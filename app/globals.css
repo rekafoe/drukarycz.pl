@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1a1916;
+  --muted: #6d685f;
+  --line: #e4dfd6;
+  --paper: #f3f0ea;
+  --white: #fffcf8;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-paper: var(--paper);
+  --color-card: var(--white);
+  --font-sans: var(--font-manrope);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+}
+
+.doors:hover .door {
+  flex: 0.82 1 0;
+}
+
+.doors .door:hover {
+  flex: 1.35 1 0;
+}
+
+.door {
+  transition: flex 0.55s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.45s ease, padding 0.45s ease;
+}
+
+.door-art {
+  margin-top: auto;
+  margin-bottom: 18px;
+  transform-origin: center bottom;
+  animation: float 4.8s ease-in-out infinite;
+}
+
+.door-art-late {
+  animation-delay: -1.6s;
+}
+
+.door:hover .door-art {
+  animation-play-state: paused;
+  transform: translateY(-18px) scale(1.06);
+}
+
+.door-leave {
+  flex: 0.001 1 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+  filter: brightness(0.7);
+}
+
+.door-leave .door-art,
+.door-leave span {
+  opacity: 0;
+}
+
+.door-take {
+  flex: 1 1 auto !important;
+}
+
+.rise {
+  animation: rise 0.45s ease both;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
