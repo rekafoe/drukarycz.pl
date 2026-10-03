@@ -32,11 +32,21 @@ export function ShirtArt({
   );
 }
 
-export function MugArt({ text, size = 240 }: { text: string; size?: number }) {
+function outlineFor(color: string) {
+  const hex = color.replace("#", "");
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+  const lum = (r * 299 + g * 587 + b * 114) / 1000;
+  return lum > 170 ? "#1a1916" : "#f6f3ee";
+}
+
+export function MugArt({ color, text, size = 240 }: { color: string; text: string; size?: number }) {
+  const stroke = outlineFor(color);
   return (
     <svg width={size} height={size} viewBox="0 0 200 200" aria-hidden>
-      <rect x="48" y="48" width="90" height="110" rx="12" fill="#f7f4ef" stroke="#1a1916" strokeWidth="3" />
-      <path d="M138 78h16a24 24 0 0 1 0 48h-16" fill="none" stroke="#1a1916" strokeWidth="3" />
+      <rect x="48" y="48" width="90" height="110" rx="12" fill={color} stroke={stroke} strokeWidth="3" />
+      <path d="M138 78h16a24 24 0 0 1 0 48h-16" fill="none" stroke={stroke} strokeWidth="3" />
       <text
         x="93"
         y="112"
@@ -44,7 +54,7 @@ export function MugArt({ text, size = 240 }: { text: string; size?: number }) {
         fontFamily="Manrope, sans-serif"
         fontSize="14"
         fontWeight="800"
-        fill="#1a1916"
+        fill={stroke}
       >
         {text}
       </text>
@@ -65,6 +75,6 @@ export function ProductArt({
   size?: number;
   hidePrint?: boolean;
 }) {
-  if (product === "mug") return <MugArt text={hidePrint ? "" : text} size={size ?? 260} />;
+  if (product === "mug") return <MugArt color={color} text={hidePrint ? "" : text} size={size ?? 260} />;
   return <ShirtArt color={color} text={text} size={size} hidePrint={hidePrint} />;
 }

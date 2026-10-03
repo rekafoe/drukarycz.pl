@@ -75,6 +75,8 @@ export function EditorCanvas({
   const [textures, setTextures] = useState<Record<string, string>>({});
   const [revision, setRevision] = useState(0);
   const [fit, setFit] = useState(0.45);
+  const [sheetEmpty, setSheetEmpty] = useState(true);
+  const [canDelete, setCanDelete] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
 
   useEffect(() => {
@@ -105,6 +107,7 @@ export function EditorCanvas({
     });
     fabricRef.current = canvas;
     let stopped = false;
+    setCanDelete(false);
 
     let timer = 0;
     const publish = () => {
@@ -114,9 +117,11 @@ export function EditorCanvas({
         const lower = canvas.getElement();
         const url = knockoutWhite(lower);
         if (!url) return;
+        const empty = canvas.getObjects().length === 0;
         setTextures((prev) => ({ ...prev, [active.id]: url }));
         setRevision((n) => n + 1);
-        if (active.id === areasFor(product)[0]?.id) onPreviewRef.current(url);
+        setSheetEmpty(empty);
+        if (active.id === areasFor(product)[0]?.id) onPreviewRef.current(empty ? null : url);
       }, 180);
     };
 
@@ -131,10 +136,14 @@ export function EditorCanvas({
     });
 
     const onChange = () => publish();
+    const onSelect = () => setCanDelete(canvas.getActiveObjects().length > 0);
     canvas.on("object:modified", onChange);
     canvas.on("object:added", onChange);
     canvas.on("object:removed", onChange);
     canvas.on("text:changed", onChange);
+    canvas.on("selection:created", onSelect);
+    canvas.on("selection:updated", onSelect);
+    canvas.on("selection:cleared", onSelect);
 
     return () => {
       stopped = true;
@@ -191,6 +200,7 @@ export function EditorCanvas({
     canvas.remove(...selected);
     canvas.discardActiveObject();
     canvas.requestRenderAll();
+    setCanDelete(false);
   }
 
   useEffect(() => {
@@ -214,14 +224,14 @@ export function EditorCanvas({
       <div className="flex shrink-0 items-center gap-5 border-b border-line px-4 py-2 text-sm lg:hidden">
         <button
           type="button"
-          className={mobilePanel === "model" ? "font-semibold text-ink" : "text-muted"}
+          className={`border-b-2 pb-0.5 ${mobilePanel === "model" ? "border-ink font-semibold text-ink" : "border-transparent text-muted"}`}
           onClick={() => setMobilePanel("model")}
         >
           Вещь
         </button>
         <button
           type="button"
-          className={mobilePanel === "sheet" ? "font-semibold text-ink" : "text-muted"}
+          className={`border-b-2 pb-0.5 ${mobilePanel === "sheet" ? "border-ink font-semibold text-ink" : "border-transparent text-muted"}`}
           onClick={() => setMobilePanel("sheet")}
         >
           Лист
@@ -260,7 +270,12 @@ export function EditorCanvas({
               }}
             />
           </label>
-          <button type="button" className="hover:text-ink" onClick={removeSelected}>
+          <button
+            type="button"
+            className={canDelete ? "hover:text-ink" : "cursor-default opacity-35"}
+            disabled={!canDelete}
+            onClick={removeSelected}
+          >
             Удалить
           </button>
           {areas.length > 1 ? (
@@ -293,6 +308,11 @@ export function EditorCanvas({
                   className="absolute top-0 left-0 origin-top-left bg-white shadow-[0_0_0_1px_rgba(26,25,22,0.14)]"
                   style={{ width: widthPx, height: heightPx, transform: `scale(${fit})` }}
                 />
+                {sheetEmpty ? (
+                  <p className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-muted">
+                    Текст или фото
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

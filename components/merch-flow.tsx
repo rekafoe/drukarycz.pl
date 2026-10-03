@@ -53,9 +53,12 @@ export function MerchFlow() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [placed, setPlaced] = useState(false);
+  const [cartFrom, setCartFrom] = useState<"shop" | "editor">("shop");
 
   const product = productById(draft.product);
   const zone = product.zones.find((item) => item.id === draft.zone) ?? product.zones[0];
+  const colorName = shirtColors.find((item) => item.value === draft.color)?.label ?? "";
+  const finishName = finishes.find((item) => item.id === draft.finish)?.label ?? "";
 
   function openProduct(id: ProductId) {
     setLeaving(id);
@@ -74,7 +77,7 @@ export function MerchFlow() {
   return (
     <main className="min-h-full">
       {step === "doors" ? (
-        <section className="doors flex min-h-screen overflow-hidden">
+        <section className="doors flex min-h-screen flex-col overflow-hidden md:flex-row">
           <Door
             tone="dark"
             title="Футболка"
@@ -104,32 +107,57 @@ export function MerchFlow() {
 
       {step === "shop" ? (
         <section className="rise">
-          <Top onHome={() => setStep("doors")} />
-          <div className="grid items-center gap-7 px-7 pb-8 md:grid-cols-[1.15fr_0.85fr]">
-            <div className="grid min-h-[520px] place-items-center rounded-[20px] border border-line bg-card">
+          <Top
+            onHome={() => setStep("doors")}
+            onCart={() => {
+              setCartFrom("shop");
+              setStep("cart");
+            }}
+          />
+          <div className="grid items-start gap-7 px-5 pb-10 md:items-center md:px-7 md:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid min-h-[240px] place-items-center rounded-[20px] border border-line bg-card md:min-h-[520px]">
               <ProductArt product={draft.product} color={draft.color} text="" size={300} hidePrint />
             </div>
             <div>
               <h1 className="text-[40px] font-extrabold tracking-tight">{product.name}</h1>
               <p className="mt-1.5 text-[15px] text-muted">Минск, Дзержинского 3Б · готово за 1–2 дня</p>
               <p className="mt-4 text-[28px] font-extrabold tracking-tight">от 5 р.</p>
-              <FieldLabel>Размер</FieldLabel>
-              <Pills values={sizes} current={draft.size} onPick={(size) => setDraft({ ...draft, size })} />
+              {draft.product === "tshirt" ? (
+                <>
+                  <FieldLabel>Размер</FieldLabel>
+                  <Pills values={sizes} current={draft.size} onPick={(size) => setDraft({ ...draft, size })} />
+                </>
+              ) : (
+                <>
+                  <FieldLabel>Объём</FieldLabel>
+                  <p className="text-sm font-semibold">330 мл</p>
+                </>
+              )}
               <FieldLabel>Цвет</FieldLabel>
-              <div className="flex gap-2">
-                {shirtColors.map((swatch) => (
-                  <button
-                    key={swatch.id}
-                    type="button"
-                    aria-label={swatch.label}
-                    className={`h-9 w-9 rounded-full border ${draft.color === swatch.value ? "border-ink shadow-[inset_0_0_0_1px_#1a1916]" : "border-line"}`}
-                    style={{ background: swatch.value }}
-                    onClick={() => setDraft({ ...draft, color: swatch.value })}
-                  />
-                ))}
+              <div className="flex items-center gap-2.5">
+                {shirtColors.map((swatch) => {
+                  const selected = draft.color === swatch.value;
+                  return (
+                    <button
+                      key={swatch.id}
+                      type="button"
+                      aria-label={swatch.label}
+                      aria-pressed={selected}
+                      className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-paper" : "border-line"}`}
+                      style={{ background: swatch.value }}
+                      onClick={() => setDraft({ ...draft, color: swatch.value })}
+                    />
+                  );
+                })}
+                <span className="ml-1 text-sm text-muted">{colorName}</span>
               </div>
               <FieldLabel>Тираж</FieldLabel>
-              <Pills values={quantities} current={draft.qty} onPick={(qty) => setDraft({ ...draft, qty })} />
+              <Pills
+                values={quantities}
+                current={draft.qty}
+                format={(value) => `${value} шт.`}
+                onPick={(qty) => setDraft({ ...draft, qty })}
+              />
               <FieldLabel>Отделка</FieldLabel>
               <Pills
                 values={finishes.map((item) => item.label)}
@@ -139,17 +167,15 @@ export function MerchFlow() {
                   if (next) setDraft({ ...draft, finish: next.id });
                 }}
               />
-              <p className="mt-2 text-xs text-muted">Вид отделки. Ширину рулона здесь не выбирают.</p>
+              <p className="mt-2 text-xs text-muted">Как будет выглядеть поверхность печати.</p>
               <button
                 type="button"
-                className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white"
+                className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white hover:bg-[#2c2a26]"
                 onClick={() => setStep("editor")}
               >
                 Сделать свой
               </button>
-              <button type="button" className="mt-2.5 text-muted underline decoration-1 underline-offset-[3px]">
-                Свой файл
-              </button>
+              <p className="mt-3 text-sm text-muted">Свой файл подключим вместе с заказом.</p>
             </div>
           </div>
         </section>
@@ -163,14 +189,18 @@ export function MerchFlow() {
             </button>
             <span className="text-sm font-semibold">{product.name}</span>
             <span className="hidden text-sm text-muted sm:inline">
-              {draft.size} · {draft.qty} шт.
+              {draft.product === "tshirt" ? `${draft.size} · ` : "330 мл · "}
+              {colorName} · {draft.qty} шт. · {finishName}
             </span>
             <div className="flex-1" />
             <span className="text-sm text-muted">от 5 р.</span>
             <button
               type="button"
               className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white"
-              onClick={() => setStep("cart")}
+              onClick={() => {
+                setCartFrom("editor");
+                setStep("cart");
+              }}
             >
               В корзину
             </button>
@@ -190,8 +220,8 @@ export function MerchFlow() {
 
       {step === "cart" ? (
         <section className="rise mx-auto max-w-3xl px-7 py-8">
-          <button type="button" className="font-bold" onClick={() => setStep("editor")}>
-            ← В редактор
+          <button type="button" className="font-bold" onClick={() => setStep(cartFrom)}>
+            {cartFrom === "shop" ? "← К вещи" : "← В редактор"}
           </button>
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight">Корзина</h1>
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
@@ -204,10 +234,14 @@ export function MerchFlow() {
             <div>
               <h2 className="text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
-                {draft.size} · тираж {draft.qty} · {zone.label} · {finishes.find((item) => item.id === draft.finish)?.label}
+                {[draft.product === "tshirt" ? draft.size : "330 мл", colorName, `тираж ${draft.qty}`, zone.label, finishName]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
               <p className="mt-1 font-bold">от 5 р.</p>
-              <p className="text-sm text-muted">Макет подготовлен в редакторе</p>
+              <p className="text-sm text-muted">
+                {draft.previewUrl ? "Макет подготовлен в редакторе" : "На листе пока пусто"}
+              </p>
             </div>
           </article>
           <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
@@ -215,10 +249,10 @@ export function MerchFlow() {
             <p className="mt-1">Сейчас остаются в браузере. В CRM не отправляются.</p>
             <ul className="mt-3 grid gap-1">
               <li>вещь: {product.name}</li>
-              <li>размер: {draft.size}</li>
-              <li>цвет вещи: {shirtColors.find((item) => item.value === draft.color)?.label}</li>
+              <li>{draft.product === "tshirt" ? `размер: ${draft.size}` : "объём: 330 мл"}</li>
+              <li>цвет вещи: {colorName}</li>
               <li>тираж: {draft.qty}</li>
-              <li>отделка: {finishes.find((item) => item.id === draft.finish)?.label} — только вид, без ширины рулона</li>
+              <li>отделка: {finishName} — только вид, без ширины рулона</li>
               <li>editorKind: souvenir_3d</li>
               <li>зона: {zone.label}, {zone.widthMm}×{zone.heightMm} мм</li>
               <li>editorDraftToken: появится, когда черновик начнёт уходить в CRM</li>
@@ -240,18 +274,24 @@ export function MerchFlow() {
                 Имя
                 <input
                   required
+                  autoComplete="name"
+                  placeholder="Как к вам обращаться"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
+                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
                 />
               </label>
               <label className="grid gap-1 text-sm font-bold">
                 Телефон
                 <input
                   required
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="+375"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
+                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
                 />
               </label>
               <button type="submit" className="rounded-xl bg-ink px-4 py-4 font-bold text-white">
@@ -265,15 +305,19 @@ export function MerchFlow() {
   );
 }
 
-function Top({ onHome }: { onHome: () => void }) {
+function Top({ onHome, onCart }: { onHome: () => void; onCart: () => void }) {
   return (
     <header className="flex items-center justify-between px-7 py-4">
       <button type="button" onClick={onHome} className="text-lg font-extrabold tracking-tight">
         merch.by
       </button>
       <nav className="flex gap-4 text-sm font-semibold text-muted">
-        <span>Каталог</span>
-        <span>Корзина</span>
+        <button type="button" className="hover:text-ink" onClick={onHome}>
+          Двери
+        </button>
+        <button type="button" className="hover:text-ink" onClick={onCart}>
+          Корзина
+        </button>
       </nav>
     </header>
   );
@@ -289,25 +333,31 @@ function Pills({
   values,
   current,
   onPick,
+  format,
 }: {
   values: readonly string[];
   current: string;
   onPick: (value: string) => void;
+  format?: (value: string) => string;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
-      {values.map((value) => (
-        <button
-          key={value}
-          type="button"
-          className={`rounded-full border px-3.5 py-2 font-semibold ${
-            value === current ? "border-ink shadow-[inset_0_0_0_1px_#1a1916]" : "border-line bg-card"
-          }`}
-          onClick={() => onPick(value)}
-        >
-          {value}
-        </button>
-      ))}
+      {values.map((value) => {
+        const selected = value === current;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={selected}
+            className={`rounded-full border px-3.5 py-2 font-semibold ${
+              selected ? "border-ink bg-ink text-white" : "border-line bg-card hover:border-ink"
+            }`}
+            onClick={() => onPick(value)}
+          >
+            {format ? format(value) : value}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -335,12 +385,12 @@ function Door({
     <button
       type="button"
       onClick={onPick}
-      className={`door flex min-h-screen flex-1 flex-col justify-end gap-2 overflow-hidden px-10 py-10 text-left ${
+      className={`door flex min-h-[52vh] flex-1 flex-col justify-end gap-2 overflow-hidden px-6 py-8 text-left md:min-h-screen md:px-10 md:py-10 ${
         tone === "dark" ? "bg-[#171614] text-[#f6f3ee]" : "bg-[#f6f3ee] text-[#171614]"
       } ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
     >
       {children}
-      <span className="text-[64px] leading-[0.95] font-extrabold tracking-tight">{title}</span>
+      <span className="text-[44px] leading-[0.95] font-extrabold tracking-tight md:text-[64px]">{title}</span>
       <span className="text-lg opacity-70">{line}</span>
       <span
         className={`mt-4 w-fit rounded-full px-4 py-3 font-bold ${

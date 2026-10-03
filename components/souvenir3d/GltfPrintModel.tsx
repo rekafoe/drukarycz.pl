@@ -436,7 +436,7 @@ function createPrintAreaBorderTexture(
   const lineW = Math.max(2, Math.round(0.9 * pxPerMm));
   const inset = Math.max(3, Math.round(lineW * 1.2));
 
-  ctx.strokeStyle = 'rgba(37, 99, 235, 0.92)';
+  ctx.strokeStyle = 'rgba(26, 25, 22, 0.45)';
   ctx.lineWidth = lineW;
   ctx.lineCap = 'butt';
   ctx.lineJoin = 'miter';
@@ -445,7 +445,7 @@ function createPrintAreaBorderTexture(
 
   ctx.setLineDash([]);
   ctx.lineWidth = lineW + 1;
-  ctx.strokeStyle = 'rgba(37, 99, 235, 1)';
+  ctx.strokeStyle = 'rgba(26, 25, 22, 0.72)';
   const corner = Math.max(10, Math.round(6 * pxPerMm));
   const drawCorner = (x: number, y: number, dx: number, dy: number) => {
     ctx.beginPath();
