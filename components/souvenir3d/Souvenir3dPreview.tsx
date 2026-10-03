@@ -119,10 +119,10 @@ const SceneBody: React.FC<{
 
   return (
     <>
-      <color attach="background" args={['#e8eef5']} />
-      <fog attach="fog" args={['#e8eef5', 8, 18]} />
-      <ambientLight intensity={0.35} />
-      <hemisphereLight args={['#ffffff', '#94a3b8', 0.45]} />
+      <color attach="background" args={['#e7e1d6']} />
+      <fog attach="fog" args={['#e7e1d6', 14, 26]} />
+      <ambientLight intensity={0.42} />
+      <hemisphereLight args={['#fffaf3', '#cfc6b8', 0.38]} />
       <directionalLight
         position={[3.2, 5.5, 2.8]}
         intensity={1.35}
@@ -156,14 +156,14 @@ const SceneBody: React.FC<{
       )}
       <ContactShadows
         position={[0, groundY, 0]}
-        opacity={0.45}
+        opacity={0.28}
         scale={isMug ? 4.5 : 6.5}
         blur={2.4}
         far={2.5}
       />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]} receiveShadow>
         <circleGeometry args={[isMug ? 1.4 : 2.1, 48]} />
-        <meshStandardMaterial color="#d8e0ea" roughness={0.95} metalness={0} />
+        <meshStandardMaterial color="#ddd6ca" roughness={0.96} metalness={0} />
       </mesh>
       <OrbitControls
         enabled={orbitEnabled}
@@ -232,7 +232,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
 
   const rootClass = ['souvenir3d-preview', className].filter(Boolean).join(' ');
   const label = (() => {
-    if (caption) return caption;
+    if (caption !== undefined) return caption;
     if (!active) return '3D-превью';
     const base = `${active.label} · ${active.widthMm}×${active.heightMm} мм`;
     if (!isMugPrintArea(active)) return base;
@@ -248,9 +248,9 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   const hasGltf = Boolean(printAreas.some((a) => a.modelUrl) || active?.modelUrl);
 
   const cameraPos = useMemo<[number, number, number]>(() => {
-    if (isMug) return hasGltf ? [1.85, 1.05, 2.75] : [2.5, 1.25, 2.75];
+    if (isMug) return hasGltf ? [1.55, 1.02, 2.35] : [2.5, 1.25, 2.75];
     if (hasGltf) {
-      return isBack ? [0.2, 1.15, -3.8] : [0.2, 1.15, 3.8];
+      return isBack ? [0.16, 1.16, -3.25] : [0.16, 1.16, 3.25];
     }
     return isBack ? [0.15, 0.55, -4.15] : [0.15, 0.55, 4.15];
   }, [isBack, isMug, hasGltf]);
@@ -268,7 +268,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
         <Canvas
           shadows
           dpr={[1, 2]}
-          camera={{ position: cameraPos, fov: 38 }}
+          camera={{ position: cameraPos, fov: 34 }}
           gl={{
             antialias: true,
             alpha: true,
@@ -287,7 +287,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
           />
         </Canvas>
       </div>
-      <p className="souvenir3d-preview__caption">{label}</p>
+      {label ? <p className="souvenir3d-preview__caption">{label}</p> : null}
     </div>
   );
 };

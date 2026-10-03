@@ -156,17 +156,20 @@ export function MerchFlow() {
       ) : null}
 
       {step === "editor" ? (
-        <section className="flex h-screen flex-col bg-[#efece6]">
-          <header className="flex h-16 items-center gap-3.5 border-b border-line bg-card px-4">
-            <button type="button" className="font-bold" onClick={() => setStep("shop")}>
-              ← К вещи
+        <section className="flex h-dvh flex-col bg-paper text-ink">
+          <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-4">
+            <button type="button" className="text-sm text-muted" onClick={() => setStep("shop")}>
+              К вещи
             </button>
-            <strong>{product.name}</strong>
+            <span className="text-sm font-semibold">{product.name}</span>
+            <span className="hidden text-sm text-muted sm:inline">
+              {draft.size} · {draft.qty} шт.
+            </span>
             <div className="flex-1" />
-            <span className="font-extrabold">от 5 р.</span>
+            <span className="text-sm text-muted">от 5 р.</span>
             <button
               type="button"
-              className="rounded-xl bg-ink px-4 py-2.5 font-bold text-white"
+              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white"
               onClick={() => setStep("cart")}
             >
               В корзину

@@ -78,7 +78,7 @@ export function EditorCanvas({
     const stage = stageRef.current;
     if (!stage) return;
     const measure = () => {
-      const pad = 28;
+      const pad = 52;
       const width = Math.max(stage.clientWidth - pad, 160);
       const height = Math.max(stage.clientHeight - pad, 160);
       setFit(Math.min(width / widthPx, height / heightPx, 1));
@@ -190,33 +190,17 @@ export function EditorCanvas({
     canvas.requestRenderAll();
   }
 
+  const sheetW = Math.round(widthPx * fit);
+  const sheetH = Math.round(heightPx * fit);
+
   return (
-    <div className="grid min-h-0 flex-1 md:grid-cols-[220px_1fr_340px]">
-      <aside className="border-r border-line bg-card p-4">
-        <p className="mb-2 text-[12px] font-bold tracking-[0.06em] text-muted uppercase">Зона</p>
-        <div className="flex flex-wrap gap-2">
-          {areas.map((area) => (
-            <button
-              key={area.id}
-              type="button"
-              className={`rounded-full border px-3 py-1.5 text-sm font-bold ${
-                area.id === active.id ? "border-ink bg-ink text-white" : "border-line"
-              }`}
-              onClick={() => onActiveId(area.id)}
-            >
-              {area.label}
-            </button>
-          ))}
-        </div>
-        <p className="mt-4 mb-2 text-[12px] font-bold tracking-[0.06em] text-muted uppercase">На лист</p>
-        <div className="grid gap-2">
-          <button type="button" className="rounded-xl border border-line px-3 py-2 font-bold" onClick={addText}>
+    <div className="grid min-h-0 min-w-0 flex-1 overflow-hidden grid-rows-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-cols-[minmax(292px,28%)_minmax(0,1fr)] lg:grid-rows-1">
+      <aside className="order-2 flex min-h-0 min-w-0 flex-col overflow-hidden border-t border-line lg:order-1 lg:border-t-0 lg:border-r">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-muted">
+          <button type="button" className="hover:text-ink" onClick={addText}>
             Текст
           </button>
-          <button type="button" className="rounded-xl border border-line px-3 py-2 font-bold" onClick={removeSelected}>
-            Удалить
-          </button>
-          <label className="cursor-pointer rounded-xl border border-line px-3 py-2 text-center font-bold">
+          <label className="cursor-pointer hover:text-ink">
             Фото
             <input
               type="file"
@@ -229,29 +213,53 @@ export function EditorCanvas({
               }}
             />
           </label>
+          <button type="button" className="hover:text-ink" onClick={removeSelected}>
+            Удалить
+          </button>
+          {areas.length > 1 ? (
+            <div className="ml-auto flex gap-3">
+              {areas.map((area) => (
+                <button
+                  key={area.id}
+                  type="button"
+                  className={area.id === active.id ? "font-semibold text-ink" : "hover:text-ink"}
+                  onClick={() => onActiveId(area.id)}
+                >
+                  {area.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span className="ml-auto">{active.label}</span>
+          )}
         </div>
-        <p className="mt-4 text-xs text-muted">
-          Холст Fabric, {active.widthMm}×{active.heightMm} мм, зона «{active.label}». В печать уходит плоский лист. Модель справа только превью.
-        </p>
+        <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 pb-3">
+          <div className="grid justify-items-center gap-1">
+            <span className="text-[11px] tracking-wide text-muted">{active.widthMm} мм</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] tracking-wide text-muted [writing-mode:vertical-rl] rotate-180">
+                {active.heightMm} мм
+              </span>
+              <div className="relative overflow-hidden" style={{ width: sheetW, height: sheetH }}>
+                <div
+                  ref={hostRef}
+                  className="absolute top-0 left-0 origin-top-left bg-white shadow-[0_0_0_1px_rgba(26,25,22,0.14)]"
+                  style={{ width: widthPx, height: heightPx, transform: `scale(${fit})` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </aside>
-      <div ref={stageRef} className="grid min-h-[420px] place-items-center overflow-hidden p-4">
-        <div style={{ width: Math.round(widthPx * fit), height: Math.round(heightPx * fit) }}>
-          <div
-            ref={hostRef}
-            className="origin-top-left bg-white shadow-[0_16px_40px_rgba(30,24,16,0.08)]"
-            style={{ width: widthPx, height: heightPx, transform: `scale(${fit})` }}
-          />
-        </div>
-      </div>
-      <aside className="flex min-h-[320px] flex-col border-l border-line bg-card md:min-h-0">
+      <div className="order-1 h-full min-h-0 min-w-0 lg:order-2">
         <Souvenir3dPreview
           printAreas={areas}
           activePrintAreaId={active.id}
           texturesByArea={textures}
           textureRevision={revision}
-          caption="Превью модели. Печатается лист слева."
+          caption=""
         />
-      </aside>
+      </div>
     </div>
   );
 }
