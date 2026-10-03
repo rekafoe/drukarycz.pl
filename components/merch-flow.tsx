@@ -1,7 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, type ReactNode } from "react";
 import { ProductArt } from "@/components/product-art";
+
+const EditorCanvas = dynamic(
+  () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
+  { ssr: false, loading: () => <p className="p-6 text-muted">Открываем холст…</p> },
+);
 import {
   productById,
   quantities,
@@ -19,7 +25,15 @@ type Draft = {
   color: string;
   qty: string;
   text: string;
+  finish: "none" | "matte" | "gloss";
+  previewUrl: string | null;
 };
+
+const finishes = [
+  { id: "none", label: "Без отделки" },
+  { id: "matte", label: "Матовая" },
+  { id: "gloss", label: "Глянцевая" },
+] as const;
 
 const initialDraft: Draft = {
   product: "tshirt",
@@ -28,6 +42,8 @@ const initialDraft: Draft = {
   color: "#171614",
   qty: "1",
   text: "Ваш принт",
+  finish: "none",
+  previewUrl: null,
 };
 
 export function MerchFlow() {
@@ -40,7 +56,6 @@ export function MerchFlow() {
 
   const product = productById(draft.product);
   const zone = product.zones.find((item) => item.id === draft.zone) ?? product.zones[0];
-  const backEmpty = draft.product === "tshirt" && draft.zone === "back";
 
   function openProduct(id: ProductId) {
     setLeaving(id);
@@ -115,6 +130,16 @@ export function MerchFlow() {
               </div>
               <FieldLabel>Тираж</FieldLabel>
               <Pills values={quantities} current={draft.qty} onPick={(qty) => setDraft({ ...draft, qty })} />
+              <FieldLabel>Отделка</FieldLabel>
+              <Pills
+                values={finishes.map((item) => item.label)}
+                current={finishes.find((item) => item.id === draft.finish)?.label ?? "Без отделки"}
+                onPick={(label) => {
+                  const next = finishes.find((item) => item.label === label);
+                  if (next) setDraft({ ...draft, finish: next.id });
+                }}
+              />
+              <p className="mt-2 text-xs text-muted">Вид отделки. Ширину рулона здесь не выбирают.</p>
               <button
                 type="button"
                 className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white"
@@ -137,18 +162,6 @@ export function MerchFlow() {
               ← К вещи
             </button>
             <strong>{product.name}</strong>
-            <div className="flex rounded-full bg-paper p-0.5">
-              {product.zones.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 text-sm font-bold ${draft.zone === item.id ? "bg-ink text-white" : ""}`}
-                  onClick={() => setDraft({ ...draft, zone: item.id })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
             <div className="flex-1" />
             <span className="font-extrabold">от 5 р.</span>
             <button
@@ -159,57 +172,15 @@ export function MerchFlow() {
               В корзину
             </button>
           </header>
-          <div className="grid min-h-0 flex-1 md:grid-cols-[240px_1fr_320px]">
-            <aside className="border-r border-line bg-card p-4">
-              <FieldLabel>Текст</FieldLabel>
-              <input
-                value={draft.text}
-                maxLength={24}
-                onChange={(event) => setDraft({ ...draft, text: event.target.value })}
-                className="w-full rounded-[10px] border border-line bg-white px-3 py-2.5"
-              />
-              <FieldLabel>Цвет вещи</FieldLabel>
-              <div className="flex gap-2">
-                {shirtColors.map((swatch) => (
-                  <button
-                    key={swatch.id}
-                    type="button"
-                    aria-label={swatch.label}
-                    className={`h-9 w-9 rounded-full border ${draft.color === swatch.value ? "border-ink shadow-[inset_0_0_0_1px_#1a1916]" : "border-line"}`}
-                    style={{ background: swatch.value }}
-                    onClick={() => setDraft({ ...draft, color: swatch.value })}
-                  />
-                ))}
-              </div>
-              <p className="mt-4 max-w-[220px] text-xs text-muted">
-                Редактор зоны «{zone.label}», {zone.widthMm}×{zone.heightMm} мм. В печать уходит плоский лист. Превью справа только смотрит.
-              </p>
-            </aside>
-            <div className="grid place-items-center p-5">
-              <div
-                className={`relative grid place-items-center rounded-lg bg-white shadow-[0_16px_40px_rgba(30,24,16,0.08)] ${
-                  draft.product === "mug" ? "aspect-[20/8.5] w-[min(520px,92%)]" : "aspect-[3/4] w-[min(360px,86%)]"
-                }`}
-              >
-                <p className="px-3 text-center text-[42px] font-extrabold tracking-tight break-words">
-                  {draft.text || "Пусто"}
-                </p>
-                <span className="absolute bottom-3 text-xs text-muted">{zone.label}</span>
-              </div>
-            </div>
-            <aside className="flex flex-col items-center justify-center gap-2 border-l border-line bg-card">
-              <ProductArt
-                product={draft.product}
-                color={draft.color}
-                text={backEmpty ? "" : draft.text}
-                size={230}
-                hidePrint={backEmpty}
-              />
-              <p className="max-w-[220px] text-center text-xs text-muted">
-                {backEmpty ? "Спина пустая, пока на ней нет текста." : "Превью вещи. Печатается лист слева."}
-              </p>
-            </aside>
-          </div>
+          <EditorCanvas
+            key={draft.product}
+            product={draft.product}
+            activeId={draft.zone}
+            onActiveId={(zoneId) => setDraft((current) => ({ ...current, zone: zoneId }))}
+            onPreview={(url) =>
+              setDraft((current) => (current.previewUrl === url ? current : { ...current, previewUrl: url }))
+            }
+          />
         </section>
       ) : null}
 
@@ -220,16 +191,35 @@ export function MerchFlow() {
           </button>
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight">Корзина</h1>
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
-            <ProductArt product={draft.product} color={draft.color} text={draft.text} size={96} />
+            {draft.previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={draft.previewUrl} alt="" className="h-24 w-24 object-contain" />
+            ) : (
+              <ProductArt product={draft.product} color={draft.color} text="" size={96} hidePrint />
+            )}
             <div>
               <h2 className="text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
-                {draft.size} · тираж {draft.qty} · {zone.label}
+                {draft.size} · тираж {draft.qty} · {zone.label} · {finishes.find((item) => item.id === draft.finish)?.label}
               </p>
               <p className="mt-1 font-bold">от 5 р.</p>
               <p className="text-sm text-muted">Макет подготовлен в редакторе</p>
             </div>
           </article>
+          <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
+            <h2 className="font-bold text-ink">Поля будущего заказа</h2>
+            <p className="mt-1">Сейчас остаются в браузере. В CRM не отправляются.</p>
+            <ul className="mt-3 grid gap-1">
+              <li>вещь: {product.name}</li>
+              <li>размер: {draft.size}</li>
+              <li>цвет вещи: {shirtColors.find((item) => item.value === draft.color)?.label}</li>
+              <li>тираж: {draft.qty}</li>
+              <li>отделка: {finishes.find((item) => item.id === draft.finish)?.label} — только вид, без ширины рулона</li>
+              <li>editorKind: souvenir_3d</li>
+              <li>зона: {zone.label}, {zone.widthMm}×{zone.heightMm} мм</li>
+              <li>editorDraftToken: появится, когда черновик начнёт уходить в CRM</li>
+            </ul>
+          </section>
           {placed ? (
             <p className="mt-6 rounded-2xl bg-ink px-4 py-4 text-white">
               Заявка сохранена в этом браузере. В CRM её пока не отправляем — шов заказа заложим, когда скажете.

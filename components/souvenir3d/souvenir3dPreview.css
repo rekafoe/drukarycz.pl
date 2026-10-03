@@ -1,0 +1,286 @@
+.souvenir3d-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 35%, #f4f7fb 0%, #e4ebf4 55%, #d5dde8 100%);
+  border: 1px solid var(--border-color, #d0d9e4);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+}
+
+.souvenir3d-preview__viewport {
+  flex: 1;
+  min-height: 220px;
+  touch-action: none;
+}
+
+.souvenir3d-preview__viewport canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.souvenir3d-preview__caption {
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+}
+
+.souvenir3d-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.souvenir3d-editor__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
+  gap: 0.75rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.souvenir3d-editor__fabric {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  background: var(--bg-primary, #fff);
+}
+
+.souvenir3d-editor__fabric-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.souvenir3d-editor__fabric-body > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.souvenir3d-editor__preview-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.souvenir3d-editor__preview-pane .souvenir3d-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.souvenir3d-editor__preview-stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.souvenir3d-editor__areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.souvenir3d-editor__areas--editor-footer {
+  flex: 0 0 auto;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.souvenir3d-editor__areas--editor-footer .souvenir3d-editor__area-btn {
+  min-width: 5.5rem;
+}
+
+.souvenir3d-editor__areas--in-chrome {
+  padding: 8px 12px 2px;
+  border-top: none;
+  background: transparent;
+}
+
+.souvenir3d-editor__areas--on-3d {
+  position: absolute;
+  top: 0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  justify-content: center;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 88%);
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: 0 4px 14px rgb(15 23 42 / 10%);
+  backdrop-filter: blur(6px);
+}
+
+.souvenir3d-editor__area-btn {
+  appearance: none;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #0f172a);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.souvenir3d-editor__area-btn--active {
+  border-color: var(--accent, #2563eb);
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
+  color: var(--accent, #2563eb);
+  font-weight: 600;
+}
+
+.souvenir3d-placement {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.souvenir3d-placement__blank {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  aspect-ratio: 3 / 4;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.souvenir3d-placement__blank--mug {
+  aspect-ratio: 1 / 1;
+}
+
+.souvenir3d-placement__silhouette {
+  position: absolute;
+  inset: 12%;
+  border: 2px dashed #94a3b8;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+
+.souvenir3d-placement__blank--mug .souvenir3d-placement__silhouette {
+  inset: 18% 22%;
+  border-radius: 40% / 12%;
+}
+
+.souvenir3d-placement__print {
+  position: absolute;
+  left: 28%;
+  top: 28%;
+  width: 44%;
+  height: 40%;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #64748b;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 12%);
+}
+
+.souvenir3d-placement__blank--mug .souvenir3d-placement__print {
+  left: 24%;
+  top: 32%;
+  width: 52%;
+  height: 36%;
+}
+
+.souvenir3d-placement__meta {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .souvenir3d-editor__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .souvenir3d-editor__preview-pane {
+    min-height: 240px;
+    max-height: 42vh;
+    order: -1;
+  }
+}
+
+/* Мобильный док редактора (≤760): 3D только во вкладке, не сверху постоянно */
+@media (max-width: 760px) {
+  .souvenir3d-editor--mobile-tabs .souvenir3d-editor__layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .souvenir3d-editor--mobile-tabs .souvenir3d-editor__fabric {
+    flex: 1 1 auto;
+    min-height: 0;
+    order: 0;
+  }
+
+  .souvenir3d-editor--mobile-tabs .souvenir3d-editor__preview-pane {
+    display: none;
+    order: 0;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .souvenir3d-editor--mobile-tabs.souvenir3d-editor--show-3d .souvenir3d-editor__preview-pane {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    order: -1;
+  }
+
+  .souvenir3d-editor--mobile-tabs.souvenir3d-editor--show-3d .souvenir3d-editor__fabric {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .souvenir3d-editor--mobile-tabs.souvenir3d-editor--show-3d .souvenir3d-editor__fabric-body {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  .souvenir3d-editor--mobile-tabs.souvenir3d-editor--show-3d .souvenir3d-editor__fabric-body > * {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .souvenir3d-editor--mobile-tabs .souvenir3d-editor__areas--on-3d {
+    display: none;
+  }
+}
