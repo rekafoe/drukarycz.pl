@@ -53,11 +53,13 @@ function knockoutWhite(source: HTMLCanvasElement): string | null {
 export function EditorCanvas({
   product,
   activeId,
+  bodyColor,
   onActiveId,
   onPreview,
 }: {
   product: ProductId;
   activeId: string;
+  bodyColor: string;
   onActiveId: (id: string) => void;
   onPreview: (url: string | null) => void;
 }) {
@@ -302,6 +304,7 @@ export function EditorCanvas({
           activePrintAreaId={active.id}
           texturesByArea={textures}
           textureRevision={revision}
+          bodyColor={bodyColor}
           caption=""
         />
       </div>

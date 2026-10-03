@@ -23,6 +23,8 @@ export type Souvenir3dPreviewProps = {
   dragOverlayRevision?: number;
   className?: string;
   caption?: string;
+  /** Цвет вещи с лавки. На печатный слой не влияет. */
+  bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
   orbitEnabled?: boolean;
 };
@@ -93,9 +95,10 @@ const SceneBody: React.FC<{
   active: PrintAreaConfig;
   textures: Record<string, THREE.Texture | null>;
   dragTexture: THREE.Texture | null;
+  bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
   orbitEnabled: boolean;
-}> = ({ printAreas, active, textures, dragTexture, onSurfacePointer, orbitEnabled }) => {
+}> = ({ printAreas, active, textures, dragTexture, bodyColor, onSurfacePointer, orbitEnabled }) => {
   const modelUrl = printAreas.find((a) => a.modelUrl)?.modelUrl || active.modelUrl;
   const hasGltf = Boolean(modelUrl);
   const isMug = isMugPrintArea(active);
@@ -137,6 +140,7 @@ const SceneBody: React.FC<{
           <GltfPrintModel
             url={modelUrl}
             layers={layers}
+            bodyColor={bodyColor}
             onSurfacePointer={onSurfacePointer}
           />
         </Suspense>
@@ -190,6 +194,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   dragOverlayRevision = 0,
   className,
   caption,
+  bodyColor,
   onSurfacePointer,
   orbitEnabled = true,
 }) => {
@@ -282,6 +287,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
             active={active}
             textures={textures}
             dragTexture={dragTexture}
+            bodyColor={bodyColor}
             onSurfacePointer={onSurfacePointer}
             orbitEnabled={orbitEnabled}
           />

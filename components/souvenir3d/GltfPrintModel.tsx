@@ -24,6 +24,8 @@ type GltfPrintModelProps = {
   url: string;
   /** Все зоны (грудь+спина) рисуются сразу; камера смотрит на активную. */
   layers: PrintLayer[];
+  /** Цвет вещи с лавки. Печатный слой им не красится. */
+  bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
 };
 
@@ -250,16 +252,44 @@ function buildMugWrapGeometry(
   return geo;
 }
 
-function applyMugCeramicMaterials(root: THREE.Object3D) {
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: '#f4f6f9',
-    roughness: 0.28,
-    metalness: 0.04,
-  });
+function applyMugCeramicMaterials(root: THREE.Object3D, color: string) {
+  let bodyMat = root.userData.merchBodyMat as THREE.MeshStandardMaterial | undefined;
+  if (!bodyMat) {
+    bodyMat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.28,
+      metalness: 0.04,
+    });
+    root.userData.merchBodyMat = bodyMat;
+  } else {
+    bodyMat.color.set(color);
+  }
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
     mesh.material = bodyMat;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+  });
+}
+
+/** Ткань GLB без своей карты цвета: заменяем материал цветом лавки. Принт — отдельный слой. */
+function applyShirtBodyColor(root: THREE.Object3D, color: string) {
+  let mat = root.userData.merchBodyMat as THREE.MeshStandardMaterial | undefined;
+  if (!mat) {
+    mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.78,
+      metalness: 0,
+    });
+    root.userData.merchBodyMat = mat;
+  } else {
+    mat.color.set(color);
+  }
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.material = mat;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
   });
@@ -614,6 +644,7 @@ const PrintLayerMeshes: React.FC<{
 export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
   url,
   layers,
+  bodyColor = '#f4f1ea',
   onSurfacePointer,
 }) => {
   const { scene } = useGLTF(url);
@@ -625,16 +656,11 @@ export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
 
   useEffect(() => {
     if (isMug) {
-      applyMugCeramicMaterials(fitted);
+      applyMugCeramicMaterials(fitted, bodyColor);
       return;
     }
-    fitted.traverse((obj) => {
-      const mesh = obj as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-    });
-  }, [fitted, isMug]);
+    applyShirtBodyColor(fitted, bodyColor);
+  }, [fitted, isMug, bodyColor]);
 
   return (
     <group>

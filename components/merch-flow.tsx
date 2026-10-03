@@ -178,6 +178,7 @@ export function MerchFlow() {
           <EditorCanvas
             key={draft.product}
             product={draft.product}
+            bodyColor={draft.color}
             activeId={draft.zone}
             onActiveId={(zoneId) => setDraft((current) => ({ ...current, zone: zoneId }))}
             onPreview={(url) =>
