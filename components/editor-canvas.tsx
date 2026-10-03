@@ -239,7 +239,7 @@ export function EditorCanvas({
           </div>
         ) : null}
       </div>
-      <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(300px,1fr)_minmax(0,2fr)]">
+      <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
         <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-muted">
           <button type="button" className="hover:text-ink" onClick={addText}>
