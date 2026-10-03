@@ -73,6 +73,7 @@ export function EditorCanvas({
   const [textures, setTextures] = useState<Record<string, string>>({});
   const [revision, setRevision] = useState(0);
   const [fit, setFit] = useState(0.45);
+  const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -190,12 +191,56 @@ export function EditorCanvas({
     canvas.requestRenderAll();
   }
 
+  useEffect(() => {
+    if (mobilePanel !== "sheet") return;
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const frame = window.requestAnimationFrame(() => {
+      canvas.calcOffset();
+      canvas.requestRenderAll();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [mobilePanel]);
+
   const sheetW = Math.round(widthPx * fit);
   const sheetH = Math.round(heightPx * fit);
+  const sheetHidden = mobilePanel !== "sheet";
+  const modelHidden = mobilePanel !== "model";
 
   return (
-    <div className="grid min-h-0 min-w-0 flex-1 overflow-hidden grid-rows-[minmax(0,1.7fr)_minmax(0,1fr)] lg:grid-cols-[minmax(292px,28%)_minmax(0,1fr)] lg:grid-rows-1">
-      <aside className="order-2 flex min-h-0 min-w-0 flex-col overflow-hidden border-t border-line lg:order-1 lg:border-t-0 lg:border-r">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex shrink-0 items-center gap-5 border-b border-line px-4 py-2 text-sm lg:hidden">
+        <button
+          type="button"
+          className={mobilePanel === "model" ? "font-semibold text-ink" : "text-muted"}
+          onClick={() => setMobilePanel("model")}
+        >
+          Вещь
+        </button>
+        <button
+          type="button"
+          className={mobilePanel === "sheet" ? "font-semibold text-ink" : "text-muted"}
+          onClick={() => setMobilePanel("sheet")}
+        >
+          Лист
+        </button>
+        {areas.length > 1 && mobilePanel === "model" ? (
+          <div className="ml-auto flex gap-3">
+            {areas.map((area) => (
+              <button
+                key={area.id}
+                type="button"
+                className={area.id === active.id ? "font-semibold text-ink" : "text-muted"}
+                onClick={() => onActiveId(area.id)}
+              >
+                {area.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(300px,1fr)_minmax(0,2fr)]">
+      <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
         <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-muted">
           <button type="button" className="hover:text-ink" onClick={addText}>
             Текст
@@ -251,7 +296,7 @@ export function EditorCanvas({
           </div>
         </div>
       </aside>
-      <div className="order-1 h-full min-h-0 min-w-0 lg:order-2">
+      <div className={`${modelHidden ? "hidden" : "block"} h-full min-h-0 min-w-0 lg:block`}>
         <Souvenir3dPreview
           printAreas={areas}
           activePrintAreaId={active.id}
@@ -259,6 +304,7 @@ export function EditorCanvas({
           textureRevision={revision}
           caption=""
         />
+      </div>
       </div>
     </div>
   );
