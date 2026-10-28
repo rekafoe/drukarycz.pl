@@ -10,6 +10,7 @@ import {
 } from "@/components/souvenir3d/types";
 import { printAreaFabricPx } from "@/components/souvenir3d/scale";
 import type { ProductId } from "@/lib/catalog";
+import { defaultPrintText } from "@/lib/work";
 
 /** Как forcedPageSize у souvenir_3d: координаты зоны в масштабе 1. */
 const SCENE_SCALE = 1;
@@ -183,7 +184,7 @@ export function EditorCanvas({
   function addText() {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const text = new IText("Twój nadruk", {
+    const text = new IText(defaultPrintText, {
       left: canvas.getWidth() / 2,
       top: canvas.getHeight() / 2,
       originX: "center",

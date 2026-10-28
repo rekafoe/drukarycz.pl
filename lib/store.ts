@@ -119,6 +119,7 @@ function devCodeFor(session: SessionRecord) {
 
 export function viewSession(session: SessionRecord, store: Store) {
   const user = session.userId ? store.users.find((item) => item.id === session.userId) : undefined;
+  session.work = sanitizeWork(session.work, Boolean(session.userId));
   return {
     user: user ? publicUser(user) : null,
     work: session.work,
@@ -168,7 +169,10 @@ export function ensureSession(existingId: string | null) {
     }
     session.updatedAt = Date.now();
     pruneSessions(store, session.id);
-    return { id: session.id, isNew, view: structuredClone(viewSession(session, store)) };
+    const view = viewSession(session, store);
+    const design = ownDesign(store, session);
+    if (design) design.work = session.work;
+    return { id: session.id, isNew, view: structuredClone(view) };
   });
 }
 

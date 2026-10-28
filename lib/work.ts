@@ -36,6 +36,31 @@ const zoneIds: Record<ProductId, readonly string[]> = {
   mug: ["wrap"],
 };
 
+/** Текст, который кнопка «Tekst» кладёт на пустой лист. */
+export const defaultPrintText = "Twój nadruk";
+
+/** Старые русские заготовки. Свой текст клиента не трогаем. */
+const legacySeedText: Record<string, string> = {
+  "Ваш принт": defaultPrintText,
+};
+
+function polishSeedPage(page: object): object {
+  const record = asRecord(page);
+  if (!record || !Array.isArray(record.objects)) return page;
+  let changed = false;
+  const objects = record.objects.map((item) => {
+    const obj = asRecord(item);
+    if (!obj || typeof obj.text !== "string") return item;
+    const next = legacySeedText[obj.text.trim()];
+    if (!next || next === obj.text) return item;
+    changed = true;
+    const { width: _width, height: _height, ...rest } = obj;
+    return { ...rest, text: next };
+  });
+  if (!changed) return page;
+  return { ...record, objects };
+}
+
 export function initialWork(): WorkSnapshot {
   return {
     step: "doors",
@@ -100,7 +125,7 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean): WorkSnapshot
       if (!page || typeof page !== "object" || Array.isArray(page)) continue;
       const encoded = JSON.stringify(page);
       if (encoded.length > 1_500_000) continue;
-      pages[key] = page as object;
+      pages[key] = polishSeedPage(page as object);
     }
   }
 
