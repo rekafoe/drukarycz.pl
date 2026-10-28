@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Canvas, IText, FabricImage } from "fabric";
 import { Souvenir3dPreview } from "@/components/souvenir3d/Souvenir3dPreview";
 import {
@@ -11,6 +11,20 @@ import {
 import { printAreaFabricPx } from "@/components/souvenir3d/scale";
 import type { ProductId } from "@/lib/catalog";
 import { defaultPrintText } from "@/lib/work";
+import {
+  BackwardIcon,
+  CenterIcon,
+  DuplicateIcon,
+  ForwardIcon,
+  LargerIcon,
+  PhotoIcon,
+  RedoIcon,
+  RotateIcon,
+  SmallerIcon,
+  TextIcon,
+  TrashIcon,
+  UndoIcon,
+} from "@/components/editor-icons";
 
 /** Как forcedPageSize у souvenir_3d: координаты зоны в масштабе 1. */
 const SCENE_SCALE = 1;
@@ -455,11 +469,15 @@ export function EditorCanvas({
       <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
         <div className="shrink-0 border-b border-line bg-card px-3 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <ToolButton tone="primary" onClick={addText}>
-              Tekst
+            <ToolButton label="Tekst" tone="primary" onClick={addText}>
+              <TextIcon />
             </ToolButton>
-            <label className="cursor-pointer rounded-full bg-ink px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#2c2a26]">
-              Zdjęcie
+            <label
+              title="Zdjęcie"
+              aria-label="Zdjęcie"
+              className="grid h-10 w-10 cursor-pointer place-items-center rounded-xl bg-ink text-white hover:bg-[#2c2a26]"
+            >
+              <PhotoIcon />
               <input
                 type="file"
                 accept="image/*"
@@ -471,11 +489,37 @@ export function EditorCanvas({
                 }}
               />
             </label>
-            <ToolButton disabled={!canUndo} onClick={() => void stepHistory(false)}>
-              Cofnij
+            <span className="mx-1 hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
+            <ToolButton label="Cofnij" disabled={!canUndo} onClick={() => void stepHistory(false)}>
+              <UndoIcon />
             </ToolButton>
-            <ToolButton disabled={!canRedo} onClick={() => void stepHistory(true)}>
-              Ponów
+            <ToolButton label="Ponów" disabled={!canRedo} onClick={() => void stepHistory(true)}>
+              <RedoIcon />
+            </ToolButton>
+            <span className="mx-1 hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
+            <ToolButton label="Środek" disabled={!canDelete} onClick={centerSelected}>
+              <CenterIcon />
+            </ToolButton>
+            <ToolButton label="Obróć" disabled={!canDelete} onClick={rotateSelected}>
+              <RotateIcon />
+            </ToolButton>
+            <ToolButton label="Duplikuj" disabled={!canDelete} onClick={() => void duplicateSelected()}>
+              <DuplicateIcon />
+            </ToolButton>
+            <ToolButton label="Większy" disabled={!canDelete} onClick={() => resizeSelected(1.15)}>
+              <LargerIcon />
+            </ToolButton>
+            <ToolButton label="Mniejszy" disabled={!canDelete} onClick={() => resizeSelected(1 / 1.15)}>
+              <SmallerIcon />
+            </ToolButton>
+            <ToolButton label="Wyżej" disabled={!canDelete} onClick={() => liftSelected(true)}>
+              <ForwardIcon />
+            </ToolButton>
+            <ToolButton label="Niżej" disabled={!canDelete} onClick={() => liftSelected(false)}>
+              <BackwardIcon />
+            </ToolButton>
+            <ToolButton label="Usuń" disabled={!canDelete} onClick={removeSelected}>
+              <TrashIcon />
             </ToolButton>
             <div className="ml-auto flex flex-wrap gap-2">
               {areas.map((area) => (
@@ -493,35 +537,8 @@ export function EditorCanvas({
               ))}
             </div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <ToolButton disabled={!canDelete} onClick={centerSelected}>
-              Środek
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={rotateSelected}>
-              Obróć
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={() => void duplicateSelected()}>
-              Duplikuj
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={() => resizeSelected(1.15)}>
-              Większy
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={() => resizeSelected(1 / 1.15)}>
-              Mniejszy
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={() => liftSelected(true)}>
-              Wyżej
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={() => liftSelected(false)}>
-              Niżej
-            </ToolButton>
-            <ToolButton disabled={!canDelete} onClick={removeSelected}>
-              Usuń
-            </ToolButton>
-          </div>
           {textSelected ? (
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-[12px] font-bold tracking-[0.06em] text-muted uppercase">Kolor napisu</span>
               {textInks.map((ink) => {
                 const selected = textFill?.toLowerCase() === ink.value;
                 return (
@@ -529,6 +546,7 @@ export function EditorCanvas({
                     key={ink.id}
                     type="button"
                     aria-label={ink.label}
+                    title={ink.label}
                     aria-pressed={selected}
                     className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-card" : "border-line"}`}
                     style={{ background: ink.value }}
@@ -582,12 +600,14 @@ export function editorAreas(product: ProductId) {
 }
 
 function ToolButton({
+  label,
   children,
   onClick,
   disabled,
   tone = "plain",
 }: {
-  children: string;
+  label: string;
+  children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
   tone?: "primary" | "plain";
@@ -599,9 +619,11 @@ function ToolButton({
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-full px-3.5 py-2 text-sm font-semibold disabled:cursor-default disabled:opacity-35 disabled:hover:border-line disabled:hover:bg-paper ${look}`}
+      className={`grid h-10 w-10 place-items-center rounded-xl disabled:cursor-default disabled:opacity-35 disabled:hover:border-line disabled:hover:bg-paper ${look}`}
     >
       {children}
     </button>
