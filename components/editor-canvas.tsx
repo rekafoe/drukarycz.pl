@@ -88,6 +88,8 @@ export function EditorCanvas({
   onPages,
   onIssues,
   onBind,
+  onEditorReady,
+  onEditorFailed,
 }: {
   product: ProductId;
   activeId: string;
@@ -98,6 +100,8 @@ export function EditorCanvas({
   onPages: (pages: Record<string, object>) => void;
   onIssues?: (issues: QualityIssue[]) => void;
   onBind?: (api: EditorHandle | null) => void;
+  onEditorReady?: () => void;
+  onEditorFailed?: () => void;
 }) {
   const areas = areasFor(product);
   const active = areas.find((area) => area.id === activeId) ?? areas[0];
@@ -113,6 +117,10 @@ export function EditorCanvas({
   onIssuesRef.current = onIssues;
   const onBindRef = useRef(onBind);
   onBindRef.current = onBind;
+  const onEditorReadyRef = useRef(onEditorReady);
+  const onEditorFailedRef = useRef(onEditorFailed);
+  onEditorReadyRef.current = onEditorReady;
+  onEditorFailedRef.current = onEditorFailed;
   const productRef = useRef(product);
   productRef.current = product;
   const pxPerMmRef = useRef(widthPx / active.widthMm);
@@ -136,6 +144,8 @@ export function EditorCanvas({
   const [textFill, setTextFill] = useState<string | null>(null);
   const [textMm, setTextMm] = useState(12);
   const [issues, setIssues] = useState<QualityIssue[]>([]);
+  const [sheetReady, setSheetReady] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
@@ -236,6 +246,9 @@ export function EditorCanvas({
       if (current.past.length === 0) current.past.push(shot);
       syncHistoryFlags();
       publish();
+      window.requestAnimationFrame(() => {
+        if (!stopped) setSheetReady(true);
+      });
     });
 
     const onChange = () => publish();
@@ -548,6 +561,10 @@ export function EditorCanvas({
   }, []);
 
   useEffect(() => {
+    if (sheetReady && modelReady) onEditorReadyRef.current?.();
+  }, [sheetReady, modelReady]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target;
       if (target instanceof HTMLElement) {
@@ -854,6 +871,8 @@ export function EditorCanvas({
           textureRevision={revision}
           bodyColor={bodyColor}
           caption=""
+          onModelReady={() => setModelReady(true)}
+          onModelError={() => onEditorFailedRef.current?.()}
         />
       </div>
       </div>

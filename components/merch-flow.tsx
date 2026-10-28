@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { EditorHandle } from "@/components/editor-canvas";
+import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
@@ -18,7 +19,7 @@ import {
 
 const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
-  { ssr: false, loading: () => <p className="p-6 text-muted">Otwieramy arkusz…</p> },
+  { ssr: false, loading: () => null },
 );
 import {
   productById,
@@ -57,6 +58,10 @@ export function MerchFlow() {
   const [printBusy, setPrintBusy] = useState(false);
   const [printNote, setPrintNote] = useState<string | null>(null);
   const editorApi = useRef<EditorHandle | null>(null);
+  const editorKey = `${work.product}:${canvasEpoch}`;
+  const [readyFor, setReadyFor] = useState<string | null>(null);
+  const [editorFailed, setEditorFailed] = useState(false);
+  const editorOpen = work.step === "editor" && readyFor === editorKey && !editorFailed;
   const workRef = useRef(work);
   const readyRef = useRef(false);
   workRef.current = work;
@@ -105,6 +110,22 @@ export function MerchFlow() {
       cancel = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (work.step === "editor") return;
+    setReadyFor(null);
+    setEditorFailed(false);
+  }, [work.step]);
+
+  useEffect(() => {
+    setEditorFailed(false);
+  }, [editorKey]);
+
+  useEffect(() => {
+    if (work.step !== "editor" || editorOpen || editorFailed) return;
+    const timer = window.setTimeout(() => setEditorFailed(true), 20000);
+    return () => window.clearTimeout(timer);
+  }, [work.step, editorOpen, editorFailed, editorKey]);
 
   useEffect(() => {
     if (!ready) return;
@@ -399,7 +420,7 @@ export function MerchFlow() {
       ) : null}
 
       {work.step === "editor" ? (
-        <section className="flex h-dvh flex-col bg-paper text-ink">
+        <section className="relative flex h-dvh flex-col bg-paper text-ink">
           <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-4">
             <button
               type="button"
@@ -452,7 +473,15 @@ export function MerchFlow() {
             onBind={(api) => {
               editorApi.current = api;
             }}
+            onEditorReady={() => setReadyFor(editorKey)}
+            onEditorFailed={() => setEditorFailed(true)}
           />
+          {editorOpen ? null : (
+            <EditorLoader
+              failed={editorFailed}
+              onLeave={() => updateWork((current) => ({ ...current, step: "shop" }))}
+            />
+          )}
         </section>
       ) : null}
 

@@ -27,7 +27,30 @@ export type Souvenir3dPreviewProps = {
   bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
   orbitEnabled?: boolean;
+  /** Модель собрана и нарисована. Редактор до этого закрыт. */
+  onModelReady?: () => void;
+  onModelError?: () => void;
 };
+
+class ModelBoundary extends React.Component<
+  { onError: () => void; children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
 
 function configurePrintTexture(texture: THREE.Texture): THREE.Texture {
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -98,7 +121,8 @@ const SceneBody: React.FC<{
   bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
   orbitEnabled: boolean;
-  startGltf: boolean;
+  onModelReady: () => void;
+  onModelError: () => void;
 }> = ({
   printAreas,
   active,
@@ -107,7 +131,8 @@ const SceneBody: React.FC<{
   bodyColor,
   onSurfacePointer,
   orbitEnabled,
-  startGltf,
+  onModelReady,
+  onModelError,
 }) => {
   const modelUrl = printAreas.find((a) => a.modelUrl)?.modelUrl || active.modelUrl;
   const hasGltf = Boolean(modelUrl);
@@ -129,6 +154,10 @@ const SceneBody: React.FC<{
       })),
     [printAreas, textures, dragTexture, active.id],
   );
+
+  useEffect(() => {
+    if (!hasGltf) onModelReady();
+  }, [hasGltf, onModelReady]);
 
   const procedural = (
     <group position={[0, isMug ? 0.05 : 0.02, 0]}>
@@ -160,16 +189,19 @@ const SceneBody: React.FC<{
       <directionalLight position={[-2.5, 2.2, -1.5]} intensity={0.28} />
       <spotLight position={[0, 4.5, 3]} angle={0.45} penumbra={0.55} intensity={0.55} castShadow />
       <LocalStudioEnvironment />
-      {hasGltf && startGltf && modelUrl ? (
-        <Suspense fallback={null}>
-          <GltfPrintModel
-            url={modelUrl}
-            layers={layers}
-            bodyColor={bodyColor}
-            onSurfacePointer={onSurfacePointer}
-          />
-        </Suspense>
-      ) : hasGltf ? null : procedural}
+      {hasGltf && modelUrl ? (
+        <ModelBoundary onError={onModelError}>
+          <Suspense fallback={null}>
+            <GltfPrintModel
+              url={modelUrl}
+              layers={layers}
+              bodyColor={bodyColor}
+              onSurfacePointer={onSurfacePointer}
+              onReady={onModelReady}
+            />
+          </Suspense>
+        </ModelBoundary>
+      ) : procedural}
       <ContactShadows
         position={[0, groundY, 0]}
         opacity={0.28}
@@ -209,6 +241,8 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   bodyColor,
   onSurfacePointer,
   orbitEnabled = true,
+  onModelReady,
+  onModelError,
 }) => {
   const active =
     resolveActivePrintArea(printAreas, activePrintAreaId)
@@ -216,13 +250,18 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   const [textures, setTextures] = useState<Record<string, THREE.Texture | null>>({});
   const [dragTexture, setDragTexture] = useState<THREE.Texture | null>(null);
   const modelUrl = active?.modelUrl || printAreas.find((area) => area.modelUrl)?.modelUrl || "";
-  const [startGltf, setStartGltf] = useState(false);
-
-  useEffect(() => {
-    setStartGltf(false);
-    const frame = window.requestAnimationFrame(() => setStartGltf(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, [modelUrl]);
+  const onModelReadyRef = React.useRef(onModelReady);
+  const onModelErrorRef = React.useRef(onModelError);
+  onModelReadyRef.current = onModelReady;
+  onModelErrorRef.current = onModelError;
+  const notifyModelReady = React.useCallback(() => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => onModelReadyRef.current?.());
+    });
+  }, []);
+  const notifyModelError = React.useCallback(() => {
+    onModelErrorRef.current?.();
+  }, []);
 
   useEffect(() => {
     const next: Record<string, THREE.Texture | null> = {};
@@ -310,7 +349,8 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
             bodyColor={bodyColor}
             onSurfacePointer={onSurfacePointer}
             orbitEnabled={orbitEnabled}
-            startGltf={startGltf}
+            onModelReady={notifyModelReady}
+            onModelError={notifyModelError}
           />
         </Canvas>
       </div>
