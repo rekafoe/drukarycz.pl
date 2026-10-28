@@ -1,7 +1,16 @@
 import { randomBytes, randomInt } from "crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import path from "path";
-import { initialWork, phoneDigits, sanitizeWork, workIsMeaningful, type WorkSnapshot } from "@/lib/work";
+import { listPrintFiles, removePrints, writePrintFile } from "@/lib/print-files";
+import {
+  initialWork,
+  phoneDigits,
+  samePages,
+  sanitizeWork,
+  workIsMeaningful,
+  type PrintAreaId,
+  type WorkSnapshot,
+} from "@/lib/work";
 
 export type Challenge = {
   phoneDigits: string;
@@ -104,6 +113,9 @@ function pruneSessions(store: Store, currentId: string) {
     const current = store.sessions.find((item) => item.id === currentId);
     if (current) keep.push(current);
   }
+  for (const item of store.sessions) {
+    if (!keep.some((kept) => kept.id === item.id)) removePrints(item.id);
+  }
   store.sessions = keep;
 }
 
@@ -120,6 +132,7 @@ function devCodeFor(session: SessionRecord) {
 export function viewSession(session: SessionRecord, store: Store) {
   const user = session.userId ? store.users.find((item) => item.id === session.userId) : undefined;
   session.work = sanitizeWork(session.work, Boolean(session.userId), session.work);
+  session.work.printFiles = listPrintFiles(session.id);
   return {
     user: user ? publicUser(user) : null,
     work: session.work,
@@ -182,6 +195,8 @@ export function saveWork(sessionId: string, input: unknown) {
     if (!session) return null;
     const previous = session.work;
     session.work = sanitizeWork(input, Boolean(session.userId), previous);
+    if (!samePages(previous.pages, session.work.pages)) removePrints(session.id);
+    session.work.printFiles = listPrintFiles(session.id);
     session.updatedAt = Date.now();
     if (session.userId) touchDesign(store, session);
     else session.designId = null;
@@ -297,6 +312,38 @@ export function openOwnDesign(sessionId: string, designId: string) {
   });
 }
 
+const printAreas: readonly PrintAreaId[] = ["front", "back", "wrap"];
+
+export function saveAreaPrint(sessionId: string, area: string, bytes: Buffer) {
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session) return { error: "Nie znaleziono sesji" as const };
+    const allowed = session.work.product === "mug" ? ["wrap"] : ["front", "back"];
+    if (!printAreas.includes(area as PrintAreaId) || !allowed.includes(area)) {
+      return { error: "Zła strefa" as const };
+    }
+    writePrintFile(sessionId, area as PrintAreaId, bytes);
+    session.work.printFiles = listPrintFiles(session.id);
+    session.updatedAt = Date.now();
+    if (session.userId) touchDesign(store, session);
+    const file = session.work.printFiles[area as PrintAreaId];
+    if (!file) return { error: "Nie zapisano pliku" as const };
+    return { file };
+  });
+}
+
+export function clearPrints(sessionId: string) {
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session) return null;
+    removePrints(sessionId);
+    session.work.printFiles = {};
+    session.updatedAt = Date.now();
+    if (session.userId) touchDesign(store, session);
+    return viewSession(session, store);
+  });
+}
+
 export function deleteAccount(sessionId: string) {
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
@@ -306,6 +353,7 @@ export function deleteAccount(sessionId: string) {
     store.designs = store.designs.filter((item) => item.ownerId !== userId);
     for (const item of store.sessions) {
       if (item.userId !== userId) continue;
+      removePrints(item.id);
       item.userId = null;
       item.designId = null;
       item.challenge = null;

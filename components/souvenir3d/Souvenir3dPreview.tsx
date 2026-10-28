@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -98,9 +98,23 @@ const SceneBody: React.FC<{
   bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
   orbitEnabled: boolean;
-}> = ({ printAreas, active, textures, dragTexture, bodyColor, onSurfacePointer, orbitEnabled }) => {
+  startGltf: boolean;
+  gltfReady: boolean;
+  onGltfReady: () => void;
+}> = ({
+  printAreas,
+  active,
+  textures,
+  dragTexture,
+  bodyColor,
+  onSurfacePointer,
+  orbitEnabled,
+  startGltf,
+  gltfReady,
+  onGltfReady,
+}) => {
   const modelUrl = printAreas.find((a) => a.modelUrl)?.modelUrl || active.modelUrl;
-  const hasGltf = Boolean(modelUrl);
+  const hasGltf = Boolean(modelUrl) && gltfReady;
   const isMug = isMugPrintArea(active);
   const isGltfTshirt = hasGltf && !isMug;
   const isGltfMug = hasGltf && isMug;
@@ -120,6 +134,21 @@ const SceneBody: React.FC<{
     [printAreas, textures, dragTexture, active.id],
   );
 
+  const procedural = (
+    <group position={[0, isMug ? 0.05 : 0.02, 0]}>
+      <ProceduralProduct
+        printArea={
+          active.procedural || active.modelUrl
+            ? active
+            : { ...active, procedural: isMug ? 'mug' : 'tshirt' }
+        }
+        printTexture={textures[active.id] ?? null}
+        dragTexture={dragTexture}
+        onSurfacePointer={onSurfacePointer}
+      />
+    </group>
+  );
+
   return (
     <>
       <color attach="background" args={['#e7e1d6']} />
@@ -135,29 +164,17 @@ const SceneBody: React.FC<{
       <directionalLight position={[-2.5, 2.2, -1.5]} intensity={0.28} />
       <spotLight position={[0, 4.5, 3]} angle={0.45} penumbra={0.55} intensity={0.55} castShadow />
       <LocalStudioEnvironment />
-      {hasGltf && modelUrl ? (
-        <Suspense fallback={null}>
+      {startGltf && modelUrl ? (
+        <Suspense fallback={procedural}>
           <GltfPrintModel
             url={modelUrl}
             layers={layers}
             bodyColor={bodyColor}
             onSurfacePointer={onSurfacePointer}
+            onReady={onGltfReady}
           />
         </Suspense>
-      ) : (
-        <group position={[0, isMug ? 0.05 : 0.02, 0]}>
-          <ProceduralProduct
-            printArea={
-              active.procedural || active.modelUrl
-                ? active
-                : { ...active, procedural: isMug ? 'mug' : 'tshirt' }
-            }
-            printTexture={textures[active.id] ?? null}
-            dragTexture={dragTexture}
-            onSurfacePointer={onSurfacePointer}
-          />
-        </group>
-      )}
+      ) : procedural}
       <ContactShadows
         position={[0, groundY, 0]}
         opacity={0.28}
@@ -203,6 +220,17 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
     ?? printAreas[0];
   const [textures, setTextures] = useState<Record<string, THREE.Texture | null>>({});
   const [dragTexture, setDragTexture] = useState<THREE.Texture | null>(null);
+  const modelUrl = active?.modelUrl || printAreas.find((area) => area.modelUrl)?.modelUrl || "";
+  const [startGltf, setStartGltf] = useState(false);
+  const [gltfReady, setGltfReady] = useState(false);
+  const onGltfReady = useCallback(() => setGltfReady(true), []);
+
+  useEffect(() => {
+    setStartGltf(false);
+    setGltfReady(false);
+    const frame = window.requestAnimationFrame(() => setStartGltf(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [modelUrl]);
 
   useEffect(() => {
     const next: Record<string, THREE.Texture | null> = {};
@@ -250,7 +278,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   })();
   const isMug = active ? isMugPrintArea(active) : false;
   const isBack = Boolean(active && !isMug && isTshirtBackPrintArea(active));
-  const hasGltf = Boolean(printAreas.some((a) => a.modelUrl) || active?.modelUrl);
+  const hasGltf = gltfReady && Boolean(modelUrl);
 
   const cameraPos = useMemo<[number, number, number]>(() => {
     if (isMug) return hasGltf ? [1.55, 1.02, 2.35] : [2.5, 1.25, 2.75];
@@ -290,6 +318,9 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
             bodyColor={bodyColor}
             onSurfacePointer={onSurfacePointer}
             orbitEnabled={orbitEnabled}
+            startGltf={startGltf}
+            gltfReady={gltfReady}
+            onGltfReady={onGltfReady}
           />
         </Canvas>
       </div>

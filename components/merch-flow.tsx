@@ -2,12 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import type { EditorHandle } from "@/components/editor-canvas";
 import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
 import {
   emptyOrder,
   initialWork,
+  type PrintAreaId,
+  type PrintFiles,
   type PublicUser,
   type SessionView,
   type WorkSnapshot,
@@ -24,6 +27,13 @@ import {
   sizes,
   type ProductId,
 } from "@/lib/catalog";
+
+function printZoneNames(work: WorkSnapshot) {
+  const labels: Record<string, string> = { front: "przód", back: "tył", wrap: "obwód" };
+  return (Object.keys(work.printFiles) as PrintAreaId[])
+    .filter((id) => work.printFiles[id])
+    .map((id) => labels[id] ?? id);
+}
 
 const finishes = [
   { id: "none", label: "Bez wykończenia" },
@@ -44,6 +54,9 @@ export function MerchFlow() {
   const [orderError, setOrderError] = useState<string | null>(null);
   const [orderBusy, setOrderBusy] = useState(false);
   const [canvasEpoch, setCanvasEpoch] = useState(0);
+  const [printBusy, setPrintBusy] = useState(false);
+  const [printNote, setPrintNote] = useState<string | null>(null);
+  const editorApi = useRef<EditorHandle | null>(null);
   const workRef = useRef(work);
   const readyRef = useRef(false);
   workRef.current = work;
@@ -141,6 +154,40 @@ export function MerchFlow() {
     const response = await fetch("/api/account", { method: "DELETE" });
     if (!response.ok) return;
     applySession((await response.json()) as SessionView);
+  }
+
+  async function openCart() {
+    setPrintBusy(true);
+    setPrintNote(null);
+    const printFiles: PrintFiles = {};
+    let failed = false;
+    try {
+      const exported = (await editorApi.current?.exportProduction()) ?? [];
+      await fetch("/api/prints", { method: "DELETE" });
+      for (const item of exported) {
+        if (!("blob" in item)) {
+          failed = true;
+          continue;
+        }
+        const response = await fetch(`/api/prints?area=${encodeURIComponent(item.area)}`, {
+          method: "POST",
+          headers: { "Content-Type": "image/png" },
+          body: item.blob,
+        });
+        if (!response.ok) {
+          failed = true;
+          continue;
+        }
+        const body = (await response.json()) as { area: PrintAreaId; file: PrintFiles[PrintAreaId] };
+        if (body.file) printFiles[body.area] = body.file;
+      }
+      if (failed) setPrintNote("Nie udało się zapisać pliku do druku.");
+    } catch {
+      setPrintNote("Nie udało się zapisać pliku do druku.");
+    } finally {
+      setPrintBusy(false);
+    }
+    updateWork((current) => ({ ...current, cartFrom: "editor", step: "cart", printFiles }));
   }
 
   async function placeOrder(event: FormEvent) {
@@ -371,13 +418,15 @@ export function MerchFlow() {
               Prawne
             </a>
             {saveError ? <span className="text-sm text-muted">Nie zapisano</span> : null}
+            {work.quality.length > 0 ? <span className="text-sm text-muted">Uwagi do druku</span> : null}
             <span className="text-sm text-muted">od 5 zł</span>
             <button
               type="button"
-              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white"
-              onClick={() => updateWork((current) => ({ ...current, cartFrom: "editor", step: "cart" }))}
+              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              disabled={printBusy}
+              onClick={() => void openCart()}
             >
-              Do koszyka
+              {printBusy ? "Zapisujemy plik…" : "Do koszyka"}
             </button>
           </header>
           <EditorCanvas
@@ -392,9 +441,17 @@ export function MerchFlow() {
             }
             onPages={(pages) =>
               updateWork((current) =>
-                JSON.stringify(current.pages) === JSON.stringify(pages) ? current : { ...current, pages },
+                JSON.stringify(current.pages) === JSON.stringify(pages) ? current : { ...current, pages, printFiles: {} },
               )
             }
+            onIssues={(quality) =>
+              updateWork((current) =>
+                JSON.stringify(current.quality) === JSON.stringify(quality) ? current : { ...current, quality },
+              )
+            }
+            onBind={(api) => {
+              editorApi.current = api;
+            }}
           />
         </section>
       ) : null}
@@ -432,6 +489,19 @@ export function MerchFlow() {
               <p className="text-sm text-muted">
                 {work.previewUrl ? "Projekt przygotowany w edytorze" : "Arkusz jest jeszcze pusty"}
               </p>
+              {work.quality.length > 0 ? (
+                <ul className="mt-2 grid gap-1 text-sm text-ink">
+                  {work.quality.map((issue) => (
+                    <li key={`${issue.areaId}-${issue.code}`}>{issue.message}</li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="mt-2 text-sm text-muted">
+                {printZoneNames(work).length > 0
+                  ? `Plik do druku 300 dpi jest na serwerze merch: ${printZoneNames(work).join(", ")}.`
+                  : "Plik do druku 300 dpi zapisze się w drodze z edytora."}
+              </p>
+              {printNote ? <p className="mt-2 text-sm text-ink">{printNote}</p> : null}
             </div>
           </article>
           <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
@@ -448,6 +518,7 @@ export function MerchFlow() {
                 strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
               </li>
               <li>editorDraftToken: pojawi się, gdy szkic zacznie iść do CRM</li>
+              <li>plik do druku: {printZoneNames(work).length > 0 ? printZoneNames(work).join(", ") : "jeszcze nie"}</li>
               {work.order.email ? <li>e-mail: {work.order.email}</li> : null}
               {work.order.street ? (
                 <li>

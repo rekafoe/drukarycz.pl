@@ -122,6 +122,50 @@ export function BackwardIcon() {
   );
 }
 
+export function AlignLeftIcon() {
+  return (
+    <Glyph>
+      <path d="M5 5v14" />
+      <path d="M9 8h10" />
+      <path d="M9 12h6" />
+      <path d="M9 16h10" />
+    </Glyph>
+  );
+}
+
+export function AlignCenterIcon() {
+  return (
+    <Glyph>
+      <path d="M12 5v14" />
+      <path d="M7 8h10" />
+      <path d="M9 12h6" />
+      <path d="M7 16h10" />
+    </Glyph>
+  );
+}
+
+export function AlignRightIcon() {
+  return (
+    <Glyph>
+      <path d="M19 5v14" />
+      <path d="M5 8h10" />
+      <path d="M9 12h6" />
+      <path d="M5 16h10" />
+    </Glyph>
+  );
+}
+
+export function FitIcon() {
+  return (
+    <Glyph>
+      <path d="M4 9V4h5" />
+      <path d="M15 4h5v5" />
+      <path d="M20 15v5h-5" />
+      <path d="M9 20H4v-5" />
+    </Glyph>
+  );
+}
+
 export function TrashIcon() {
   return (
     <Glyph>

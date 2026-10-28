@@ -121,6 +121,12 @@ export function printAreaFabricPx(
   };
 }
 
+/** Во сколько раз растр 300 dpi больше холста Fabric для этой ширины зоны. */
+export function productionMultiplier(fabricWidthPx: number, widthMm: number): number {
+  const target = Math.max(1, Math.round((widthMm / 25.4) * SOUVENIR_PRODUCTION_DPI));
+  return target / Math.max(1, fabricWidthPx);
+}
+
 /** Размер CanvasTexture для 3D-превью (aspect = мм). */
 export function printAreaPreviewTexturePx(
   widthMm: number,

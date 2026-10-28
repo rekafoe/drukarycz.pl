@@ -82,8 +82,9 @@ function usePrintMaterial(
       polygonOffset: true,
       polygonOffsetFactor,
       polygonOffsetUnits: polygonOffsetFactor,
-      depthWrite: true,
-      transparent: !printTexture,
+      transparent: true,
+      alphaTest: printTexture ? 0.04 : 0,
+      depthWrite: !printTexture,
       opacity: printTexture ? 1 : 0.85,
     });
     if (printTexture) {

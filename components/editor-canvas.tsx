@@ -1,20 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Canvas, IText, FabricImage } from "fabric";
+import { Canvas, FabricImage, IText, StaticCanvas } from "fabric";
 import { Souvenir3dPreview } from "@/components/souvenir3d/Souvenir3dPreview";
 import {
   DEFAULT_PRINT_AREA_MUG,
   DEFAULT_PRINT_AREAS_TSHIRT,
   type PrintAreaConfig,
 } from "@/components/souvenir3d/types";
-import { printAreaFabricPx } from "@/components/souvenir3d/scale";
+import { printAreaFabricPx, productionMultiplier } from "@/components/souvenir3d/scale";
 import type { ProductId } from "@/lib/catalog";
-import { defaultPrintText } from "@/lib/work";
+import { issuesForAreas, SAFE_MARGIN_MM } from "@/lib/print-quality";
+import { defaultPrintText, type QualityIssue } from "@/lib/work";
 import {
+  AlignCenterIcon,
+  AlignLeftIcon,
+  AlignRightIcon,
   BackwardIcon,
   CenterIcon,
   DuplicateIcon,
+  FitIcon,
   ForwardIcon,
   LargerIcon,
   PhotoIcon,
@@ -33,7 +38,14 @@ const textInks = [
   { id: "czarny", label: "Czarny", value: "#1a1916" },
   { id: "bordowy", label: "Bordowy", value: "#7d1d1d" },
   { id: "granatowy", label: "Granatowy", value: "#1e3a5f" },
+  { id: "bialy", label: "Biały", value: "#ffffff" },
 ] as const;
+
+const MAX_PRINT_BYTES = 8_000_000;
+
+export type EditorHandle = {
+  exportProduction: () => Promise<Array<{ area: string; blob: Blob } | { area: string; error: "large" }>>;
+};
 
 type HistoryBucket = { past: string[]; future: string[] };
 
@@ -54,27 +66,16 @@ function areasFor(product: ProductId): PrintAreaConfig[] {
   return product === "mug" ? [DEFAULT_PRINT_AREA_MUG] : DEFAULT_PRINT_AREAS_TSHIRT;
 }
 
-/** Как в Souvenir3dEditor: почти белый фон зоны не печатается на модели. */
-function knockoutWhite(source: HTMLCanvasElement): string | null {
-  const w = source.width;
-  const h = source.height;
-  if (w < 2 || h < 2) return null;
-  const out = document.createElement("canvas");
-  out.width = w;
-  out.height = h;
-  const ctx = out.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(source, 0, 0);
-  const image = ctx.getImageData(0, 0, w, h);
-  const data = image.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i] ?? 0;
-    const g = data[i + 1] ?? 0;
-    const b = data[i + 2] ?? 0;
-    if (r >= 248 && g >= 248 && b >= 248) data[i + 3] = 0;
+/** Фон листа не входит в текстуру, поэтому белые чернила остаются на модели. */
+function transparentPng(canvas: Canvas): string | null {
+  if (canvas.getObjects().length === 0) return null;
+  const previous = canvas.backgroundColor;
+  canvas.backgroundColor = "";
+  try {
+    return canvas.toCanvasElement(1).toDataURL("image/png");
+  } finally {
+    canvas.backgroundColor = previous || "#ffffff";
   }
-  ctx.putImageData(image, 0, 0);
-  return out.toDataURL("image/png");
 }
 
 export function EditorCanvas({
@@ -85,6 +86,8 @@ export function EditorCanvas({
   onActiveId,
   onPreview,
   onPages,
+  onIssues,
+  onBind,
 }: {
   product: ProductId;
   activeId: string;
@@ -93,6 +96,8 @@ export function EditorCanvas({
   onActiveId: (id: string) => void;
   onPreview: (url: string | null) => void;
   onPages: (pages: Record<string, object>) => void;
+  onIssues?: (issues: QualityIssue[]) => void;
+  onBind?: (api: EditorHandle | null) => void;
 }) {
   const areas = areasFor(product);
   const active = areas.find((area) => area.id === activeId) ?? areas[0];
@@ -104,6 +109,15 @@ export function EditorCanvas({
   onPreviewRef.current = onPreview;
   const onPagesRef = useRef(onPages);
   onPagesRef.current = onPages;
+  const onIssuesRef = useRef(onIssues);
+  onIssuesRef.current = onIssues;
+  const onBindRef = useRef(onBind);
+  onBindRef.current = onBind;
+  const productRef = useRef(product);
+  productRef.current = product;
+  const pxPerMmRef = useRef(widthPx / active.widthMm);
+  pxPerMmRef.current = widthPx / active.widthMm;
+  const issuesKey = useRef("");
   const pages = useRef<Record<string, object>>(initialPages);
   const emitted = useRef("");
   const areaIdRef = useRef(active.id);
@@ -118,7 +132,10 @@ export function EditorCanvas({
   const [sheetEmpty, setSheetEmpty] = useState(true);
   const [canDelete, setCanDelete] = useState(false);
   const [textSelected, setTextSelected] = useState(false);
+  const [imageSelected, setImageSelected] = useState(false);
   const [textFill, setTextFill] = useState<string | null>(null);
+  const [textMm, setTextMm] = useState(12);
+  const [issues, setIssues] = useState<QualityIssue[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
@@ -153,6 +170,7 @@ export function EditorCanvas({
     let stopped = false;
     setCanDelete(false);
     setTextSelected(false);
+    setImageSelected(false);
     setTextFill(null);
 
     const bucket = () => {
@@ -190,17 +208,17 @@ export function EditorCanvas({
       if (applying.current) return;
       remember();
       emitPages();
+      reportIssues();
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (stopped) return;
-        const lower = canvas.getElement();
-        const url = knockoutWhite(lower);
-        if (!url) return;
+        const url = transparentPng(canvas);
         const empty = canvas.getObjects().length === 0;
-        setTextures((prev) => ({ ...prev, [active.id]: url }));
+        if (!url && !empty) return;
+        setTextures((prev) => ({ ...prev, [active.id]: url ?? "" }));
         setRevision((n) => n + 1);
         setSheetEmpty(empty);
-        if (active.id === areasFor(product)[0]?.id) onPreviewRef.current(empty ? null : url);
+        if (active.id === areasFor(product)[0]?.id) onPreviewRef.current(empty || !url ? null : url);
       }, 180);
     };
 
@@ -221,12 +239,27 @@ export function EditorCanvas({
     });
 
     const onChange = () => publish();
+    const reportIssues = () => {
+      const nextIssues = issuesForAreas(areasFor(product), pages.current);
+      const key = JSON.stringify(nextIssues);
+      if (key === issuesKey.current) return;
+      issuesKey.current = key;
+      setIssues(nextIssues);
+      onIssuesRef.current?.(nextIssues);
+    };
     const onSelect = () => {
       const objects = canvas.getActiveObjects();
       const text = objects.find((object) => isTextObject(object));
       setCanDelete(objects.length > 0);
       setTextSelected(Boolean(text));
+      setImageSelected(objects.some((object) => object.type === "image"));
       setTextFill(text && typeof text.fill === "string" ? text.fill : null);
+      if (text) {
+        const font = text.get("fontSize");
+        const scale = text.scaleY || 1;
+        const mm = ((typeof font === "number" ? font : 32) * Math.abs(scale)) / (widthPx / active.widthMm);
+        setTextMm(Math.max(1, Math.round(mm)));
+      }
     };
     canvas.on("object:modified", onChange);
     canvas.on("object:added", onChange);
@@ -304,6 +337,7 @@ export function EditorCanvas({
     canvas.requestRenderAll();
     setCanDelete(false);
     setTextSelected(false);
+    setImageSelected(false);
     setTextFill(null);
   }
 
@@ -342,6 +376,7 @@ export function EditorCanvas({
         const current = object.get("fontSize");
         const size = Math.round((typeof current === "number" ? current : 32) * factor);
         object.set("fontSize", Math.min(240, Math.max(12, size)));
+        setTextMm(readTextMm(object));
       } else {
         object.scaleX = Math.min(8, Math.max(0.05, (object.scaleX || 1) * factor));
         object.scaleY = Math.min(8, Math.max(0.05, (object.scaleY || 1) * factor));
@@ -378,6 +413,84 @@ export function EditorCanvas({
     touch();
   }
 
+  function readTextMm(object: { get: (key: string) => unknown; scaleY?: number }) {
+    const font = object.get("fontSize");
+    const scale = object.scaleY || 1;
+    const mm = ((typeof font === "number" ? font : 32) * Math.abs(scale)) / (widthPx / active.widthMm);
+    return Math.max(1, Math.round(mm));
+  }
+
+  function applyTextMm(mm: number) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const pxPerMm = widthPx / active.widthMm;
+    const texts = canvas.getActiveObjects().filter((object) => isTextObject(object));
+    if (texts.length === 0) return;
+    for (const object of texts) {
+      const scale = object.scaleY || 1;
+      const px = Math.round((mm * pxPerMm) / Math.abs(scale || 1));
+      object.set("fontSize", Math.min(240, Math.max(8, px)));
+      object.setCoords();
+    }
+    setTextMm(mm);
+    touch();
+  }
+
+  function alignSelected(side: "left" | "center" | "right") {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    const bounds = object.getBoundingRect();
+    const margin = SAFE_MARGIN_MM * (widthPx / active.widthMm);
+    const dx =
+      side === "left"
+        ? margin - bounds.left
+        : side === "right"
+          ? canvas.getWidth() - margin - (bounds.left + bounds.width)
+          : (canvas.getWidth() - bounds.width) / 2 - bounds.left;
+    object.set({ left: (object.left || 0) + dx });
+    object.setCoords();
+    touch();
+  }
+
+  function fitSelected() {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const images = canvas.getActiveObjects().filter((object) => object.type === "image");
+    if (images.length === 0) return;
+    for (const image of images) {
+      const scale = Math.min(canvas.getWidth() / Math.max(image.width || 1, 1), canvas.getHeight() / Math.max(image.height || 1, 1));
+      image.set({ scaleX: scale, scaleY: scale, originX: "center", originY: "center" });
+      canvas.centerObject(image);
+      image.setCoords();
+    }
+    touch();
+  }
+
+  function moveSelected(dx: number, dy: number) {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    object.set({ left: (object.left || 0) + dx, top: (object.top || 0) + dy });
+    object.setCoords();
+    touch();
+  }
+
+  function copyZone() {
+    const canvas = fabricRef.current;
+    const zones = areasFor(product);
+    const current = zones.find((area) => area.id === areaIdRef.current);
+    const other = zones.find((area) => area.id !== areaIdRef.current);
+    if (!canvas || !current || !other || canvas.getObjects().length === 0) return;
+    const agreed = window.confirm(
+      `Zastąpić strefę ${other.label} kopią strefy ${current.label}? Obecny projekt tej strefy zniknie.`,
+    );
+    if (!agreed) return;
+    pages.current[other.id] = canvas.toObject();
+    delete histories.current[other.id];
+    publishRef.current();
+  }
+
   function paintText(fill: string) {
     const canvas = fabricRef.current;
     if (!canvas) return;
@@ -408,6 +521,7 @@ export function EditorCanvas({
     }
     setCanDelete(false);
     setTextSelected(false);
+    setImageSelected(false);
     setTextFill(null);
     setCanUndo(bucket.past.length > 1);
     setCanRedo(bucket.future.length > 0);
@@ -415,6 +529,92 @@ export function EditorCanvas({
     skipRemember.current = true;
     publishRef.current();
     skipRemember.current = false;
+  }
+
+  const moveRef = useRef(moveSelected);
+  const removeRef = useRef(removeSelected);
+  const historyRef = useRef(stepHistory);
+  const exportRef = useRef(exportProduction);
+  moveRef.current = moveSelected;
+  removeRef.current = removeSelected;
+  historyRef.current = stepHistory;
+  exportRef.current = exportProduction;
+
+  useEffect(() => {
+    onBindRef.current?.({
+      exportProduction: () => exportRef.current(),
+    });
+    return () => onBindRef.current?.(null);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable) return;
+      }
+      const editing = fabricRef.current?.getActiveObject() as { isEditing?: boolean } | undefined;
+      if (editing?.isEditing) return;
+      const px = pxPerMmRef.current;
+      const step = event.shiftKey ? px * 5 : px;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveRef.current(-step, 0);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        moveRef.current(step, 0);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveRef.current(0, -step);
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveRef.current(0, step);
+      } else if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        removeRef.current();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        void historyRef.current(event.shiftKey);
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        void historyRef.current(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  async function exportProduction() {
+    const canvas = fabricRef.current;
+    if (canvas) pages.current[areaIdRef.current] = canvas.toObject();
+    const files: Array<{ area: string; blob: Blob } | { area: string; error: "large" }> = [];
+    for (const area of areasFor(productRef.current)) {
+      const page = pages.current[area.id];
+      if (!page) continue;
+      const objects = (page as { objects?: unknown[] }).objects;
+      if (!Array.isArray(objects) || objects.length === 0) continue;
+      const { widthPx: areaWidth, heightPx: areaHeight } = printAreaFabricPx(area.widthMm, area.heightMm, SCENE_SCALE);
+      const host = document.createElement("canvas");
+      const off = new StaticCanvas(host, {
+        width: areaWidth,
+        height: areaHeight,
+        backgroundColor: "",
+        renderOnAddRemove: false,
+      });
+      try {
+        await off.loadFromJSON(page);
+        if (off.getObjects().length === 0) continue;
+        const painted = off.toCanvasElement(productionMultiplier(areaWidth, area.widthMm));
+        const blob = await new Promise<Blob | null>((resolve) => painted.toBlob((value) => resolve(value), "image/png"));
+        if (!blob || blob.size === 0) continue;
+        if (blob.size > MAX_PRINT_BYTES) files.push({ area: area.id, error: "large" });
+        else files.push({ area: area.id, blob });
+      } finally {
+        void off.dispose();
+      }
+    }
+    return files;
   }
 
   useEffect(() => {
@@ -537,29 +737,87 @@ export function EditorCanvas({
               ))}
             </div>
           </div>
-          {textSelected ? (
-            <div className="mt-2 flex items-center gap-2">
-              {textInks.map((ink) => {
-                const selected = textFill?.toLowerCase() === ink.value;
-                return (
-                  <button
-                    key={ink.id}
-                    type="button"
-                    aria-label={ink.label}
-                    title={ink.label}
-                    aria-pressed={selected}
-                    className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-card" : "border-line"}`}
-                    style={{ background: ink.value }}
-                    onClick={() => paintText(ink.value)}
+          {textSelected || imageSelected || areas.length > 1 ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {textSelected
+                ? textInks.map((ink) => {
+                    const selected = textFill?.toLowerCase() === ink.value;
+                    return (
+                      <button
+                        key={ink.id}
+                        type="button"
+                        aria-label={ink.label}
+                        title={ink.label}
+                        aria-pressed={selected}
+                        className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-card" : "border-line"}`}
+                        style={{ background: ink.value }}
+                        onClick={() => paintText(ink.value)}
+                      />
+                    );
+                  })
+                : null}
+              {textSelected ? (
+                <label className="flex items-center gap-1 text-sm">
+                  <span className="sr-only">Rozmiar napisu w milimetrach</span>
+                  <input
+                    type="number"
+                    min={3}
+                    max={80}
+                    value={textMm}
+                    aria-label="Rozmiar napisu w milimetrach"
+                    className="h-9 w-16 rounded-lg border border-line bg-paper px-2"
+                    onChange={(event) => {
+                      const mm = Number(event.target.value);
+                      if (!Number.isFinite(mm)) return;
+                      applyTextMm(Math.min(80, Math.max(3, Math.round(mm))));
+                    }}
                   />
-                );
-              })}
+                  <span className="text-muted">mm</span>
+                </label>
+              ) : null}
+              {textSelected ? (
+                <>
+                  <ToolButton label="Do lewej" onClick={() => alignSelected("left")}>
+                    <AlignLeftIcon />
+                  </ToolButton>
+                  <ToolButton label="W poziomie na środek" onClick={() => alignSelected("center")}>
+                    <AlignCenterIcon />
+                  </ToolButton>
+                  <ToolButton label="Do prawej" onClick={() => alignSelected("right")}>
+                    <AlignRightIcon />
+                  </ToolButton>
+                </>
+              ) : null}
+              {imageSelected ? (
+                <ToolButton label="Na strefę" onClick={fitSelected}>
+                  <FitIcon />
+                </ToolButton>
+              ) : null}
+              {areas.length > 1 ? (
+                <button
+                  type="button"
+                  className="rounded-full border border-line bg-paper px-3.5 py-2 text-sm font-semibold disabled:opacity-35"
+                  disabled={sheetEmpty}
+                  onClick={copyZone}
+                >
+                  {active.id === "back" ? "Kopiuj na przód" : "Kopiuj na tył"}
+                </button>
+              ) : null}
             </div>
+          ) : null}
+          {issues.length > 0 ? (
+            <ul className="mt-2 grid gap-1 text-sm text-muted" role="status">
+              {issues.map((issue) => (
+                <li key={`${issue.areaId}-${issue.code}`}>{issue.message}</li>
+              ))}
+            </ul>
           ) : null}
         </div>
         <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 pb-3">
           <div className="grid justify-items-center gap-1">
-            <span className="text-[11px] tracking-wide text-muted">{active.widthMm} mm</span>
+            <span className="text-[11px] tracking-wide text-muted">
+              {active.widthMm} mm · margines {SAFE_MARGIN_MM} mm
+            </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] tracking-wide text-muted [writing-mode:vertical-rl] rotate-180">
                 {active.heightMm} mm
@@ -570,6 +828,14 @@ export function EditorCanvas({
                   className="absolute top-0 left-0 origin-top-left bg-white shadow-[0_0_0_1px_rgba(26,25,22,0.14)]"
                   style={{ width: widthPx, height: heightPx, transform: `scale(${fit})` }}
                 />
+                <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                  <div
+                    className="absolute border border-dashed border-ink/35"
+                    style={{ inset: SAFE_MARGIN_MM * (widthPx / active.widthMm) * fit }}
+                  />
+                  <div className="absolute top-0 left-1/2 h-full w-px bg-ink/20" />
+                  <div className="absolute top-1/2 left-0 h-px w-full bg-ink/20" />
+                </div>
                 {sheetEmpty ? (
                   <p className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-muted">
                     Tekst albo zdjęcie

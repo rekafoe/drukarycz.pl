@@ -4,6 +4,22 @@ export type Step = "doors" | "shop" | "editor" | "cart";
 export type Finish = "none" | "matte" | "gloss";
 export type CartFrom = "shop" | "editor";
 
+export type PrintAreaId = "front" | "back" | "wrap";
+
+export type PrintFileMeta = {
+  bytes: number;
+  savedAt: string;
+};
+
+export type PrintFiles = Partial<Record<PrintAreaId, PrintFileMeta>>;
+
+export type QualityIssue = {
+  code: "low_dpi" | "out_of_bounds" | "small_text";
+  severity: "warning" | "error";
+  areaId: string;
+  message: string;
+};
+
 export type OrderDetails = {
   email: string;
   street: string;
@@ -27,6 +43,8 @@ export type WorkSnapshot = {
   finish: Finish;
   previewUrl: string | null;
   pages: Record<string, object>;
+  quality: QualityIssue[];
+  printFiles: PrintFiles;
   order: OrderDetails;
   placed: boolean;
 };
@@ -100,9 +118,15 @@ export function initialWork(): WorkSnapshot {
     finish: "none",
     previewUrl: null,
     pages: {},
+    quality: [],
+    printFiles: {},
     order: emptyOrder(),
     placed: false,
   };
+}
+
+export function samePages(a: Record<string, object>, b: Record<string, object>) {
+  return (["front", "back", "wrap"] as const).every((key) => JSON.stringify(a[key] ?? null) === JSON.stringify(b[key] ?? null));
 }
 
 export function phoneDigits(value: string) {
@@ -173,6 +197,29 @@ function sanitizeOrder(raw: unknown, previous: WorkSnapshot | null | undefined, 
   return { order, placed };
 }
 
+function sanitizeQuality(raw: unknown): QualityIssue[] {
+  if (!Array.isArray(raw)) return [];
+  const issues: QualityIssue[] = [];
+  for (const item of raw) {
+    const record = asRecord(item);
+    if (!record) continue;
+    const code = record.code;
+    if (code !== "low_dpi" && code !== "out_of_bounds" && code !== "small_text") continue;
+    const areaId = record.areaId === "front" || record.areaId === "back" || record.areaId === "wrap" ? record.areaId : "";
+    if (!areaId) continue;
+    const message = clip(record.message, 180);
+    if (!message) continue;
+    issues.push({
+      code,
+      severity: code === "out_of_bounds" ? "error" : "warning",
+      areaId,
+      message,
+    });
+    if (issues.length >= 8) break;
+  }
+  return issues;
+}
+
 export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: WorkSnapshot | null): WorkSnapshot {
   const base = initialWork();
   const raw = asRecord(input);
@@ -220,6 +267,8 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
     finish,
     previewUrl,
     pages,
+    quality: sanitizeQuality(raw.quality),
+    printFiles: {},
     order: orderState.order,
     placed: orderState.placed,
   };

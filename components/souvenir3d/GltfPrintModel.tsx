@@ -27,6 +27,7 @@ type GltfPrintModelProps = {
   /** Цвет вещи с лавки. Печатный слой им не красится. */
   bodyColor?: string;
   onSurfacePointer?: SouvenirSurfacePointerHandler;
+  onReady?: () => void;
 };
 
 function forwardSurfacePointer(
@@ -517,8 +518,8 @@ function usePrintMaterial(printTexture: THREE.Texture | null, polygonOffsetFacto
       return { mat: new THREE.MeshBasicMaterial({ visible: false }), map };
     }
 
-    // Свой шейдер, без onBeforeCompile: белый лист выкидываем по RGB,
-    // чернила пишем непрозрачными. Цвет ткани остаётся материалом модели.
+    // Свой шейдер, без onBeforeCompile. Фон листа прозрачный, поэтому
+    // белые чернила остаются. Прозрачные пиксели не рисуем. Цвет ткани — материал модели.
     const mat = new THREE.ShaderMaterial({
       uniforms: { map: { value: map } },
       transparent: true,
@@ -543,7 +544,6 @@ function usePrintMaterial(printTexture: THREE.Texture | null, polygonOffsetFacto
           if (vUv.x < 0.0 || vUv.x > 1.0 || vUv.y < 0.0 || vUv.y > 1.0) discard;
           vec4 texel = texture2D(map, vUv);
           if (texel.a < 0.04) discard;
-          if (texel.r > 0.93 && texel.g > 0.93 && texel.b > 0.93) discard;
           gl_FragColor = vec4(texel.rgb, 1.0);
         }
       `,
@@ -654,6 +654,7 @@ export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
   layers,
   bodyColor = '#f4f1ea',
   onSurfacePointer,
+  onReady,
 }) => {
   const { scene } = useGLTF(url);
   const isMug = layers.some((l) => isMugPrintArea(l.printArea));
@@ -670,6 +671,10 @@ export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
     applyShirtBodyColor(fitted, bodyColor);
   }, [fitted, isMug, bodyColor]);
 
+  useLayoutEffect(() => {
+    onReady?.();
+  }, [fitted, onReady]);
+
   return (
     <group>
       <primitive object={fitted} />
@@ -685,8 +690,5 @@ export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
     </group>
   );
 };
-
-useGLTF.preload('/models/tshirt.glb');
-useGLTF.preload('/models/mug.glb');
 
 export default GltfPrintModel;
