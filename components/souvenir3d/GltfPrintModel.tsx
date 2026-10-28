@@ -113,6 +113,10 @@ function fitCloneToStudio(source: THREE.Object3D, targetSize = 2.35): THREE.Obje
   root.position.x -= center.x;
   root.position.z -= center.z;
   root.updateMatrixWorld(true);
+  root.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.isMesh) mesh.geometry.computeVertexNormals();
+  });
 
   return root;
 }
@@ -254,13 +258,9 @@ function buildMugWrapGeometry(
 }
 
 function applyMugCeramicMaterials(root: THREE.Object3D, color: string) {
-  let bodyMat = root.userData.merchBodyMat as THREE.MeshStandardMaterial | undefined;
+  let bodyMat = root.userData.merchBodyMat as THREE.MeshLambertMaterial | undefined;
   if (!bodyMat) {
-    bodyMat = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.28,
-      metalness: 0.04,
-    });
+    bodyMat = new THREE.MeshLambertMaterial({ color });
     root.userData.merchBodyMat = bodyMat;
   } else {
     bodyMat.color.set(color);
@@ -276,13 +276,9 @@ function applyMugCeramicMaterials(root: THREE.Object3D, color: string) {
 
 /** Ткань GLB без своей карты цвета: заменяем материал цветом лавки. Принт — отдельный слой. */
 function applyShirtBodyColor(root: THREE.Object3D, color: string) {
-  let mat = root.userData.merchBodyMat as THREE.MeshStandardMaterial | undefined;
+  let mat = root.userData.merchBodyMat as THREE.MeshLambertMaterial | undefined;
   if (!mat) {
-    mat = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.78,
-      metalness: 0,
-    });
+    mat = new THREE.MeshLambertMaterial({ color });
     root.userData.merchBodyMat = mat;
   } else {
     mat.color.set(color);
@@ -690,5 +686,10 @@ export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
     </group>
   );
 };
+
+export function preloadPrintModel(url: string) {
+  if (!url) return;
+  useGLTF.preload(url);
+}
 
 export default GltfPrintModel;

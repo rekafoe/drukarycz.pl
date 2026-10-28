@@ -28,6 +28,26 @@ import {
   sizes,
   type ProductId,
 } from "@/lib/catalog";
+import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
+
+const warmedModels = new Set<string>();
+
+function warmModel(url: string) {
+  if (warmedModels.has(url)) return;
+  warmedModels.add(url);
+  void fetch(url).catch(() => {
+    warmedModels.delete(url);
+  });
+}
+
+function warmEditor(urls: string[]) {
+  void import("@/components/editor-canvas")
+    .then(() => import("@/components/souvenir3d/GltfPrintModel"))
+    .then((mod) => {
+      for (const url of urls) mod.preloadPrintModel(url);
+    })
+    .catch(() => undefined);
+}
 
 function printZoneNames(work: WorkSnapshot) {
   const labels: Record<string, string> = { front: "przód", back: "tył", wrap: "obwód" };
@@ -109,6 +129,12 @@ export function MerchFlow() {
     return () => {
       cancel = true;
     };
+  }, []);
+
+  useEffect(() => {
+    warmModel(DEFAULT_TSHIRT_MODEL_URL);
+    warmModel(DEFAULT_MUG_MODEL_URL);
+    warmEditor([DEFAULT_TSHIRT_MODEL_URL, DEFAULT_MUG_MODEL_URL]);
   }, []);
 
   useEffect(() => {

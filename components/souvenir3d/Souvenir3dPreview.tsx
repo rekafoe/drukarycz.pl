@@ -1,8 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { ContactShadows, OrbitControls } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { GltfPrintModel } from './GltfPrintModel';
 import { ProceduralProduct } from './ProceduralProduct';
 import type { PrintAreaConfig, SouvenirSurfacePointerHandler } from './types';
@@ -96,23 +95,6 @@ function CameraRig({
   return null;
 }
 
-function LocalStudioEnvironment() {
-  const { gl, scene } = useThree();
-  useEffect(() => {
-    const pmrem = new THREE.PMREMGenerator(gl);
-    const room = new RoomEnvironment();
-    const { texture } = pmrem.fromScene(room, 0.04);
-    scene.environment = texture;
-    room.dispose();
-    return () => {
-      if (scene.environment === texture) scene.environment = null;
-      texture.dispose();
-      pmrem.dispose();
-    };
-  }, [gl, scene]);
-  return null;
-}
-
 const SceneBody: React.FC<{
   printAreas: PrintAreaConfig[];
   active: PrintAreaConfig;
@@ -178,17 +160,10 @@ const SceneBody: React.FC<{
     <>
       <color attach="background" args={['#e7e1d6']} />
       <fog attach="fog" args={['#e7e1d6', 14, 26]} />
-      <ambientLight intensity={0.42} />
-      <hemisphereLight args={['#fffaf3', '#cfc6b8', 0.38]} />
-      <directionalLight
-        position={[3.2, 5.5, 2.8]}
-        intensity={1.35}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-      />
-      <directionalLight position={[-2.5, 2.2, -1.5]} intensity={0.28} />
-      <spotLight position={[0, 4.5, 3]} angle={0.45} penumbra={0.55} intensity={0.55} castShadow />
-      <LocalStudioEnvironment />
+      <ambientLight intensity={0.72} />
+      <hemisphereLight args={['#fffaf3', '#cfc6b8', 0.55]} />
+      <directionalLight position={[3.2, 5.5, 2.8]} intensity={1.45} />
+      <directionalLight position={[-2.5, 2.2, -1.5]} intensity={0.35} />
       {hasGltf && modelUrl ? (
         <ModelBoundary onError={onModelError}>
           <Suspense fallback={null}>
@@ -202,14 +177,7 @@ const SceneBody: React.FC<{
           </Suspense>
         </ModelBoundary>
       ) : procedural}
-      <ContactShadows
-        position={[0, groundY, 0]}
-        opacity={0.28}
-        scale={isMug ? 4.5 : 6.5}
-        blur={2.4}
-        far={2.5}
-      />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]}>
         <circleGeometry args={[isMug ? 1.4 : 2.1, 48]} />
         <meshStandardMaterial color="#ddd6ca" roughness={0.96} metalness={0} />
       </mesh>
@@ -219,7 +187,7 @@ const SceneBody: React.FC<{
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 1.7}
         minDistance={isMug ? 1.7 : isGltfTshirt ? 2.6 : 2.3}
-        maxDistance={isMug ? 4.8 : 6.2}
+        maxDistance={isMug ? 4.8 : 8.5}
         target={[0, orbitTargetY, 0]}
       />
     </>
@@ -314,7 +282,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   const cameraPos = useMemo<[number, number, number]>(() => {
     if (isMug) return hasGltf ? [1.55, 1.02, 2.35] : [2.5, 1.25, 2.75];
     if (hasGltf) {
-      return isBack ? [0.16, 1.16, -3.25] : [0.16, 1.16, 3.25];
+      return isBack ? [0.2, 1.2, -6.2] : [0.2, 1.2, 6.2];
     }
     return isBack ? [0.15, 0.55, -4.15] : [0.15, 0.55, 4.15];
   }, [isBack, isMug, hasGltf]);
@@ -330,14 +298,17 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
     <div className={rootClass}>
       <div className="souvenir3d-preview__viewport" aria-label="Podgląd 3D produktu">
         <Canvas
-          shadows
-          dpr={[1, 2]}
+          dpr={1}
           camera={{ position: cameraPos, fov: 34 }}
           gl={{
-            antialias: true,
+            antialias: false,
             alpha: true,
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: 1.05,
+          }}
+          onCreated={({ gl, scene }) => {
+            scene.background = new THREE.Color("#e7e1d6");
+            gl.setClearColor("#e7e1d6", 1);
           }}
         >
           <CameraRig position={cameraPos} lookAt={lookAt} />
