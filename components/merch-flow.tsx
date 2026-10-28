@@ -1,8 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
+import {
+  initialWork,
+  type PublicUser,
+  type SessionView,
+  type WorkSnapshot,
+} from "@/lib/work";
 
 const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
@@ -16,68 +23,168 @@ import {
   type ProductId,
 } from "@/lib/catalog";
 
-type Step = "doors" | "shop" | "editor" | "cart";
-
-type Draft = {
-  product: ProductId;
-  zone: string;
-  size: string;
-  color: string;
-  qty: string;
-  text: string;
-  finish: "none" | "matte" | "gloss";
-  previewUrl: string | null;
-};
-
 const finishes = [
   { id: "none", label: "Без отделки" },
   { id: "matte", label: "Матовая" },
   { id: "gloss", label: "Глянцевая" },
 ] as const;
 
-const initialDraft: Draft = {
-  product: "tshirt",
-  zone: "front",
-  size: "M",
-  color: "#171614",
-  qty: "1",
-  text: "Ваш принт",
-  finish: "none",
-  previewUrl: null,
-};
-
 export function MerchFlow() {
-  const [step, setStep] = useState<Step>("doors");
+  const [ready, setReady] = useState(false);
+  const [bootError, setBootError] = useState<string | null>(null);
+  const [user, setUser] = useState<PublicUser | null>(null);
+  const [designId, setDesignId] = useState<string | null>(null);
+  const [work, setWork] = useState<WorkSnapshot>(() => initialWork());
+  const [orderName, setOrderName] = useState("");
+  const [loginOpen, setLoginOpen] = useState(false);
   const [leaving, setLeaving] = useState<ProductId | null>(null);
-  const [draft, setDraft] = useState<Draft>(initialDraft);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [placed, setPlaced] = useState(false);
-  const [cartFrom, setCartFrom] = useState<"shop" | "editor">("shop");
+  const [saveError, setSaveError] = useState(false);
+  const [canvasEpoch, setCanvasEpoch] = useState(0);
+  const workRef = useRef(work);
+  const readyRef = useRef(false);
+  workRef.current = work;
 
-  const product = productById(draft.product);
-  const zone = product.zones.find((item) => item.id === draft.zone) ?? product.zones[0];
-  const colorName = shirtColors.find((item) => item.value === draft.color)?.label ?? "";
-  const finishName = finishes.find((item) => item.id === draft.finish)?.label ?? "";
+  function updateWork(patch: (current: WorkSnapshot) => WorkSnapshot) {
+    const next = patch(workRef.current);
+    if (next === workRef.current) return;
+    workRef.current = next;
+    setWork(next);
+  }
+
+  function applySession(view: SessionView) {
+    workRef.current = view.work;
+    setWork(view.work);
+    setUser(view.user);
+    setDesignId(view.designId);
+    setOrderName(view.user?.name ?? "");
+    setCanvasEpoch((value) => value + 1);
+  }
+
+  useEffect(() => {
+    let cancel = false;
+    fetch("/api/session")
+      .then((response) => {
+        if (!response.ok) throw new Error("session");
+        return response.json() as Promise<SessionView>;
+      })
+      .then((view) => {
+        if (cancel) return;
+        applySession(view);
+        readyRef.current = true;
+        setReady(true);
+      })
+      .catch(() => {
+        if (!cancel) setBootError("Не удалось открыть сервер");
+      });
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    const body = JSON.stringify(workRef.current);
+    const handle = window.setTimeout(() => {
+      void fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            setSaveError(true);
+            return;
+          }
+          const view = (await response.json()) as SessionView;
+          setSaveError(false);
+          setDesignId(view.designId);
+        })
+        .catch(() => setSaveError(true));
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [ready, work]);
+
+  useEffect(() => {
+    const flush = () => {
+      if (!readyRef.current) return;
+      void fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(workRef.current),
+        keepalive: true,
+      });
+    };
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
+
+  async function logout() {
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    if (!response.ok) return;
+    applySession((await response.json()) as SessionView);
+  }
+
+  async function placeOrder(event: FormEvent) {
+    event.preventDefault();
+    if (!user) {
+      setLoginOpen(true);
+      return;
+    }
+    const response = await fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: orderName }),
+    });
+    if (!response.ok) return;
+    const view = (await response.json()) as SessionView;
+    setUser(view.user);
+    setOrderName(view.user?.name ?? orderName);
+    updateWork((current) => ({ ...current, placed: true }));
+  }
+
+  const product = productById(work.product);
+  const zone = product.zones.find((item) => item.id === work.zone) ?? product.zones[0];
+  const colorName = shirtColors.find((item) => item.value === work.color)?.label ?? "";
+  const finishName = finishes.find((item) => item.id === work.finish)?.label ?? "";
 
   function openProduct(id: ProductId) {
     setLeaving(id);
     window.setTimeout(() => {
       const next = productById(id);
-      setDraft((current) => ({
+      updateWork((current) => ({
         ...current,
         product: id,
         zone: next.zones[0].id,
+        step: "shop",
       }));
       setLeaving(null);
-      setStep("shop");
     }, 480);
   }
 
+  if (!ready) {
+    return (
+      <main className="grid min-h-screen place-items-center px-6 text-center">
+        <div className="grid gap-3">
+          <p className="text-muted">{bootError ?? "Открываем…"}</p>
+          {bootError ? (
+            <button type="button" className="font-bold" onClick={() => window.location.reload()}>
+              Ещё раз
+            </button>
+          ) : null}
+        </div>
+      </main>
+    );
+  }
+
+  const account = (
+    <AccountLinks user={user} onLogin={() => setLoginOpen(true)} onLogout={() => void logout()} />
+  );
+
   return (
     <main className="min-h-full">
-      {step === "doors" ? (
-        <section className="doors flex min-h-screen flex-col overflow-hidden md:flex-row">
+      {work.step === "doors" ? (
+        <section className="doors relative flex min-h-screen flex-col overflow-hidden md:flex-row">
+          <div className="absolute top-5 right-5 z-10">{account}</div>
           <Door
             tone="dark"
             title="Футболка"
@@ -105,27 +212,29 @@ export function MerchFlow() {
         </section>
       ) : null}
 
-      {step === "shop" ? (
+      {work.step === "shop" ? (
         <section className="rise">
           <Top
-            onHome={() => setStep("doors")}
-            onCart={() => {
-              setCartFrom("shop");
-              setStep("cart");
-            }}
+            onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
+            onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
+            account={account}
           />
           <div className="grid items-start gap-7 px-5 pb-10 md:items-center md:px-7 md:grid-cols-[1.15fr_0.85fr]">
             <div className="grid min-h-[240px] place-items-center rounded-[20px] border border-line bg-card md:min-h-[520px]">
-              <ProductArt product={draft.product} color={draft.color} text="" size={300} hidePrint />
+              <ProductArt product={work.product} color={work.color} text="" size={300} hidePrint />
             </div>
             <div>
               <h1 className="text-[40px] font-extrabold tracking-tight">{product.name}</h1>
               <p className="mt-1.5 text-[15px] text-muted">Минск, Дзержинского 3Б · готово за 1–2 дня</p>
               <p className="mt-4 text-[28px] font-extrabold tracking-tight">от 5 р.</p>
-              {draft.product === "tshirt" ? (
+              {work.product === "tshirt" ? (
                 <>
                   <FieldLabel>Размер</FieldLabel>
-                  <Pills values={sizes} current={draft.size} onPick={(size) => setDraft({ ...draft, size })} />
+                  <Pills
+                    values={sizes}
+                    current={work.size}
+                    onPick={(size) => updateWork((current) => ({ ...current, size }))}
+                  />
                 </>
               ) : (
                 <>
@@ -136,7 +245,7 @@ export function MerchFlow() {
               <FieldLabel>Цвет</FieldLabel>
               <div className="flex items-center gap-2.5">
                 {shirtColors.map((swatch) => {
-                  const selected = draft.color === swatch.value;
+                  const selected = work.color === swatch.value;
                   return (
                     <button
                       key={swatch.id}
@@ -145,7 +254,7 @@ export function MerchFlow() {
                       aria-pressed={selected}
                       className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-paper" : "border-line"}`}
                       style={{ background: swatch.value }}
-                      onClick={() => setDraft({ ...draft, color: swatch.value })}
+                      onClick={() => updateWork((current) => ({ ...current, color: swatch.value }))}
                     />
                   );
                 })}
@@ -154,24 +263,24 @@ export function MerchFlow() {
               <FieldLabel>Тираж</FieldLabel>
               <Pills
                 values={quantities}
-                current={draft.qty}
+                current={work.qty}
                 format={(value) => `${value} шт.`}
-                onPick={(qty) => setDraft({ ...draft, qty })}
+                onPick={(qty) => updateWork((current) => ({ ...current, qty }))}
               />
               <FieldLabel>Отделка</FieldLabel>
               <Pills
                 values={finishes.map((item) => item.label)}
-                current={finishes.find((item) => item.id === draft.finish)?.label ?? "Без отделки"}
+                current={finishes.find((item) => item.id === work.finish)?.label ?? "Без отделки"}
                 onPick={(label) => {
                   const next = finishes.find((item) => item.label === label);
-                  if (next) setDraft({ ...draft, finish: next.id });
+                  if (next) updateWork((current) => ({ ...current, finish: next.id }));
                 }}
               />
               <p className="mt-2 text-xs text-muted">Как будет выглядеть поверхность печати.</p>
               <button
                 type="button"
                 className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white hover:bg-[#2c2a26]"
-                onClick={() => setStep("editor")}
+                onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
               >
                 Сделать свой
               </button>
@@ -181,140 +290,212 @@ export function MerchFlow() {
         </section>
       ) : null}
 
-      {step === "editor" ? (
+      {work.step === "editor" ? (
         <section className="flex h-dvh flex-col bg-paper text-ink">
           <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-4">
-            <button type="button" className="text-sm text-muted" onClick={() => setStep("shop")}>
+            <button
+              type="button"
+              className="text-sm text-muted"
+              onClick={() => updateWork((current) => ({ ...current, step: "shop" }))}
+            >
               К вещи
             </button>
             <span className="text-sm font-semibold">{product.name}</span>
             <span className="hidden text-sm text-muted sm:inline">
-              {draft.product === "tshirt" ? `${draft.size} · ` : "330 мл · "}
-              {colorName} · {draft.qty} шт. · {finishName}
+              {work.product === "tshirt" ? `${work.size} · ` : "330 мл · "}
+              {colorName} · {work.qty} шт. · {finishName}
             </span>
             <div className="flex-1" />
+            {saveError ? <span className="text-sm text-muted">Не сохранилось</span> : null}
             <span className="text-sm text-muted">от 5 р.</span>
             <button
               type="button"
               className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white"
-              onClick={() => {
-                setCartFrom("editor");
-                setStep("cart");
-              }}
+              onClick={() => updateWork((current) => ({ ...current, cartFrom: "editor", step: "cart" }))}
             >
               В корзину
             </button>
           </header>
           <EditorCanvas
-            key={draft.product}
-            product={draft.product}
-            bodyColor={draft.color}
-            activeId={draft.zone}
-            onActiveId={(zoneId) => setDraft((current) => ({ ...current, zone: zoneId }))}
+            key={`${work.product}:${canvasEpoch}`}
+            product={work.product}
+            bodyColor={work.color}
+            initialPages={work.pages}
+            activeId={work.zone}
+            onActiveId={(zoneId) => updateWork((current) => ({ ...current, zone: zoneId }))}
             onPreview={(url) =>
-              setDraft((current) => (current.previewUrl === url ? current : { ...current, previewUrl: url }))
+              updateWork((current) => (current.previewUrl === url ? current : { ...current, previewUrl: url }))
+            }
+            onPages={(pages) =>
+              updateWork((current) =>
+                JSON.stringify(current.pages) === JSON.stringify(pages) ? current : { ...current, pages },
+              )
             }
           />
         </section>
       ) : null}
 
-      {step === "cart" ? (
+      {work.step === "cart" ? (
         <section className="rise mx-auto max-w-3xl px-7 py-8">
-          <button type="button" className="font-bold" onClick={() => setStep(cartFrom)}>
-            {cartFrom === "shop" ? "← К вещи" : "← В редактор"}
+          <button
+            type="button"
+            className="font-bold"
+            onClick={() => updateWork((current) => ({ ...current, step: current.cartFrom }))}
+          >
+            {work.cartFrom === "shop" ? "← К вещи" : "← В редактор"}
           </button>
-          <h1 className="mt-4 text-4xl font-extrabold tracking-tight">Корзина</h1>
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <h1 className="text-4xl font-extrabold tracking-tight">Корзина</h1>
+            {account}
+          </div>
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
-            {draft.previewUrl ? (
+            {work.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={draft.previewUrl} alt="" className="h-24 w-24 object-contain" />
+              <img src={work.previewUrl} alt="" className="h-24 w-24 object-contain" />
             ) : (
-              <ProductArt product={draft.product} color={draft.color} text="" size={96} hidePrint />
+              <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
             )}
             <div>
               <h2 className="text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
-                {[draft.product === "tshirt" ? draft.size : "330 мл", colorName, `тираж ${draft.qty}`, zone.label, finishName]
+                {[work.product === "tshirt" ? work.size : "330 мл", colorName, `тираж ${work.qty}`, zone.label, finishName]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
               <p className="mt-1 font-bold">от 5 р.</p>
               <p className="text-sm text-muted">
-                {draft.previewUrl ? "Макет подготовлен в редакторе" : "На листе пока пусто"}
+                {work.previewUrl ? "Макет подготовлен в редакторе" : "На листе пока пусто"}
               </p>
             </div>
           </article>
           <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
             <h2 className="font-bold text-ink">Поля будущего заказа</h2>
-            <p className="mt-1">Сейчас остаются в браузере. В CRM не отправляются.</p>
+            <p className="mt-1">Хранятся на сервере merch. В CRM не отправляются.</p>
             <ul className="mt-3 grid gap-1">
               <li>вещь: {product.name}</li>
-              <li>{draft.product === "tshirt" ? `размер: ${draft.size}` : "объём: 330 мл"}</li>
+              <li>{work.product === "tshirt" ? `размер: ${work.size}` : "объём: 330 мл"}</li>
               <li>цвет вещи: {colorName}</li>
-              <li>тираж: {draft.qty}</li>
+              <li>тираж: {work.qty}</li>
               <li>отделка: {finishName} — только вид, без ширины рулона</li>
               <li>editorKind: souvenir_3d</li>
-              <li>зона: {zone.label}, {zone.widthMm}×{zone.heightMm} мм</li>
+              <li>
+                зона: {zone.label}, {zone.widthMm}×{zone.heightMm} мм
+              </li>
               <li>editorDraftToken: появится, когда черновик начнёт уходить в CRM</li>
             </ul>
           </section>
-          {placed ? (
-            <p className="mt-6 rounded-2xl bg-ink px-4 py-4 text-white">
-              Заявка сохранена в этом браузере. В CRM её пока не отправляем — шов заказа заложим, когда скажете.
+          {user && designId ? (
+            <p className="mt-4 text-sm text-muted">
+              Свой макет:{" "}
+              <a className="font-semibold text-ink underline" href={`/m/${designId}`}>
+                /m/{designId}
+              </a>
             </p>
-          ) : (
-            <form
-              className="mt-6 grid gap-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setPlaced(true);
-              }}
-            >
+          ) : null}
+          {saveError ? <p className="mt-4 text-sm text-muted">Не сохранилось</p> : null}
+          {work.placed && user ? (
+            <p className="mt-6 rounded-2xl bg-ink px-4 py-4 text-white">
+              Заявка сохранена на сервере merch. В CRM её не отправляем.
+            </p>
+          ) : user ? (
+            <form className="mt-6 grid gap-3" onSubmit={(event) => void placeOrder(event)}>
               <label className="grid gap-1 text-sm font-bold">
                 Имя
                 <input
                   required
                   autoComplete="name"
                   placeholder="Как к вам обращаться"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  value={orderName}
+                  onChange={(event) => setOrderName(event.target.value)}
                   className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
                 />
               </label>
               <label className="grid gap-1 text-sm font-bold">
                 Телефон
                 <input
-                  required
+                  readOnly
                   type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="+375"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
+                  value={user.phone}
+                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
                 />
               </label>
               <button type="submit" className="rounded-xl bg-ink px-4 py-4 font-bold text-white">
                 Оформить
               </button>
             </form>
+          ) : (
+            <div className="mt-6 grid gap-3">
+              <p className="text-sm text-muted">Оформить заказ и снова открыть свой макет можно после входа.</p>
+              <button
+                type="button"
+                className="rounded-xl bg-ink px-4 py-4 font-bold text-white"
+                onClick={() => setLoginOpen(true)}
+              >
+                Войти и оформить
+              </button>
+            </div>
           )}
         </section>
+      ) : null}
+
+      {loginOpen ? (
+        <LoginPanel
+          onClose={() => setLoginOpen(false)}
+          onSuccess={(view) => {
+            applySession(view);
+            setLoginOpen(false);
+          }}
+        />
       ) : null}
     </main>
   );
 }
 
-function Top({ onHome, onCart }: { onHome: () => void; onCart: () => void }) {
+function AccountLinks({
+  user,
+  onLogin,
+  onLogout,
+}: {
+  user: PublicUser | null;
+  onLogin: () => void;
+  onLogout: () => void;
+}) {
+  if (!user) {
+    return (
+      <button type="button" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink" onClick={onLogin}>
+        Войти
+      </button>
+    );
+  }
   return (
-    <header className="flex items-center justify-between px-7 py-4">
+    <span className="flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink">
+      <span>{user.name}</span>
+      <button type="button" className="text-muted" onClick={onLogout}>
+        Выйти
+      </button>
+    </span>
+  );
+}
+
+function Top({
+  onHome,
+  onCart,
+  account,
+}: {
+  onHome: () => void;
+  onCart: () => void;
+  account: ReactNode;
+}) {
+  return (
+    <header className="flex items-center justify-between gap-4 px-7 py-4">
       <button type="button" onClick={onHome} className="text-lg font-extrabold tracking-tight">
         merch.by
       </button>
-      <nav className="flex gap-4 text-sm font-semibold text-muted">
+      <nav className="flex items-center gap-4 text-sm font-semibold text-muted">
         <button type="button" className="hover:text-ink" onClick={onHome}>
           Двери
         </button>
+        {account}
         <button type="button" className="hover:text-ink" onClick={onCart}>
           Корзина
         </button>

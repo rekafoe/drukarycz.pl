@@ -54,14 +54,18 @@ export function EditorCanvas({
   product,
   activeId,
   bodyColor,
+  initialPages,
   onActiveId,
   onPreview,
+  onPages,
 }: {
   product: ProductId;
   activeId: string;
   bodyColor: string;
+  initialPages: Record<string, object>;
   onActiveId: (id: string) => void;
   onPreview: (url: string | null) => void;
+  onPages: (pages: Record<string, object>) => void;
 }) {
   const areas = areasFor(product);
   const active = areas.find((area) => area.id === activeId) ?? areas[0];
@@ -71,7 +75,10 @@ export function EditorCanvas({
   const fabricRef = useRef<Canvas | null>(null);
   const onPreviewRef = useRef(onPreview);
   onPreviewRef.current = onPreview;
-  const pages = useRef<Record<string, object>>({});
+  const onPagesRef = useRef(onPages);
+  onPagesRef.current = onPages;
+  const pages = useRef<Record<string, object>>(initialPages);
+  const emitted = useRef("");
   const [textures, setTextures] = useState<Record<string, string>>({});
   const [revision, setRevision] = useState(0);
   const [fit, setFit] = useState(0.45);
@@ -110,7 +117,17 @@ export function EditorCanvas({
     setCanDelete(false);
 
     let timer = 0;
+    let readyToEmit = false;
+    const emitPages = () => {
+      if (!readyToEmit || stopped) return;
+      pages.current[active.id] = canvas.toObject();
+      const encoded = JSON.stringify(pages.current);
+      if (encoded === emitted.current) return;
+      emitted.current = encoded;
+      onPagesRef.current({ ...pages.current });
+    };
     const publish = () => {
+      emitPages();
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (stopped) return;
@@ -132,7 +149,9 @@ export function EditorCanvas({
         })
       : Promise.resolve();
     ready.then(() => {
-      if (!stopped) publish();
+      if (stopped) return;
+      readyToEmit = true;
+      publish();
     });
 
     const onChange = () => publish();
@@ -146,9 +165,16 @@ export function EditorCanvas({
     canvas.on("selection:cleared", onSelect);
 
     return () => {
+      if (readyToEmit) {
+        pages.current[active.id] = canvas.toObject();
+        const encoded = JSON.stringify(pages.current);
+        if (encoded !== emitted.current) {
+          emitted.current = encoded;
+          onPagesRef.current({ ...pages.current });
+        }
+      }
       stopped = true;
       window.clearTimeout(timer);
-      pages.current[active.id] = canvas.toObject();
       canvas.dispose();
       fabricRef.current = null;
     };
