@@ -1,0 +1,25 @@
+/** Пустые слоты заполняет организация. Не подставлять вымышленные NIP, KRS, адрес и телефон. */
+export const seller = {
+  brand: "merch.by",
+  city: "Warszawa",
+  country: "Polska",
+  leadTime: "1–2 dni robocze",
+  priceFrom: "od 5 zł",
+  legalName: "",
+  street: "",
+  postalCode: "",
+  nip: "",
+  register: "",
+  email: "",
+  phone: "",
+};
+
+export const sellerGaps = [
+  ["legalName", "Nazwa firmy"],
+  ["street", "Ulica i numer"],
+  ["postalCode", "Kod pocztowy siedziby"],
+  ["nip", "NIP"],
+  ["register", "KRS albo CEIDG"],
+  ["email", "E-mail"],
+  ["phone", "Telefon"],
+] as const;

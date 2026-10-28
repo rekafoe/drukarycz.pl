@@ -119,7 +119,7 @@ function devCodeFor(session: SessionRecord) {
 
 export function viewSession(session: SessionRecord, store: Store) {
   const user = session.userId ? store.users.find((item) => item.id === session.userId) : undefined;
-  session.work = sanitizeWork(session.work, Boolean(session.userId));
+  session.work = sanitizeWork(session.work, Boolean(session.userId), session.work);
   return {
     user: user ? publicUser(user) : null,
     work: session.work,
@@ -180,7 +180,8 @@ export function saveWork(sessionId: string, input: unknown) {
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
     if (!session) return null;
-    session.work = sanitizeWork(input, Boolean(session.userId));
+    const previous = session.work;
+    session.work = sanitizeWork(input, Boolean(session.userId), previous);
     session.updatedAt = Date.now();
     if (session.userId) touchDesign(store, session);
     else session.designId = null;
@@ -293,5 +294,24 @@ export function openOwnDesign(sessionId: string, designId: string) {
     session.designId = design.id;
     session.updatedAt = Date.now();
     return true;
+  });
+}
+
+export function deleteAccount(sessionId: string) {
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session?.userId) return { error: "Najpierw się zaloguj" as const };
+    const userId = session.userId;
+    store.users = store.users.filter((item) => item.id !== userId);
+    store.designs = store.designs.filter((item) => item.ownerId !== userId);
+    for (const item of store.sessions) {
+      if (item.userId !== userId) continue;
+      item.userId = null;
+      item.designId = null;
+      item.challenge = null;
+      item.work = initialWork();
+      item.updatedAt = Date.now();
+    }
+    return { view: viewSession(session, store) };
   });
 }

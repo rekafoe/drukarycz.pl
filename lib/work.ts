@@ -4,6 +4,18 @@ export type Step = "doors" | "shop" | "editor" | "cart";
 export type Finish = "none" | "matte" | "gloss";
 export type CartFrom = "shop" | "editor";
 
+export type OrderDetails = {
+  email: string;
+  street: string;
+  postalCode: string;
+  city: string;
+  nip: string;
+  acceptTerms: boolean;
+  acceptCustom: boolean;
+  marketing: boolean;
+  consentAt: string;
+};
+
 export type WorkSnapshot = {
   step: Step;
   cartFrom: CartFrom;
@@ -15,6 +27,7 @@ export type WorkSnapshot = {
   finish: Finish;
   previewUrl: string | null;
   pages: Record<string, object>;
+  order: OrderDetails;
   placed: boolean;
 };
 
@@ -61,6 +74,20 @@ function polishSeedPage(page: object): object {
   return { ...record, objects };
 }
 
+export function emptyOrder(): OrderDetails {
+  return {
+    email: "",
+    street: "",
+    postalCode: "",
+    city: "",
+    nip: "",
+    acceptTerms: false,
+    acceptCustom: false,
+    marketing: false,
+    consentAt: "",
+  };
+}
+
 export function initialWork(): WorkSnapshot {
   return {
     step: "doors",
@@ -73,6 +100,7 @@ export function initialWork(): WorkSnapshot {
     finish: "none",
     previewUrl: null,
     pages: {},
+    order: emptyOrder(),
     placed: false,
   };
 }
@@ -95,7 +123,57 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-export function sanitizeWork(input: unknown, allowPlaced: boolean): WorkSnapshot {
+function clip(value: unknown, max: number) {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, max);
+}
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const postalPattern = /^\d{2}-\d{3}$/;
+
+function sanitizeOrder(raw: unknown, previous: WorkSnapshot | null | undefined, wantPlaced: boolean, allowPlaced: boolean) {
+  const source = asRecord(raw);
+  const email = clip(source?.email, 120);
+  const street = clip(source?.street, 120);
+  const postalCode = clip(source?.postalCode, 6);
+  const city = clip(source?.city, 120);
+  const nipRaw = clip(source?.nip, 20);
+  const nipCompact = nipRaw.replace(/[\s-]/g, "");
+  const nipOk = nipCompact === "" || /^\d{10}$/.test(nipCompact);
+  const nip = nipOk ? nipCompact : "";
+  const acceptTerms = source?.acceptTerms === true;
+  const acceptCustom = source?.acceptCustom === true;
+  const marketing = source?.marketing === true;
+  const complete =
+    emailPattern.test(email) &&
+    street.length > 2 &&
+    postalPattern.test(postalCode) &&
+    city.length > 1 &&
+    acceptTerms &&
+    acceptCustom &&
+    nipOk;
+  const placed = allowPlaced && wantPlaced && complete;
+  let consentAt = "";
+  if (placed) {
+    const prevAt = previous?.order?.consentAt;
+    const keep = Boolean(previous?.placed && typeof prevAt === "string" && prevAt && !Number.isNaN(Date.parse(prevAt)));
+    consentAt = keep && typeof prevAt === "string" ? prevAt : new Date().toISOString();
+  }
+  const order: OrderDetails = {
+    email,
+    street,
+    postalCode,
+    city,
+    nip,
+    acceptTerms,
+    acceptCustom,
+    marketing,
+    consentAt,
+  };
+  return { order, placed };
+}
+
+export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: WorkSnapshot | null): WorkSnapshot {
   const base = initialWork();
   const raw = asRecord(input);
   if (!raw) return base;
@@ -129,6 +207,8 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean): WorkSnapshot
     }
   }
 
+  const orderState = sanitizeOrder(raw.order, previous, raw.placed === true, allowPlaced);
+
   return {
     step,
     cartFrom,
@@ -140,6 +220,7 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean): WorkSnapshot
     finish,
     previewUrl,
     pages,
-    placed: allowPlaced && raw.placed === true,
+    order: orderState.order,
+    placed: orderState.placed,
   };
 }
