@@ -15,6 +15,18 @@ import { defaultPrintText } from "@/lib/work";
 /** Как forcedPageSize у souvenir_3d: координаты зоны в масштабе 1. */
 const SCENE_SCALE = 1;
 
+const textInks = [
+  { id: "czarny", label: "Czarny", value: "#1a1916" },
+  { id: "bordowy", label: "Bordowy", value: "#7d1d1d" },
+  { id: "granatowy", label: "Granatowy", value: "#1e3a5f" },
+] as const;
+
+type HistoryBucket = { past: string[]; future: string[] };
+
+function isTextObject(object: { type?: string }) {
+  return object.type === "i-text" || object.type === "text" || object.type === "textbox";
+}
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -80,11 +92,21 @@ export function EditorCanvas({
   onPagesRef.current = onPages;
   const pages = useRef<Record<string, object>>(initialPages);
   const emitted = useRef("");
+  const areaIdRef = useRef(active.id);
+  const histories = useRef<Record<string, HistoryBucket>>({});
+  const applying = useRef(false);
+  const skipRemember = useRef(false);
+  const publishRef = useRef<() => void>(() => {});
+  areaIdRef.current = active.id;
   const [textures, setTextures] = useState<Record<string, string>>({});
   const [revision, setRevision] = useState(0);
   const [fit, setFit] = useState(0.45);
   const [sheetEmpty, setSheetEmpty] = useState(true);
   const [canDelete, setCanDelete] = useState(false);
+  const [textSelected, setTextSelected] = useState(false);
+  const [textFill, setTextFill] = useState<string | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
 
   useEffect(() => {
@@ -116,9 +138,32 @@ export function EditorCanvas({
     fabricRef.current = canvas;
     let stopped = false;
     setCanDelete(false);
+    setTextSelected(false);
+    setTextFill(null);
+
+    const bucket = () => {
+      const current = histories.current[active.id] ?? { past: [], future: [] };
+      histories.current[active.id] = current;
+      return current;
+    };
+    const syncHistoryFlags = () => {
+      const current = bucket();
+      setCanUndo(current.past.length > 1);
+      setCanRedo(current.future.length > 0);
+    };
 
     let timer = 0;
     let readyToEmit = false;
+    const remember = () => {
+      if (!readyToEmit || applying.current || skipRemember.current || stopped) return;
+      const shot = JSON.stringify(canvas.toObject());
+      const current = bucket();
+      if (current.past[current.past.length - 1] === shot) return;
+      current.past.push(shot);
+      if (current.past.length > 12) current.past.shift();
+      current.future = [];
+      syncHistoryFlags();
+    };
     const emitPages = () => {
       if (!readyToEmit || stopped) return;
       pages.current[active.id] = canvas.toObject();
@@ -128,6 +173,8 @@ export function EditorCanvas({
       onPagesRef.current({ ...pages.current });
     };
     const publish = () => {
+      if (applying.current) return;
+      remember();
       emitPages();
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
@@ -152,11 +199,21 @@ export function EditorCanvas({
     ready.then(() => {
       if (stopped) return;
       readyToEmit = true;
+      const shot = JSON.stringify(canvas.toObject());
+      const current = bucket();
+      if (current.past.length === 0) current.past.push(shot);
+      syncHistoryFlags();
       publish();
     });
 
     const onChange = () => publish();
-    const onSelect = () => setCanDelete(canvas.getActiveObjects().length > 0);
+    const onSelect = () => {
+      const objects = canvas.getActiveObjects();
+      const text = objects.find((object) => isTextObject(object));
+      setCanDelete(objects.length > 0);
+      setTextSelected(Boolean(text));
+      setTextFill(text && typeof text.fill === "string" ? text.fill : null);
+    };
     canvas.on("object:modified", onChange);
     canvas.on("object:added", onChange);
     canvas.on("object:removed", onChange);
@@ -164,6 +221,9 @@ export function EditorCanvas({
     canvas.on("selection:created", onSelect);
     canvas.on("selection:updated", onSelect);
     canvas.on("selection:cleared", onSelect);
+    publishRef.current = () => {
+      if (!stopped) publish();
+    };
 
     return () => {
       if (readyToEmit) {
@@ -175,6 +235,7 @@ export function EditorCanvas({
         }
       }
       stopped = true;
+      publishRef.current = () => {};
       window.clearTimeout(timer);
       canvas.dispose();
       fabricRef.current = null;
@@ -228,6 +289,118 @@ export function EditorCanvas({
     canvas.discardActiveObject();
     canvas.requestRenderAll();
     setCanDelete(false);
+    setTextSelected(false);
+    setTextFill(null);
+  }
+
+  function touch() {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    canvas.requestRenderAll();
+    publishRef.current();
+  }
+
+  function centerSelected() {
+    const canvas = fabricRef.current;
+    const activeObject = canvas?.getActiveObject();
+    if (!canvas || !activeObject) return;
+    canvas.centerObject(activeObject);
+    activeObject.setCoords();
+    touch();
+  }
+
+  function rotateSelected() {
+    const canvas = fabricRef.current;
+    const activeObject = canvas?.getActiveObject();
+    if (!canvas || !activeObject) return;
+    activeObject.rotate(((activeObject.angle || 0) + 15) % 360);
+    activeObject.setCoords();
+    touch();
+  }
+
+  function resizeSelected(factor: number) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = canvas.getActiveObjects();
+    if (objects.length === 0) return;
+    for (const object of objects) {
+      if (isTextObject(object)) {
+        const current = object.get("fontSize");
+        const size = Math.round((typeof current === "number" ? current : 32) * factor);
+        object.set("fontSize", Math.min(240, Math.max(12, size)));
+      } else {
+        object.scaleX = Math.min(8, Math.max(0.05, (object.scaleX || 1) * factor));
+        object.scaleY = Math.min(8, Math.max(0.05, (object.scaleY || 1) * factor));
+      }
+      object.setCoords();
+    }
+    touch();
+  }
+
+  async function duplicateSelected() {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = canvas.getActiveObjects();
+    if (objects.length === 0) return;
+    const clones = await Promise.all(objects.map((object) => object.clone()));
+    canvas.discardActiveObject();
+    for (const clone of clones) {
+      clone.set({ left: (clone.left || 0) + 24, top: (clone.top || 0) + 24 });
+      canvas.add(clone);
+    }
+    if (clones.length === 1) canvas.setActiveObject(clones[0]);
+    canvas.requestRenderAll();
+  }
+
+  function liftSelected(forward: boolean) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = canvas.getActiveObjects();
+    if (objects.length === 0) return;
+    for (const object of objects) {
+      if (forward) canvas.bringObjectForward(object);
+      else canvas.sendObjectBackwards(object);
+    }
+    touch();
+  }
+
+  function paintText(fill: string) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const texts = canvas.getActiveObjects().filter((object) => isTextObject(object));
+    if (texts.length === 0) return;
+    for (const object of texts) object.set("fill", fill);
+    setTextFill(fill);
+    touch();
+  }
+
+  async function stepHistory(forward: boolean) {
+    const canvas = fabricRef.current;
+    const bucket = histories.current[areaIdRef.current];
+    if (!canvas || !bucket) return;
+    if (forward ? bucket.future.length === 0 : bucket.past.length < 2) return;
+    const next = forward ? bucket.future.pop() : bucket.past.pop();
+    if (!next) return;
+    if (forward) bucket.past.push(next);
+    else bucket.future.push(next);
+    const shot = forward ? next : bucket.past[bucket.past.length - 1];
+    if (!shot) return;
+    applying.current = true;
+    try {
+      await canvas.loadFromJSON(JSON.parse(shot));
+      canvas.discardActiveObject();
+    } finally {
+      applying.current = false;
+    }
+    setCanDelete(false);
+    setTextSelected(false);
+    setTextFill(null);
+    setCanUndo(bucket.past.length > 1);
+    setCanRedo(bucket.future.length > 0);
+    canvas.requestRenderAll();
+    skipRemember.current = true;
+    publishRef.current();
+    skipRemember.current = false;
   }
 
   useEffect(() => {
@@ -280,47 +453,91 @@ export function EditorCanvas({
       </div>
       <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
-        <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-muted">
-          <button type="button" className="hover:text-ink" onClick={addText}>
-            Tekst
-          </button>
-          <label className="cursor-pointer hover:text-ink">
-            Zdjęcie
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void addPhoto(file);
-                event.target.value = "";
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            className={canDelete ? "hover:text-ink" : "cursor-default opacity-35"}
-            disabled={!canDelete}
-            onClick={removeSelected}
-          >
-            Usuń
-          </button>
-          {areas.length > 1 ? (
-            <div className="ml-auto flex gap-3">
+        <div className="shrink-0 border-b border-line bg-card px-3 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <ToolButton tone="primary" onClick={addText}>
+              Tekst
+            </ToolButton>
+            <label className="cursor-pointer rounded-full bg-ink px-3.5 py-2 text-sm font-semibold text-white hover:bg-[#2c2a26]">
+              Zdjęcie
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void addPhoto(file);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            <ToolButton disabled={!canUndo} onClick={() => void stepHistory(false)}>
+              Cofnij
+            </ToolButton>
+            <ToolButton disabled={!canRedo} onClick={() => void stepHistory(true)}>
+              Ponów
+            </ToolButton>
+            <div className="ml-auto flex flex-wrap gap-2">
               {areas.map((area) => (
                 <button
                   key={area.id}
                   type="button"
-                  className={area.id === active.id ? "font-semibold text-ink" : "hover:text-ink"}
+                  aria-pressed={area.id === active.id}
+                  className={`rounded-full px-3.5 py-2 text-sm font-semibold ${
+                    area.id === active.id ? "bg-ink text-white" : "border border-line bg-paper text-ink hover:border-ink"
+                  }`}
                   onClick={() => onActiveId(area.id)}
                 >
                   {area.label}
                 </button>
               ))}
             </div>
-          ) : (
-            <span className="ml-auto">{active.label}</span>
-          )}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <ToolButton disabled={!canDelete} onClick={centerSelected}>
+              Środek
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={rotateSelected}>
+              Obróć
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={() => void duplicateSelected()}>
+              Duplikuj
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={() => resizeSelected(1.15)}>
+              Większy
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={() => resizeSelected(1 / 1.15)}>
+              Mniejszy
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={() => liftSelected(true)}>
+              Wyżej
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={() => liftSelected(false)}>
+              Niżej
+            </ToolButton>
+            <ToolButton disabled={!canDelete} onClick={removeSelected}>
+              Usuń
+            </ToolButton>
+          </div>
+          {textSelected ? (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[12px] font-bold tracking-[0.06em] text-muted uppercase">Kolor napisu</span>
+              {textInks.map((ink) => {
+                const selected = textFill?.toLowerCase() === ink.value;
+                return (
+                  <button
+                    key={ink.id}
+                    type="button"
+                    aria-label={ink.label}
+                    aria-pressed={selected}
+                    className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-card" : "border-line"}`}
+                    style={{ background: ink.value }}
+                    onClick={() => paintText(ink.value)}
+                  />
+                );
+              })}
+            </div>
+          ) : null}
         </div>
         <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 pb-3">
           <div className="grid justify-items-center gap-1">
@@ -362,5 +579,32 @@ export function EditorCanvas({
 
 export function editorAreas(product: ProductId) {
   return areasFor(product);
+}
+
+function ToolButton({
+  children,
+  onClick,
+  disabled,
+  tone = "plain",
+}: {
+  children: string;
+  onClick: () => void;
+  disabled?: boolean;
+  tone?: "primary" | "plain";
+}) {
+  const look =
+    tone === "primary"
+      ? "bg-ink text-white hover:bg-[#2c2a26]"
+      : "border border-line bg-paper text-ink hover:border-ink";
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`rounded-full px-3.5 py-2 text-sm font-semibold disabled:cursor-default disabled:opacity-35 disabled:hover:border-line disabled:hover:bg-paper ${look}`}
+    >
+      {children}
+    </button>
+  );
 }
 
