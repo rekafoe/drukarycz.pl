@@ -36,22 +36,22 @@ export function DesignGate({ id }: { id: string }) {
 
   return (
     <main className="mx-auto grid min-h-screen max-w-lg content-center gap-4 px-6">
-      {phase === "opening" ? <p className="text-muted">Открываем макет…</p> : null}
+      {phase === "opening" ? <p className="text-muted">Otwieramy projekt…</p> : null}
       {phase === "denied" ? (
         <>
-          <h1 className="text-4xl font-extrabold tracking-tight">Макет не открывается</h1>
-          <p className="text-muted">Открывается только свой макет.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">Projekt się nie otwiera</h1>
+          <p className="text-muted">Otwiera się tylko własny projekt.</p>
           <a href="/" className="font-bold">
-            На двери
+            Do drzwi
           </a>
         </>
       ) : null}
       {phase === "locked" ? (
         <>
-          <h1 className="text-4xl font-extrabold tracking-tight">Макет не открывается</h1>
-          <p className="text-muted">Войдите по телефону, на который он сохранён.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">Projekt się nie otwiera</h1>
+          <p className="text-muted">Zaloguj się telefonem, na który jest zapisany.</p>
           <a href="/" className="font-bold">
-            На двери
+            Do drzwi
           </a>
           <LoginPanel
             embedded

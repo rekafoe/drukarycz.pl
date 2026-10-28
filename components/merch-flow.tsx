@@ -13,7 +13,7 @@ import {
 
 const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
-  { ssr: false, loading: () => <p className="p-6 text-muted">Открываем холст…</p> },
+  { ssr: false, loading: () => <p className="p-6 text-muted">Otwieramy arkusz…</p> },
 );
 import {
   productById,
@@ -24,9 +24,9 @@ import {
 } from "@/lib/catalog";
 
 const finishes = [
-  { id: "none", label: "Без отделки" },
-  { id: "matte", label: "Матовая" },
-  { id: "gloss", label: "Глянцевая" },
+  { id: "none", label: "Bez wykończenia" },
+  { id: "matte", label: "Matowe" },
+  { id: "gloss", label: "Błyszczące" },
 ] as const;
 
 export function MerchFlow() {
@@ -74,7 +74,7 @@ export function MerchFlow() {
         setReady(true);
       })
       .catch(() => {
-        if (!cancel) setBootError("Не удалось открыть сервер");
+        if (!cancel) setBootError("Nie udało się otworzyć serwera");
       });
     return () => {
       cancel = true;
@@ -165,10 +165,10 @@ export function MerchFlow() {
     return (
       <main className="grid min-h-screen place-items-center px-6 text-center">
         <div className="grid gap-3">
-          <p className="text-muted">{bootError ?? "Открываем…"}</p>
+          <p className="text-muted">{bootError ?? "Otwieramy…"}</p>
           {bootError ? (
             <button type="button" className="font-bold" onClick={() => window.location.reload()}>
-              Ещё раз
+              Jeszcze raz
             </button>
           ) : null}
         </div>
@@ -187,8 +187,8 @@ export function MerchFlow() {
           <div className="absolute top-5 right-5 z-10">{account}</div>
           <Door
             tone="dark"
-            title="Футболка"
-            line="Грудь и спина · от 5 р."
+            title="Koszulka"
+            line="Przód i tył · od 5 zł"
             leaving={leaving}
             self="tshirt"
             onPick={() => openProduct("tshirt")}
@@ -199,8 +199,8 @@ export function MerchFlow() {
           </Door>
           <Door
             tone="light"
-            title="Кружка"
-            line="Обхват · от 5 р."
+            title="Kubek"
+            line="Obwód · od 5 zł"
             leaving={leaving}
             self="mug"
             onPick={() => openProduct("mug")}
@@ -225,11 +225,11 @@ export function MerchFlow() {
             </div>
             <div>
               <h1 className="text-[40px] font-extrabold tracking-tight">{product.name}</h1>
-              <p className="mt-1.5 text-[15px] text-muted">Минск, Дзержинского 3Б · готово за 1–2 дня</p>
-              <p className="mt-4 text-[28px] font-extrabold tracking-tight">от 5 р.</p>
+              <p className="mt-1.5 text-[15px] text-muted">Warszawa · gotowe w 1–2 dni</p>
+              <p className="mt-4 text-[28px] font-extrabold tracking-tight">od 5 zł</p>
               {work.product === "tshirt" ? (
                 <>
-                  <FieldLabel>Размер</FieldLabel>
+                  <FieldLabel>Rozmiar</FieldLabel>
                   <Pills
                     values={sizes}
                     current={work.size}
@@ -238,11 +238,11 @@ export function MerchFlow() {
                 </>
               ) : (
                 <>
-                  <FieldLabel>Объём</FieldLabel>
-                  <p className="text-sm font-semibold">330 мл</p>
+                  <FieldLabel>Pojemność</FieldLabel>
+                  <p className="text-sm font-semibold">330 ml</p>
                 </>
               )}
-              <FieldLabel>Цвет</FieldLabel>
+              <FieldLabel>Kolor</FieldLabel>
               <div className="flex items-center gap-2.5">
                 {shirtColors.map((swatch) => {
                   const selected = work.color === swatch.value;
@@ -260,31 +260,31 @@ export function MerchFlow() {
                 })}
                 <span className="ml-1 text-sm text-muted">{colorName}</span>
               </div>
-              <FieldLabel>Тираж</FieldLabel>
+              <FieldLabel>Nakład</FieldLabel>
               <Pills
                 values={quantities}
                 current={work.qty}
-                format={(value) => `${value} шт.`}
+                format={(value) => `${value} szt.`}
                 onPick={(qty) => updateWork((current) => ({ ...current, qty }))}
               />
-              <FieldLabel>Отделка</FieldLabel>
+              <FieldLabel>Wykończenie</FieldLabel>
               <Pills
                 values={finishes.map((item) => item.label)}
-                current={finishes.find((item) => item.id === work.finish)?.label ?? "Без отделки"}
+                current={finishes.find((item) => item.id === work.finish)?.label ?? "Bez wykończenia"}
                 onPick={(label) => {
                   const next = finishes.find((item) => item.label === label);
                   if (next) updateWork((current) => ({ ...current, finish: next.id }));
                 }}
               />
-              <p className="mt-2 text-xs text-muted">Как будет выглядеть поверхность печати.</p>
+              <p className="mt-2 text-xs text-muted">Tak będzie wyglądać powierzchnia nadruku.</p>
               <button
                 type="button"
                 className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white hover:bg-[#2c2a26]"
                 onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
               >
-                Сделать свой
+                Zrób własny
               </button>
-              <p className="mt-3 text-sm text-muted">Свой файл подключим вместе с заказом.</p>
+              <p className="mt-3 text-sm text-muted">Własny plik podepniemy razem z zamówieniem.</p>
             </div>
           </div>
         </section>
@@ -298,22 +298,22 @@ export function MerchFlow() {
               className="text-sm text-muted"
               onClick={() => updateWork((current) => ({ ...current, step: "shop" }))}
             >
-              К вещи
+              Do rzeczy
             </button>
             <span className="text-sm font-semibold">{product.name}</span>
             <span className="hidden text-sm text-muted sm:inline">
-              {work.product === "tshirt" ? `${work.size} · ` : "330 мл · "}
-              {colorName} · {work.qty} шт. · {finishName}
+              {work.product === "tshirt" ? `${work.size} · ` : "330 ml · "}
+              {colorName} · {work.qty} szt. · {finishName}
             </span>
             <div className="flex-1" />
-            {saveError ? <span className="text-sm text-muted">Не сохранилось</span> : null}
-            <span className="text-sm text-muted">от 5 р.</span>
+            {saveError ? <span className="text-sm text-muted">Nie zapisano</span> : null}
+            <span className="text-sm text-muted">od 5 zł</span>
             <button
               type="button"
               className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white"
               onClick={() => updateWork((current) => ({ ...current, cartFrom: "editor", step: "cart" }))}
             >
-              В корзину
+              Do koszyka
             </button>
           </header>
           <EditorCanvas
@@ -342,10 +342,10 @@ export function MerchFlow() {
             className="font-bold"
             onClick={() => updateWork((current) => ({ ...current, step: current.cartFrom }))}
           >
-            {work.cartFrom === "shop" ? "← К вещи" : "← В редактор"}
+            {work.cartFrom === "shop" ? "← Do rzeczy" : "← Do edytora"}
           </button>
           <div className="mt-4 flex items-center justify-between gap-4">
-            <h1 className="text-4xl font-extrabold tracking-tight">Корзина</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight">Koszyk</h1>
             {account}
           </div>
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
@@ -358,60 +358,60 @@ export function MerchFlow() {
             <div>
               <h2 className="text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
-                {[work.product === "tshirt" ? work.size : "330 мл", colorName, `тираж ${work.qty}`, zone.label, finishName]
+                {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label, finishName]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              <p className="mt-1 font-bold">от 5 р.</p>
+              <p className="mt-1 font-bold">od 5 zł</p>
               <p className="text-sm text-muted">
-                {work.previewUrl ? "Макет подготовлен в редакторе" : "На листе пока пусто"}
+                {work.previewUrl ? "Projekt przygotowany w edytorze" : "Arkusz jest jeszcze pusty"}
               </p>
             </div>
           </article>
           <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
-            <h2 className="font-bold text-ink">Поля будущего заказа</h2>
-            <p className="mt-1">Хранятся на сервере merch. В CRM не отправляются.</p>
+            <h2 className="font-bold text-ink">Pola przyszłego zamówienia</h2>
+            <p className="mt-1">Trzymane na serwerze merch. Do CRM nie wychodzą.</p>
             <ul className="mt-3 grid gap-1">
-              <li>вещь: {product.name}</li>
-              <li>{work.product === "tshirt" ? `размер: ${work.size}` : "объём: 330 мл"}</li>
-              <li>цвет вещи: {colorName}</li>
-              <li>тираж: {work.qty}</li>
-              <li>отделка: {finishName} — только вид, без ширины рулона</li>
+              <li>rzecz: {product.name}</li>
+              <li>{work.product === "tshirt" ? `rozmiar: ${work.size}` : "pojemność: 330 ml"}</li>
+              <li>kolor rzeczy: {colorName}</li>
+              <li>nakład: {work.qty}</li>
+              <li>wykończenie: {finishName} — tylko rodzaj, bez szerokości rolki</li>
               <li>editorKind: souvenir_3d</li>
               <li>
-                зона: {zone.label}, {zone.widthMm}×{zone.heightMm} мм
+                strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
               </li>
-              <li>editorDraftToken: появится, когда черновик начнёт уходить в CRM</li>
+              <li>editorDraftToken: pojawi się, gdy szkic zacznie iść do CRM</li>
             </ul>
           </section>
           {user && designId ? (
             <p className="mt-4 text-sm text-muted">
-              Свой макет:{" "}
+              Własny projekt:{" "}
               <a className="font-semibold text-ink underline" href={`/m/${designId}`}>
                 /m/{designId}
               </a>
             </p>
           ) : null}
-          {saveError ? <p className="mt-4 text-sm text-muted">Не сохранилось</p> : null}
+          {saveError ? <p className="mt-4 text-sm text-muted">Nie zapisano</p> : null}
           {work.placed && user ? (
             <p className="mt-6 rounded-2xl bg-ink px-4 py-4 text-white">
-              Заявка сохранена на сервере merch. В CRM её не отправляем.
+              Zgłoszenie zapisane na serwerze merch. Do CRM go nie wysyłamy.
             </p>
           ) : user ? (
             <form className="mt-6 grid gap-3" onSubmit={(event) => void placeOrder(event)}>
               <label className="grid gap-1 text-sm font-bold">
-                Имя
+                Imię
                 <input
                   required
                   autoComplete="name"
-                  placeholder="Как к вам обращаться"
+                  placeholder="Jak się do Ciebie zwracać"
                   value={orderName}
                   onChange={(event) => setOrderName(event.target.value)}
                   className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
                 />
               </label>
               <label className="grid gap-1 text-sm font-bold">
-                Телефон
+                Telefon
                 <input
                   readOnly
                   type="tel"
@@ -420,18 +420,18 @@ export function MerchFlow() {
                 />
               </label>
               <button type="submit" className="rounded-xl bg-ink px-4 py-4 font-bold text-white">
-                Оформить
+                Złóż zamówienie
               </button>
             </form>
           ) : (
             <div className="mt-6 grid gap-3">
-              <p className="text-sm text-muted">Оформить заказ и снова открыть свой макет можно после входа.</p>
+              <p className="text-sm text-muted">Zamówienie i ponowne otwarcie projektu są dostępne po zalogowaniu.</p>
               <button
                 type="button"
                 className="rounded-xl bg-ink px-4 py-4 font-bold text-white"
                 onClick={() => setLoginOpen(true)}
               >
-                Войти и оформить
+                Zaloguj się i złóż
               </button>
             </div>
           )}
@@ -463,7 +463,7 @@ function AccountLinks({
   if (!user) {
     return (
       <button type="button" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink" onClick={onLogin}>
-        Войти
+        Zaloguj się
       </button>
     );
   }
@@ -471,7 +471,7 @@ function AccountLinks({
     <span className="flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink">
       <span>{user.name}</span>
       <button type="button" className="text-muted" onClick={onLogout}>
-        Выйти
+        Wyloguj
       </button>
     </span>
   );
@@ -493,11 +493,11 @@ function Top({
       </button>
       <nav className="flex items-center gap-4 text-sm font-semibold text-muted">
         <button type="button" className="hover:text-ink" onClick={onHome}>
-          Двери
+          Drzwi
         </button>
         {account}
         <button type="button" className="hover:text-ink" onClick={onCart}>
-          Корзина
+          Koszyk
         </button>
       </nav>
     </header>
@@ -578,7 +578,7 @@ function Door({
           tone === "dark" ? "bg-[#f6f3ee] text-[#171614]" : "bg-[#171614] text-[#f6f3ee]"
         }`}
       >
-        Выбрать
+        Wybierz
       </span>
     </button>
   );

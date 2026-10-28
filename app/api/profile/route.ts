@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as { name?: unknown };
   } catch {
-    return Response.json({ error: "Напишите, как к вам обращаться" }, { status: 400 });
+    return Response.json({ error: "Napisz, jak się do Ciebie zwracać" }, { status: 400 });
   }
   const name = typeof body.name === "string" ? body.name : "";
   const result = await renameUser(sessionId, name);

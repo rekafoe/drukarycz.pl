@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as { phone?: unknown };
   } catch {
-    return Response.json({ error: "Введите телефон" }, { status: 400 });
+    return Response.json({ error: "Podaj telefon" }, { status: 400 });
   }
   const phone = typeof body.phone === "string" ? body.phone : "";
   const result = await requestCode(sessionId, phone);

@@ -183,7 +183,7 @@ export function EditorCanvas({
   function addText() {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const text = new IText("Ваш принт", {
+    const text = new IText("Twój nadruk", {
       left: canvas.getWidth() / 2,
       top: canvas.getHeight() / 2,
       originX: "center",
@@ -253,14 +253,14 @@ export function EditorCanvas({
           className={`border-b-2 pb-0.5 ${mobilePanel === "model" ? "border-ink font-semibold text-ink" : "border-transparent text-muted"}`}
           onClick={() => setMobilePanel("model")}
         >
-          Вещь
+          Rzecz
         </button>
         <button
           type="button"
           className={`border-b-2 pb-0.5 ${mobilePanel === "sheet" ? "border-ink font-semibold text-ink" : "border-transparent text-muted"}`}
           onClick={() => setMobilePanel("sheet")}
         >
-          Лист
+          Arkusz
         </button>
         {areas.length > 1 && mobilePanel === "model" ? (
           <div className="ml-auto flex gap-3">
@@ -281,10 +281,10 @@ export function EditorCanvas({
       <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
         <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-sm text-muted">
           <button type="button" className="hover:text-ink" onClick={addText}>
-            Текст
+            Tekst
           </button>
           <label className="cursor-pointer hover:text-ink">
-            Фото
+            Zdjęcie
             <input
               type="file"
               accept="image/*"
@@ -302,7 +302,7 @@ export function EditorCanvas({
             disabled={!canDelete}
             onClick={removeSelected}
           >
-            Удалить
+            Usuń
           </button>
           {areas.length > 1 ? (
             <div className="ml-auto flex gap-3">
@@ -323,10 +323,10 @@ export function EditorCanvas({
         </div>
         <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 pb-3">
           <div className="grid justify-items-center gap-1">
-            <span className="text-[11px] tracking-wide text-muted">{active.widthMm} мм</span>
+            <span className="text-[11px] tracking-wide text-muted">{active.widthMm} mm</span>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] tracking-wide text-muted [writing-mode:vertical-rl] rotate-180">
-                {active.heightMm} мм
+                {active.heightMm} mm
               </span>
               <div className="relative overflow-hidden" style={{ width: sheetW, height: sheetH }}>
                 <div
@@ -336,7 +336,7 @@ export function EditorCanvas({
                 />
                 {sheetEmpty ? (
                   <p className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-muted">
-                    Текст или фото
+                    Tekst albo zdjęcie
                   </p>
                 ) : null}
               </div>

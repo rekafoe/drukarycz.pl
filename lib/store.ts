@@ -187,12 +187,12 @@ export function saveWork(sessionId: string, input: unknown) {
 export function requestCode(sessionId: string, phoneLabel: string) {
   const digits = phoneDigits(phoneLabel);
   if (digits.length < 9 || digits.length > 15) {
-    return Promise.resolve({ error: "Введите телефон" as const });
+    return Promise.resolve({ error: "Podaj telefon" as const });
   }
   const code = randomInt(0, 10000).toString().padStart(4, "0");
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
-    if (!session) return { error: "Сессия не найдена" as const };
+    if (!session) return { error: "Nie znaleziono sesji" as const };
     session.challenge = {
       phoneDigits: digits,
       phoneLabel: phoneLabel.trim(),
@@ -213,17 +213,17 @@ export function verifyCode(sessionId: string, phoneLabel: string, code: string, 
   const digits = phoneDigits(phoneLabel);
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
-    if (!session?.challenge) return { error: "Сначала получите код" as const };
+    if (!session?.challenge) return { error: "Najpierw pobierz kod" as const };
     const challenge = session.challenge;
-    if (challenge.expiresAt <= Date.now()) return { error: "Код истёк. Получите новый" as const };
-    if (challenge.phoneDigits !== digits) return { error: "Код запрошен на другой телефон" as const };
+    if (challenge.expiresAt <= Date.now()) return { error: "Kod wygasł. Pobierz nowy" as const };
+    if (challenge.phoneDigits !== digits) return { error: "Kod zamówiono na inny telefon" as const };
     challenge.attempts += 1;
-    if (challenge.attempts > 5) return { error: "Слишком много попыток. Получите новый код" as const };
-    if (challenge.code !== code.trim()) return { error: "Код не подошёл" as const };
+    if (challenge.attempts > 5) return { error: "Za dużo prób. Pobierz nowy kod" as const };
+    if (challenge.code !== code.trim()) return { error: "Kod nie pasuje" as const };
 
     let user = store.users.find((item) => item.phoneDigits === digits);
     const nextName = name.trim() || user?.name || "";
-    if (!nextName) return { error: "Напишите, как к вам обращаться" as const };
+    if (!nextName) return { error: "Napisz, jak się do Ciebie zwracać" as const };
     if (!user) {
       user = { id: newId(), phoneDigits: digits, phoneLabel: challenge.phoneLabel, name: nextName };
       store.users.push(user);
@@ -268,11 +268,11 @@ export function logoutSession(sessionId: string) {
 
 export function renameUser(sessionId: string, name: string) {
   const trimmed = name.trim();
-  if (!trimmed || trimmed.length > 80) return Promise.resolve({ error: "Напишите, как к вам обращаться" as const });
+  if (!trimmed || trimmed.length > 80) return Promise.resolve({ error: "Napisz, jak się do Ciebie zwracać" as const });
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
     const user = session?.userId ? store.users.find((item) => item.id === session.userId) : undefined;
-    if (!session || !user) return { error: "Сначала войдите" as const };
+    if (!session || !user) return { error: "Najpierw się zaloguj" as const };
     user.name = trimmed;
     session.updatedAt = Date.now();
     return { view: viewSession(session, store) };

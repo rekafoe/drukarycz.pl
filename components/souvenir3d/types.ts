@@ -101,7 +101,7 @@ export const DEFAULT_MUG_MODEL_URL = '/models/mug.glb';
 
 export const DEFAULT_PRINT_AREA_TSHIRT: PrintAreaConfig = {
   id: 'front',
-  label: 'Грудь',
+  label: 'Przód',
   widthMm: 300,
   heightMm: 400,
   meshName: 'print_front',
@@ -111,7 +111,7 @@ export const DEFAULT_PRINT_AREA_TSHIRT: PrintAreaConfig = {
 
 export const DEFAULT_PRINT_AREA_TSHIRT_BACK: PrintAreaConfig = {
   id: 'back',
-  label: 'Спина',
+  label: 'Tył',
   widthMm: 300,
   heightMm: 400,
   meshName: 'print_back',
@@ -126,7 +126,7 @@ export const DEFAULT_PRINT_AREAS_TSHIRT: PrintAreaConfig[] = [
 
 export const DEFAULT_PRINT_AREA_MUG: PrintAreaConfig = {
   id: 'wrap',
-  label: 'Обхват кружки',
+  label: 'Obwód',
   widthMm: 200,
   heightMm: 85,
   meshName: 'print_wrap',
@@ -137,7 +137,7 @@ export const DEFAULT_PRINT_AREA_MUG: PrintAreaConfig = {
 /** Перед / спина майки по id, meshName или подписи. */
 export function isTshirtBackPrintArea(area: Pick<PrintAreaConfig, 'id' | 'meshName' | 'label'>): boolean {
   const key = `${area.id} ${area.meshName} ${area.label}`.toLowerCase();
-  return /(?:^|[^a-z])back(?:[^a-z]|$)|rear|print_back|спин|задн/.test(key);
+  return /(?:^|[^a-z])back(?:[^a-z]|$)|rear|print_back|спин|задн|tył|tyl/.test(key);
 }
 
 export function isMugModelUrl(url?: string | null): boolean {
@@ -155,7 +155,7 @@ export function isMugPrintArea(
   if (area.procedural === 'mug') return true;
   if (isMugModelUrl(area.modelUrl)) return true;
   const key = `${area.id} ${area.meshName} ${area.label}`.toLowerCase();
-  if (/wrap|mug|кружк|обхват/.test(key)) return true;
+  if (/wrap|mug|кружк|обхват|obwód|obwod/.test(key)) return true;
   // «Грудь» 200×85 на mug.glb — всё равно обхват, не майка.
   if (isMugWrapAspect(area.widthMm, area.heightMm) && !isTshirtBackPrintArea(area)) {
     return true;
@@ -183,7 +183,7 @@ export function normalizeSouvenirPrintAreas(raw: unknown): PrintAreaConfig[] {
         && a.label.trim()
         && !/^(зона\s*\d+|грудь|front)$/i.test(a.label.trim())
           ? a.label
-          : 'Обхват кружки';
+          : 'Obwód';
       return {
         ...a,
         id: /wrap|mug|кружк|обхват/i.test(a.id) ? a.id : 'wrap',
@@ -210,9 +210,9 @@ export function normalizeSouvenirPrintAreas(raw: unknown): PrintAreaConfig[] {
         && !/^зона\s*\d+$/i.test(area.label.trim())
           ? area.label
           : back
-            ? 'Спина'
+            ? 'Tył'
             : index === 0
-              ? 'Грудь'
+              ? 'Przód'
               : area.label,
     };
   });

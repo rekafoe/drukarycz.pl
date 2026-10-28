@@ -8,6 +8,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const sessionId = await requireSessionId();
   const { id } = await context.params;
   const opened = await openOwnDesign(sessionId, id);
-  if (!opened) return Response.json({ error: "Макет не открывается" }, { status: 404 });
+  if (!opened) return Response.json({ error: "Projekt się nie otwiera" }, { status: 404 });
   return Response.json({ ok: true });
 }

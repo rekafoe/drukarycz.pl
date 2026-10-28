@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -503,7 +503,7 @@ function usePrintMaterial(printTexture: THREE.Texture | null, polygonOffsetFacto
     const map = printTexture;
     if (map) {
       map.flipY = true;
-      map.colorSpace = THREE.SRGBColorSpace;
+      map.colorSpace = THREE.LinearSRGBColorSpace;
       map.anisotropy = 16;
       map.minFilter = THREE.LinearFilter;
       map.magFilter = THREE.LinearFilter;
@@ -513,33 +513,41 @@ function usePrintMaterial(printTexture: THREE.Texture | null, polygonOffsetFacto
       map.needsUpdate = true;
     }
 
-    const mat = new THREE.MeshBasicMaterial({
-      color: '#ffffff',
-      map,
-      side: THREE.DoubleSide,
+    if (!map) {
+      return { mat: new THREE.MeshBasicMaterial({ visible: false }), map };
+    }
+
+    // Свой шейдер, без onBeforeCompile: белый лист выкидываем по RGB,
+    // чернила пишем непрозрачными. Цвет ткани остаётся материалом модели.
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { map: { value: map } },
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
       toneMapped: false,
+      side: THREE.DoubleSide,
       polygonOffset: true,
       polygonOffsetFactor,
       polygonOffsetUnits: polygonOffsetFactor,
-      transparent: true,
-      opacity: 1,
-      depthWrite: false,
-      alphaTest: map ? 0.04 : 1,
-      visible: Boolean(map),
+      vertexShader: /* glsl */ `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform sampler2D map;
+        varying vec2 vUv;
+        void main() {
+          if (vUv.x < 0.0 || vUv.x > 1.0 || vUv.y < 0.0 || vUv.y > 1.0) discard;
+          vec4 texel = texture2D(map, vUv);
+          if (texel.a < 0.04) discard;
+          if (texel.r > 0.93 && texel.g > 0.93 && texel.b > 0.93) discard;
+          gl_FragColor = vec4(texel.rgb, 1.0);
+        }
+      `,
     });
-
-    // Ровный прямоугольник зоны: пиксели вне UV 0..1 не рисуем (без «зубцов» клипа).
-    mat.onBeforeCompile = (shader) => {
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <map_fragment>',
-        /* glsl */ `
-        #include <map_fragment>
-        #ifdef USE_MAP
-          if (vMapUv.x < 0.0 || vMapUv.x > 1.0 || vMapUv.y < 0.0 || vMapUv.y > 1.0) discard;
-        #endif
-        `,
-      );
-    };
 
     return { mat, map };
   }, [polygonOffsetFactor, printTexture]);
@@ -654,7 +662,7 @@ export const GltfPrintModel: React.FC<GltfPrintModelProps> = ({
     [scene, isMug],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isMug) {
       applyMugCeramicMaterials(fitted, bodyColor);
       return;

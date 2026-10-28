@@ -31,7 +31,7 @@ export function LoginPanel({
       });
       const data = (await response.json()) as { error?: string; devCode?: string | null; needsName?: boolean };
       if (!response.ok) {
-        setError(data.error ?? "Не удалось выдать код");
+        setError(data.error ?? "Nie udało się wydać kodu");
         setDevCode(null);
         return;
       }
@@ -40,7 +40,7 @@ export function LoginPanel({
       setNeedsName(askName);
       if (!askName) setName("");
     } catch {
-      setError("Не удалось выдать код");
+      setError("Nie udało się wydać kodu");
     } finally {
       setBusy(false);
     }
@@ -58,12 +58,12 @@ export function LoginPanel({
       });
       const data = (await response.json()) as SessionView & { error?: string };
       if (!response.ok || !data.user) {
-        setError(data.error ?? "Код не подошёл");
+        setError(data.error ?? "Kod nie pasuje");
         return;
       }
       onSuccess(data);
     } catch {
-      setError("Не удалось войти");
+      setError("Nie udało się wejść");
     } finally {
       setBusy(false);
     }
@@ -72,22 +72,22 @@ export function LoginPanel({
   const form = (
       <form onSubmit={verify} className="grid w-full max-w-md gap-3 rounded-2xl bg-paper p-6 text-ink">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-2xl font-extrabold tracking-tight">Вход по телефону</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight">Logowanie telefonem</h2>
           {onClose ? (
             <button type="button" className="text-sm text-muted" onClick={onClose}>
-              Закрыть
+              Zamknij
             </button>
           ) : null}
         </div>
-        <p className="text-sm text-muted">SMS не отправляем. В этом прототипе код виден на экране.</p>
+        <p className="text-sm text-muted">SMS-ów nie wysyłamy. W tym prototypie kod widać na ekranie.</p>
         <label className="grid gap-1 text-sm font-bold">
-          Телефон
+          Telefon
           <input
             required
             type="tel"
             inputMode="tel"
             autoComplete="tel"
-            placeholder="+375"
+            placeholder="+48 500 600 700"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
@@ -99,15 +99,15 @@ export function LoginPanel({
           className="rounded-xl border border-ink px-4 py-3 font-bold"
           onClick={() => void requestCode()}
         >
-          Получить код
+          Pobierz kod
         </button>
         {devCode ? (
           <p className="rounded-xl border border-line bg-card px-3 py-3 text-sm">
-            Тестовый код: <span className="font-extrabold tracking-[0.2em]">{devCode}</span>
+            Kod testowy: <span className="font-extrabold tracking-[0.2em]">{devCode}</span>
           </p>
         ) : null}
         <label className="grid gap-1 text-sm font-bold">
-          Код
+          Kod
           <input
             required
             inputMode="numeric"
@@ -119,11 +119,11 @@ export function LoginPanel({
         </label>
         {needsName ? (
           <label className="grid gap-1 text-sm font-bold">
-            Имя
+            Imię
             <input
               required
               autoComplete="name"
-              placeholder="Как к вам обращаться"
+              placeholder="Jak się do Ciebie zwracać"
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
@@ -132,7 +132,7 @@ export function LoginPanel({
         ) : null}
         {error ? <p className="text-sm font-semibold">{error}</p> : null}
         <button type="submit" disabled={busy} className="rounded-xl bg-ink px-4 py-4 font-bold text-white">
-          Войти
+          Wejdź
         </button>
       </form>
   );

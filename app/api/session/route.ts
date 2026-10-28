@@ -15,9 +15,9 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Не прочитали макет" }, { status: 400 });
+    return Response.json({ error: "Nie odczytano projektu" }, { status: 400 });
   }
   const view = await saveWork(sessionId, body);
-  if (!view) return Response.json({ error: "Сессия не найдена" }, { status: 401 });
+  if (!view) return Response.json({ error: "Nie znaleziono sesji" }, { status: 401 });
   return Response.json(view);
 }

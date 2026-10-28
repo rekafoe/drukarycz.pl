@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as { phone?: unknown; code?: unknown; name?: unknown };
   } catch {
-    return Response.json({ error: "Код не подошёл" }, { status: 400 });
+    return Response.json({ error: "Kod nie pasuje" }, { status: 400 });
   }
   const phone = typeof body.phone === "string" ? body.phone : "";
   const code = typeof body.code === "string" ? body.code : "";

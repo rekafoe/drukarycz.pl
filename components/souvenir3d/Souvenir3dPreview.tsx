@@ -238,15 +238,15 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   const rootClass = ['souvenir3d-preview', className].filter(Boolean).join(' ');
   const label = (() => {
     if (caption !== undefined) return caption;
-    if (!active) return '3D-превью';
-    const base = `${active.label} · ${active.widthMm}×${active.heightMm} мм`;
+    if (!active) return 'Podgląd 3D';
+    const base = `${active.label} · ${active.widthMm}×${active.heightMm} mm`;
     if (!isMugPrintArea(active)) return base;
     const arc = mugWrapArcFromHandle({
       widthMm: active.widthMm,
       circumferenceMm: MUG_OUTER_CIRCUMFERENCE_MM,
       startMmFromHandle: active.wrapStartMmFromHandle,
     });
-    return `${base} · от ручки ${Math.round(arc.startMm)}–${Math.round(arc.endMm)} мм`;
+    return `${base} · od ucha ${Math.round(arc.startMm)}–${Math.round(arc.endMm)} mm`;
   })();
   const isMug = active ? isMugPrintArea(active) : false;
   const isBack = Boolean(active && !isMug && isTshirtBackPrintArea(active));
@@ -269,7 +269,7 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
 
   return (
     <div className={rootClass}>
-      <div className="souvenir3d-preview__viewport" aria-label="3D-превью изделия">
+      <div className="souvenir3d-preview__viewport" aria-label="Podgląd 3D produktu">
         <Canvas
           shadows
           dpr={[1, 2]}

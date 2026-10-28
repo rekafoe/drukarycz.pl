@@ -18,26 +18,26 @@ export type CatalogProduct = {
 export const catalog: CatalogProduct[] = [
   {
     id: "tshirt",
-    name: "Футболка",
-    doorLine: "Грудь и спина · от 5 р.",
+    name: "Koszulka",
+    doorLine: "Przód i tył · od 5 zł",
     zones: [
-      { id: "front", label: "Грудь", widthMm: 300, heightMm: 400 },
-      { id: "back", label: "Спина", widthMm: 300, heightMm: 400 },
+      { id: "front", label: "Przód", widthMm: 300, heightMm: 400 },
+      { id: "back", label: "Tył", widthMm: 300, heightMm: 400 },
     ],
   },
   {
     id: "mug",
-    name: "Кружка",
-    doorLine: "Обхват · от 5 р.",
-    zones: [{ id: "wrap", label: "Обхват", widthMm: 200, heightMm: 85 }],
+    name: "Kubek",
+    doorLine: "Obwód · od 5 zł",
+    zones: [{ id: "wrap", label: "Obwód", widthMm: 200, heightMm: 85 }],
   },
 ];
 
 export const shirtColors = [
-  { id: "black", label: "Чёрный", value: "#171614" },
-  { id: "sand", label: "Песочный", value: "#f4f1ea" },
-  { id: "wine", label: "Винный", value: "#7d1d1d" },
-  { id: "navy", label: "Синий", value: "#1e3a5f" },
+  { id: "black", label: "Czarny", value: "#171614" },
+  { id: "sand", label: "Piaskowy", value: "#f4f1ea" },
+  { id: "wine", label: "Bordowy", value: "#7d1d1d" },
+  { id: "navy", label: "Granatowy", value: "#1e3a5f" },
 ] as const;
 
 export const sizes = ["S", "M", "L", "XL"] as const;
