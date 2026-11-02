@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
+import { sessionCookieName } from "@/lib/seller";
 import { ensureSession } from "@/lib/store";
 
-export const SESSION_COOKIE = "merch_session";
+export const SESSION_COOKIE = sessionCookieName;
 
 const cookieOptions = {
   httpOnly: true,

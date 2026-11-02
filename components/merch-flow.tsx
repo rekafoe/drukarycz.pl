@@ -29,6 +29,7 @@ import {
   type ProductId,
 } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
+import { seller } from "@/lib/seller";
 
 const warmedModels = new Set<string>();
 
@@ -553,7 +554,7 @@ export function MerchFlow() {
               ) : null}
               <p className="mt-2 text-sm text-muted">
                 {printZoneNames(work).length > 0
-                  ? `Plik do druku 300 dpi jest na serwerze merch: ${printZoneNames(work).join(", ")}.`
+                  ? `Plik do druku 300 dpi jest na serwerze ${seller.brand}: ${printZoneNames(work).join(", ")}.`
                   : "Plik do druku 300 dpi zapisze się w drodze z edytora."}
               </p>
               {printNote ? <p className="mt-2 text-sm text-ink">{printNote}</p> : null}
@@ -561,7 +562,7 @@ export function MerchFlow() {
           </article>
           <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
             <h2 className="font-bold text-ink">Pola przyszłego zamówienia</h2>
-            <p className="mt-1">Trzymane na serwerze merch. Do CRM nie wychodzą.</p>
+            <p className="mt-1">Trzymane na serwerze {seller.brand}. Do CRM nie wychodzą.</p>
             <ul className="mt-3 grid gap-1">
               <li>rzecz: {product.name}</li>
               <li>{work.product === "tshirt" ? `rozmiar: ${work.size}` : "pojemność: 330 ml"}</li>
@@ -602,7 +603,7 @@ export function MerchFlow() {
           {work.placed && user ? (
             <div className="mt-6 grid gap-3">
               <p className="rounded-2xl bg-ink px-4 py-4 text-white">
-                Zgłoszenie zapisane na serwerze merch. Płatności nie pobieramy i nie wysyłamy go do CRM. Umowa sprzedaży
+                Zgłoszenie zapisane na serwerze {seller.brand}. Płatności nie pobieramy i nie wysyłamy go do CRM. Umowa sprzedaży
                 powstanie dopiero po podaniu ceny z podatkiem i dostawą oraz po płatności.
               </p>
               <OrderSummary order={work.order} />
@@ -860,7 +861,7 @@ function Top({
   return (
     <header className="flex items-center justify-between gap-4 px-7 py-4">
       <button type="button" onClick={onHome} className="text-lg font-extrabold tracking-tight">
-        merch.by
+        {seller.brand}
       </button>
       <nav className="flex items-center gap-4 text-sm font-semibold text-muted">
         <button type="button" className="hover:text-ink" onClick={onHome}>

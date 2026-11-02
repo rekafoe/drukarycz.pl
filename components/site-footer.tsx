@@ -1,3 +1,5 @@
+import { seller } from "@/lib/seller";
+
 const links = [
   ["/prawne/kontakt", "Kontakt"],
   ["/prawne/regulamin", "Regulamin"],
@@ -18,7 +20,7 @@ export function SiteFooter() {
           </a>
         ))}
       </nav>
-      <p className="mt-3">merch.by · Warszawa · cena wyjściowa od 5 zł brutto</p>
+      <p className="mt-3">{seller.brand} · {seller.city} · cena wyjściowa {seller.priceFrom} brutto</p>
     </footer>
   );
 }

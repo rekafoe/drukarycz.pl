@@ -1,4 +1,4 @@
-import { seller, sellerGaps } from "@/lib/seller";
+import { seller, sellerGaps, sessionCookieName } from "@/lib/seller";
 
 export const legalSlugs = [
   "kontakt",
@@ -30,7 +30,7 @@ export function LegalArticle({ slug }: { slug: LegalSlug }) {
   return (
     <div className="mt-6 grid gap-4 text-[15px] leading-relaxed">
       <h1 className="text-4xl font-extrabold tracking-tight">{legalTitles[slug]}</h1>
-      <p className="text-sm text-muted">merch.by · wersja serwisu z 28 października 2026</p>
+      <p className="text-sm text-muted">{seller.brand} · wersja serwisu z 28 października 2026</p>
       {slug === "kontakt" ? <Kontakt /> : null}
       {slug === "regulamin" ? <Regulamin /> : null}
       {slug === "prywatnosc" ? <Prywatnosc /> : null}
@@ -81,7 +81,7 @@ function Kontakt() {
       <H2>Jak napisać</H2>
       <p>
         Kanał reklamacji i odstąpienia to e-mail sprzedawcy z tej strony. Gdy pole e-mail jest puste, nie udajemy, że
-        list dokądś dojdzie. Zgłoszenie zapisane w koszyku zostaje na serwerze merch i nie jest zamówieniem opłaconym.
+        list dokądś dojdzie. Zgłoszenie zapisane w koszyku zostaje na serwerze {seller.brand} i nie jest zamówieniem opłaconym.
       </p>
     </>
   );
@@ -96,7 +96,7 @@ function Regulamin() {
       </p>
       <H2>Czego ten serwis jeszcze nie robi</H2>
       <p>
-        Przycisk w koszyku nazywa się „Zapisz zgłoszenie”. Zapisuje projekt i dane na serwerze merch. Nie pobiera
+        Przycisk w koszyku nazywa się „Zapisz zgłoszenie”. Zapisuje projekt i dane na serwerze {seller.brand}. Nie pobiera
         płatności i nie tworzy obowiązku zapłaty. Umowa sprzedaży powstanie dopiero wtedy, gdy sprzedawca poda cenę z
         podatkiem i kosztem dostawy, a klient ją przyjmie i zapłaci. Do tego momentu przycisk nie będzie miał treści
         „Zamawiam i płacę”.
@@ -162,7 +162,7 @@ function Prywatnosc() {
         <li>e-mail, ulicę, kod pocztowy, miejscowość i opcjonalny NIP w koszyku,</li>
         <li>projekt nadruku i podgląd, w tym zdjęcie, które sam wgrywasz,</li>
         <li>treść dwóch zgód i dobrowolnej zgody marketingowej oraz czas ich zapisu,</li>
-        <li>identyfikator w ciasteczku merch_session, potrzebny, żeby odtworzyć projekt i sesję.</li>
+        <li>identyfikator w ciasteczku {sessionCookieName}, potrzebny, żeby odtworzyć projekt i sesję.</li>
       </ul>
       <H2>Po co i na jakiej podstawie</H2>
       <p>
@@ -178,7 +178,7 @@ function Prywatnosc() {
       <H2>Jak długo</H2>
       <p>
         Konto i projekt trzymamy, dopóki nie usuniesz konta. Przycisk „Usuń konto” jest przy imieniu po zalogowaniu.
-        Usuwa konto i zapisany projekt z serwera merch. Gdy pojawią się prawdziwe faktury, dane zamówienia potrzebne do
+        Usuwa konto i zapisany projekt z serwera {seller.brand}. Gdy pojawią się prawdziwe faktury, dane zamówienia potrzebne do
         podatku zostaną przez okres przechowywania faktur, a usunięcie konta zanonimizuje resztę zamiast kasować zapis
         podatkowy. W tej wersji faktur nie wystawiamy.
       </p>
@@ -206,7 +206,7 @@ function Cookies() {
   return (
     <>
       <p>
-        Używamy jednego ciasteczka technicznego: merch_session. Jest httpOnly, SameSite=Lax, działa w całej witrynie i
+        Używamy jednego ciasteczka technicznego: {sessionCookieName}. Jest httpOnly, SameSite=Lax, działa w całej witrynie i
         wygasa po 30 dniach. Trzyma identyfikator sesji, żeby projekt i logowanie przetrwały odświeżenie strony.
       </p>
       <p>

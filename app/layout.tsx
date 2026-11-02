@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { seller } from "@/lib/seller";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -8,7 +9,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "merch.by — własny nadruk",
+  title: `${seller.brand} — własny nadruk`,
   description: "Koszulki i kubki z własnym projektem. Druk w Warszawie.",
 };
 
