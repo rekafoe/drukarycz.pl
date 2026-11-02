@@ -340,7 +340,7 @@ export function MerchFlow() {
           <Door
             tone="dark"
             title="Koszulka"
-            line="Przód i tył · od 5 zł"
+            line={`Przód i tył · ${seller.priceFrom}`}
             leaving={leaving}
             self="tshirt"
             onPick={() => openProduct("tshirt")}
@@ -352,7 +352,7 @@ export function MerchFlow() {
           <Door
             tone="light"
             title="Kubek"
-            line="Obwód · od 5 zł"
+            line={`Obwód · ${seller.priceFrom}`}
             leaving={leaving}
             self="mug"
             onPick={() => openProduct("mug")}
@@ -377,8 +377,10 @@ export function MerchFlow() {
             </div>
             <div>
               <h1 className="text-[40px] font-extrabold tracking-tight">{product.name}</h1>
-              <p className="mt-1.5 text-[15px] text-muted">Warszawa · gotowe w 1–2 dni</p>
-              <p className="mt-4 text-[28px] font-extrabold tracking-tight">od 5 zł</p>
+              <p className="mt-1.5 text-[15px] text-muted">
+                {seller.city} · gotowe w {seller.leadTime}
+              </p>
+              <p className="mt-4 text-[28px] font-extrabold tracking-tight">{seller.priceFrom}</p>
               <p className="mt-1 text-sm text-muted">
                 Cena wyjściowa brutto. Wiążąca cena i koszt dostawy — przed płatnością.
               </p>
@@ -467,7 +469,7 @@ export function MerchFlow() {
             </a>
             {saveError ? <span className="text-sm text-muted">Nie zapisano</span> : null}
             {work.quality.length > 0 ? <span className="text-sm text-muted">Uwagi do druku</span> : null}
-            <span className="text-sm text-muted">od 5 zł</span>
+            <span className="text-sm text-muted">{seller.priceFrom}</span>
             <button
               type="button"
               className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
@@ -529,7 +531,7 @@ export function MerchFlow() {
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
             {work.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={work.previewUrl} alt="" className="h-24 w-24 object-contain" />
+              <img src={work.previewUrl} alt="" className="h-24 w-24 object-contain" style={{ background: work.color }} />
             ) : (
               <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
             )}
@@ -540,7 +542,7 @@ export function MerchFlow() {
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              <p className="mt-1 font-bold">od 5 zł</p>
+              <p className="mt-1 font-bold">{seller.priceFrom}</p>
               <p className="text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
               <p className="text-sm text-muted">
                 {work.previewUrl ? "Projekt przygotowany w edytorze" : "Arkusz jest jeszcze pusty"}

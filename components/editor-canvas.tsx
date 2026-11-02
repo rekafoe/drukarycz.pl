@@ -11,7 +11,7 @@ import {
 import { printAreaFabricPx, productionMultiplier } from "@/components/souvenir3d/scale";
 import type { ProductId } from "@/lib/catalog";
 import { issuesForAreas, SAFE_MARGIN_MM } from "@/lib/print-quality";
-import { defaultPrintText, type QualityIssue } from "@/lib/work";
+import { defaultPrintText, inkForFabric, type QualityIssue } from "@/lib/work";
 import {
   AlignCenterIcon,
   AlignLeftIcon,
@@ -173,7 +173,7 @@ export function EditorCanvas({
     const canvas = new Canvas(el, {
       width: widthPx,
       height: heightPx,
-      backgroundColor: "#ffffff",
+      backgroundColor: bodyColor,
       preserveObjectStacking: true,
     });
     fabricRef.current = canvas;
@@ -300,7 +300,7 @@ export function EditorCanvas({
       canvas.dispose();
       fabricRef.current = null;
     };
-  }, [active.id, active.heightMm, active.widthMm, heightPx, product, widthPx]);
+  }, [active.id, active.heightMm, active.widthMm, bodyColor, heightPx, product, widthPx]);
 
   function addText() {
     const canvas = fabricRef.current;
@@ -312,7 +312,7 @@ export function EditorCanvas({
       originY: "center",
       fontFamily: "Manrope, sans-serif",
       fontSize: Math.round(canvas.getWidth() / 8),
-      fill: "#1a1916",
+      fill: inkForFabric(bodyColor),
       fontWeight: "800",
     });
     canvas.add(text);
@@ -842,19 +842,31 @@ export function EditorCanvas({
               <div className="relative overflow-hidden" style={{ width: sheetW, height: sheetH }}>
                 <div
                   ref={hostRef}
-                  className="absolute top-0 left-0 origin-top-left bg-white shadow-[0_0_0_1px_rgba(26,25,22,0.14)]"
-                  style={{ width: widthPx, height: heightPx, transform: `scale(${fit})` }}
+                  className="absolute top-0 left-0 origin-top-left shadow-[0_0_0_1px_rgba(26,25,22,0.14)]"
+                  style={{ width: widthPx, height: heightPx, transform: `scale(${fit})`, background: bodyColor }}
                 />
                 <div className="pointer-events-none absolute inset-0" aria-hidden="true">
                   <div
-                    className="absolute border border-dashed border-ink/35"
-                    style={{ inset: SAFE_MARGIN_MM * (widthPx / active.widthMm) * fit }}
+                    className="absolute border border-dashed"
+                    style={{
+                      inset: SAFE_MARGIN_MM * (widthPx / active.widthMm) * fit,
+                      borderColor: inkForFabric(bodyColor) === "#ffffff" ? "rgba(255,255,255,0.55)" : "rgba(26,25,22,0.35)",
+                    }}
                   />
-                  <div className="absolute top-0 left-1/2 h-full w-px bg-ink/20" />
-                  <div className="absolute top-1/2 left-0 h-px w-full bg-ink/20" />
+                  <div
+                    className="absolute top-0 left-1/2 h-full w-px"
+                    style={{ background: inkForFabric(bodyColor) === "#ffffff" ? "rgba(255,255,255,0.35)" : "rgba(26,25,22,0.2)" }}
+                  />
+                  <div
+                    className="absolute top-1/2 left-0 h-px w-full"
+                    style={{ background: inkForFabric(bodyColor) === "#ffffff" ? "rgba(255,255,255,0.35)" : "rgba(26,25,22,0.2)" }}
+                  />
                 </div>
                 {sheetEmpty ? (
-                  <p className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-muted">
+                  <p
+                    className="pointer-events-none absolute inset-0 grid place-items-center text-sm"
+                    style={{ color: inkForFabric(bodyColor) === "#ffffff" ? "rgba(255,255,255,0.72)" : "var(--muted)" }}
+                  >
                     Tekst albo zdjęcie
                   </p>
                 ) : null}

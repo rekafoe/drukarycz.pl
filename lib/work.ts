@@ -70,6 +70,18 @@ const zoneIds: Record<ProductId, readonly string[]> = {
 /** Текст, который кнопка «Tekst» кладёт на пустой лист. */
 export const defaultPrintText = "Twój nadruk";
 
+/** Тёмная ткань получает белые чернила, светлая — тёмные. Чужой цвет надписи не трогаем. */
+export function inkForFabric(color: string): "#ffffff" | "#1a1916" {
+  const hex = color.replace("#", "").trim();
+  if (hex.length < 6) return "#1a1916";
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+  if (![r, g, b].every((n) => Number.isFinite(n))) return "#1a1916";
+  const lum = (r * 299 + g * 587 + b * 114) / 1000;
+  return lum > 170 ? "#1a1916" : "#ffffff";
+}
+
 /** Старые русские заготовки. Свой текст клиента не трогаем. */
 const legacySeedText: Record<string, string> = {
   "Ваш принт": defaultPrintText,

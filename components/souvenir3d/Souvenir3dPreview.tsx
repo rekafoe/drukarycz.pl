@@ -160,10 +160,11 @@ const SceneBody: React.FC<{
     <>
       <color attach="background" args={['#e7e1d6']} />
       <fog attach="fog" args={['#e7e1d6', 14, 26]} />
-      <ambientLight intensity={0.72} />
-      <hemisphereLight args={['#fffaf3', '#cfc6b8', 0.55]} />
-      <directionalLight position={[3.2, 5.5, 2.8]} intensity={1.45} />
-      <directionalLight position={[-2.5, 2.2, -1.5]} intensity={0.35} />
+      <ambientLight intensity={0.38} />
+      <hemisphereLight args={['#fff6ea', '#b7aa9c', 0.42]} />
+      <directionalLight position={[2.4, 5.2, 3.4]} intensity={2.4} />
+      <directionalLight position={[-3.1, 2.4, -1.6]} intensity={0.85} />
+      <directionalLight position={[0.2, 1.4, -3.2]} intensity={0.45} />
       {hasGltf && modelUrl ? (
         <ModelBoundary onError={onModelError}>
           <Suspense fallback={null}>
@@ -177,6 +178,10 @@ const SceneBody: React.FC<{
           </Suspense>
         </ModelBoundary>
       ) : procedural}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY + 0.004, 0.08]}>
+        <circleGeometry args={[isMug ? 0.42 : 0.72, 40]} />
+        <meshBasicMaterial color="#b3a394" transparent opacity={0.38} depthWrite={false} />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY - 0.005, 0]}>
         <circleGeometry args={[isMug ? 1.4 : 2.1, 48]} />
         <meshStandardMaterial color="#ddd6ca" roughness={0.96} metalness={0} />

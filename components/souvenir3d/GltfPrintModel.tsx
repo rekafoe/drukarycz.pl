@@ -258,9 +258,13 @@ function buildMugWrapGeometry(
 }
 
 function applyMugCeramicMaterials(root: THREE.Object3D, color: string) {
-  let bodyMat = root.userData.merchBodyMat as THREE.MeshLambertMaterial | undefined;
+  let bodyMat = root.userData.merchBodyMat as THREE.MeshStandardMaterial | undefined;
   if (!bodyMat) {
-    bodyMat = new THREE.MeshLambertMaterial({ color });
+    bodyMat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.38,
+      metalness: 0,
+    });
     root.userData.merchBodyMat = bodyMat;
   } else {
     bodyMat.color.set(color);
@@ -269,16 +273,20 @@ function applyMugCeramicMaterials(root: THREE.Object3D, color: string) {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
     mesh.material = bodyMat;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
   });
 }
 
 /** Ткань GLB без своей карты цвета: заменяем материал цветом лавки. Принт — отдельный слой. */
 function applyShirtBodyColor(root: THREE.Object3D, color: string) {
-  let mat = root.userData.merchBodyMat as THREE.MeshLambertMaterial | undefined;
+  let mat = root.userData.merchBodyMat as THREE.MeshStandardMaterial | undefined;
   if (!mat) {
-    mat = new THREE.MeshLambertMaterial({ color });
+    mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.62,
+      metalness: 0,
+    });
     root.userData.merchBodyMat = mat;
   } else {
     mat.color.set(color);
@@ -287,8 +295,8 @@ function applyShirtBodyColor(root: THREE.Object3D, color: string) {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
     mesh.material = mat;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
   });
 }
 
