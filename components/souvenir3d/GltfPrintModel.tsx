@@ -11,6 +11,7 @@ import {
 } from './scale';
 import type { PrintAreaConfig, SouvenirSurfacePointerHandler } from './types';
 import { isMugPrintArea, isTshirtBackPrintArea } from './types';
+import { dequantizeGeometry } from './dequantize-geometry';
 import { createSurfaceUvProjector } from './surfaceUvToClient';
 
 type PrintLayer = {
@@ -331,8 +332,7 @@ function buildSurfacePrintGeometry(
 ): THREE.BufferGeometry | null {
   mesh.updateWorldMatrix(true, true);
 
-  const source = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
-  const geo = source.clone();
+  const geo = dequantizeGeometry(mesh.geometry);
   geo.applyMatrix4(mesh.matrixWorld);
   geo.computeVertexNormals();
 
