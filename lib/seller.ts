@@ -6,6 +6,7 @@ const priceFromPln = 5;
 export const seller = {
   brand: "drukarycz.pl",
   city: "Warszawa",
+  cityIn: "w Warszawie",
   country: "Polska",
   leadTime: "1–2 dni robocze",
   priceFromPln,

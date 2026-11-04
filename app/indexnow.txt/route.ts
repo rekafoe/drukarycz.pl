@@ -4,6 +4,6 @@ export const dynamic = "force-dynamic";
 
 /** Файл ключа IndexNow для Bing. Сам сайт в IndexNow не стучится: адреса отправляет владелец (см. README). */
 export function GET() {
-  if (!site.indexNowKey) return new Response("Not found", { status: 404 });
+  if (!/^[A-Za-z0-9-]{8,128}$/.test(site.indexNowKey)) return new Response("Not found", { status: 404 });
   return new Response(site.indexNowKey, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }

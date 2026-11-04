@@ -3,18 +3,11 @@ import { legalSlugs } from "@/components/legal-documents";
 import { productPaths } from "@/lib/catalog";
 import { absoluteUrl } from "@/lib/site";
 
+/** Без changefreq и priority: Google их не читает, а угадывать частоту правок незачем. */
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
-    { url: absoluteUrl("/"), changeFrequency: "weekly", priority: 1 },
-    ...Object.values(productPaths).map((path) => ({
-      url: absoluteUrl(path),
-      changeFrequency: "weekly" as const,
-      priority: 0.9,
-    })),
-    ...legalSlugs.map((slug) => ({
-      url: absoluteUrl(`/prawne/${slug}`),
-      changeFrequency: "monthly" as const,
-      priority: 0.3,
-    })),
+    { url: absoluteUrl("/") },
+    ...Object.values(productPaths).map((path) => ({ url: absoluteUrl(path) })),
+    ...legalSlugs.map((slug) => ({ url: absoluteUrl(`/prawne/${slug}`) })),
   ];
 }

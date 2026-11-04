@@ -291,7 +291,7 @@ function Dostawa() {
   return (
     <>
       <p>
-        Druk przygotowujemy w {seller.city}. Czas przygotowania, który już podajemy przy rzeczy, to {seller.leadTime}.
+        Druk przygotowujemy {seller.cityIn}. Czas przygotowania, który już podajemy przy rzeczy, to {seller.leadTime}.
         To czas produkcji, nie obietnica dnia doręczenia przez przewoźnika.
       </p>
       <p>

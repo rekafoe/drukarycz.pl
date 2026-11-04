@@ -19,7 +19,7 @@ export function pageMetadata({ title, description, path, noindex }: PageSeo): Me
   return {
     title,
     description,
-    alternates: noindex ? undefined : { canonical: path, languages: { "pl-PL": path, "x-default": path } },
+    alternates: noindex ? undefined : { canonical: path, languages: { pl: path, "x-default": path } },
     robots: noindex ? { index: false, follow: false } : undefined,
     openGraph: {
       type: "website",
@@ -38,7 +38,7 @@ const colorList = shirtColors.map((item) => item.label.toLowerCase()).join(", ")
 
 export const homeSeo: PageSeo = {
   title: `Koszulki i kubki z własnym nadrukiem — ${seller.brand}`,
-  description: `Zaprojektuj nadruk na koszulce lub kubku w edytorze online i obejrzyj go na modelu 3D. Druk w Warszawie, gotowe w ${seller.leadTime}. Cena ${seller.priceFrom} brutto.`,
+  description: `Zaprojektuj nadruk na koszulce lub kubku w edytorze online i obejrzyj go na modelu 3D. Druk ${seller.cityIn}, gotowe w ${seller.leadTime}. Cena ${seller.priceFrom} brutto.`,
   path: "/",
 };
 
@@ -46,14 +46,14 @@ export const productSeo: Record<ProductId, PageSeo & { name: string; summary: st
   tshirt: {
     name: productById("tshirt").name,
     title: `Koszulka z własnym nadrukiem, ${seller.priceFrom} — ${seller.brand}`,
-    description: `Koszulka z nadrukiem według własnego projektu: przód i tył, rozmiary ${sizes[0]}–${sizes[sizes.length - 1]}, kolory: ${colorList}. Podgląd 3D, druk w Warszawie, ${seller.priceFrom}.`,
+    description: `Koszulka z nadrukiem według własnego projektu: przód i tył, rozmiary ${sizes[0]}–${sizes[sizes.length - 1]}, kolory: ${colorList}. Podgląd 3D, druk ${seller.cityIn}, ${seller.priceFrom}.`,
     summary: `Koszulka z nadrukiem według własnego projektu, przód i tył, rozmiary ${sizes.join(", ")}.`,
     path: productPaths.tshirt,
   },
   mug: {
     name: productById("mug").name,
     title: `Kubek z własnym nadrukiem, ${seller.priceFrom} — ${seller.brand}`,
-    description: `Kubek 330 ml z nadrukiem na obwodzie według własnego projektu. Podgląd 3D w edytorze, druk w Warszawie, gotowe w ${seller.leadTime}, ${seller.priceFrom}.`,
+    description: `Kubek 330 ml z nadrukiem na obwodzie według własnego projektu. Podgląd 3D w edytorze, druk ${seller.cityIn}, gotowe w ${seller.leadTime}, ${seller.priceFrom}.`,
     summary: "Kubek 330 ml z nadrukiem na obwodzie według własnego projektu.",
     path: productPaths.mug,
   },
@@ -105,7 +105,7 @@ export function homeJsonLd() {
         "@id": `${site.url}/#website`,
         name: seller.brand,
         url: absoluteUrl("/"),
-        inLanguage: "pl-PL",
+        inLanguage: "pl",
         publisher: { "@id": organizationId },
       },
     ],
