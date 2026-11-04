@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "name": "Urodziny",
+    "sort_order": 1
+  },
+  {
+    "id": 2,
+    "name": "Śmieszne",
+    "sort_order": 2
+  },
+  {
+    "id": 3,
+    "name": "Zwierzęta",
+    "sort_order": 3
+  },
+  {
+    "id": 4,
+    "name": "Imiona",
+    "sort_order": 4
+  },
+  {
+    "id": 5,
+    "name": "Sport",
+    "sort_order": 5
+  }
+]

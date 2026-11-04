@@ -1,0 +1,22 @@
+{
+  "id": 100,
+  "design_code": "000100",
+  "name": "Футболка — пустой шаблон",
+  "description": null,
+  "category_id": null,
+  "category": null,
+  "preview_url": null,
+  "site_preview_url": null,
+  "spec": "{\"productId\":501,\"typeId\":1,\"sizeId\":11,\"width_mm\":300,\"height_mm\":400,\"page_count\":2,\"import\":{\"status\":\"none\"},\"editorKind\":\"souvenir_3d\",\"printAreas\":[{\"id\":\"front\",\"label\":\"Przód\",\"widthMm\":300,\"heightMm\":400,\"meshName\":\"print_front\",\"procedural\":\"tshirt\"},{\"id\":\"back\",\"label\":\"Tył\",\"widthMm\":300,\"heightMm\":400,\"meshName\":\"print_back\",\"procedural\":\"tshirt\"}],\"designState\":{\"templateId\":100,\"pageWidth\":300,\"pageHeight\":400,\"pageCount\":2,\"sceneScale\":1,\"pages\":[{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[]},\"printAreaId\":\"front\",\"printAreaLabel\":\"Przód\",\"widthMm\":300,\"heightMm\":400},{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[]},\"printAreaId\":\"back\",\"printAreaLabel\":\"Tył\",\"widthMm\":300,\"heightMm\":400}],\"editorKind\":\"souvenir_3d\",\"activePrintAreaId\":\"front\"},\"requiredFonts\":[],\"fontsResolved\":true}",
+  "is_active": 1,
+  "sort_order": 0,
+  "usage_fee": 0,
+  "created_at": "2026-11-01T10:00:00.000Z",
+  "updated_at": "2026-11-04T12:00:00.000Z",
+  "available_size_ids": [
+    11
+  ],
+  "variant_by_size": {
+    "11": 100
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": 104,
+  "design_code": "000104",
+  "name": "Кот (импорт SVG, пиксели)",
+  "description": null,
+  "category_id": 3,
+  "category": "Zwierzęta",
+  "preview_url": null,
+  "site_preview_url": "/wzory/preview/104-front.png",
+  "spec": "{\"productId\":501,\"typeId\":1,\"sizeId\":11,\"width_mm\":300,\"height_mm\":400,\"page_count\":2,\"import\":{\"status\":\"none\"},\"editorKind\":\"souvenir_3d\",\"printAreas\":[{\"id\":\"front\",\"label\":\"Przód\",\"widthMm\":300,\"heightMm\":400,\"meshName\":\"print_front\",\"procedural\":\"tshirt\"},{\"id\":\"back\",\"label\":\"Tył\",\"widthMm\":300,\"heightMm\":400,\"meshName\":\"print_back\",\"procedural\":\"tshirt\"}],\"designState\":{\"templateId\":104,\"pageWidth\":300,\"pageHeight\":400,\"pageCount\":2,\"sceneScale\":3,\"pages\":[{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[{\"type\":\"Path\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":1700.7874015748034,\"top\":1077.1653543307089,\"path\":\"M14 30 L22 4 L40 22 C46 20 54 20 60 22 L78 4 L86 30 C92 40 94 50 94 58 C94 80 74 96 50 96 C26 96 6 80 6 58 C6 50 8 40 14 30 Z M29 54 C29 47 41 47 41 54 C41 61 29 61 29 54 Z M59 54 C59 47 71 47 71 54 C71 61 59 61 59 54 Z M44 68 L56 68 L50 75 Z\",\"fill\":\"#f2c14e\",\"stroke\":null,\"strokeWidth\":0,\"strokeLineCap\":\"round\",\"fillRule\":\"evenodd\",\"scaleX\":12.472440944881892,\"scaleY\":12.472440944881892},{\"type\":\"Textbox\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":1700.7874015748034,\"top\":2324.409448818898,\"width\":3288.188976377953,\"text\":\"MAM KOTA.\",\"fontSize\":453.5433070866142,\"fontFamily\":\"Archivo Black\",\"fontWeight\":\"normal\",\"fill\":\"#f2c14e\",\"textAlign\":\"center\",\"lineHeight\":1.05,\"charSpacing\":0,\"angle\":0,\"scaleX\":1,\"scaleY\":1},{\"type\":\"Textbox\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":1700.7874015748034,\"top\":2857.3228346456694,\"width\":3288.188976377953,\"text\":\"KOT MA MNIE.\",\"fontSize\":340.15748031496065,\"fontFamily\":\"Archivo Black\",\"fontWeight\":\"normal\",\"fill\":\"#fffaf0\",\"textAlign\":\"center\",\"lineHeight\":1.05,\"charSpacing\":0,\"angle\":0,\"scaleX\":1,\"scaleY\":1}]},\"printAreaId\":\"front\",\"printAreaLabel\":\"Przód\",\"widthMm\":300,\"heightMm\":400},{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[]},\"printAreaId\":\"back\",\"printAreaLabel\":\"Tył\",\"widthMm\":300,\"heightMm\":400}],\"editorKind\":\"souvenir_3d\",\"activePrintAreaId\":\"front\"},\"requiredFonts\":[{\"id\":1,\"family\":\"Archivo Black\",\"url\":\"/fonts/wzory/ArchivoBlack-Regular.ttf\"}],\"fontsResolved\":true}",
+  "is_active": 1,
+  "sort_order": 4,
+  "usage_fee": 5,
+  "created_at": "2026-11-01T10:00:00.000Z",
+  "updated_at": "2026-11-04T12:00:00.000Z",
+  "available_size_ids": [
+    11
+  ],
+  "variant_by_size": {
+    "11": 104
+  }
+}

@@ -1,0 +1,112 @@
+[
+  {
+    "id": 200,
+    "design_code": "000200",
+    "name": "Кружка — пустой шаблон",
+    "description": null,
+    "category_id": null,
+    "category": null,
+    "preview_url": null,
+    "site_preview_url": null,
+    "spec": "{\"productId\":502,\"typeId\":1,\"sizeId\":21,\"width_mm\":200,\"height_mm\":85,\"page_count\":1,\"import\":{\"status\":\"none\"}}",
+    "is_active": 1,
+    "sort_order": 0,
+    "usage_fee": 0,
+    "created_at": "2026-11-01T10:00:00.000Z",
+    "updated_at": "2026-11-04T12:00:00.000Z",
+    "available_size_ids": [
+      21
+    ],
+    "variant_by_size": {
+      "21": 200
+    }
+  },
+  {
+    "id": 201,
+    "design_code": "000201",
+    "name": "Не говорю до кофе",
+    "description": null,
+    "category_id": 2,
+    "category": "Śmieszne",
+    "preview_url": null,
+    "site_preview_url": "/wzory/preview/201-wrap.png",
+    "spec": "{\"productId\":502,\"typeId\":1,\"sizeId\":21,\"width_mm\":200,\"height_mm\":85,\"page_count\":1,\"import\":{\"status\":\"none\"}}",
+    "is_active": 1,
+    "sort_order": 1,
+    "usage_fee": 4,
+    "created_at": "2026-11-01T10:00:00.000Z",
+    "updated_at": "2026-11-04T12:00:00.000Z",
+    "available_size_ids": [
+      21
+    ],
+    "variant_by_size": {
+      "21": 201
+    }
+  },
+  {
+    "id": 202,
+    "design_code": "000202",
+    "name": "Коты с двух сторон",
+    "description": null,
+    "category_id": 3,
+    "category": "Zwierzęta",
+    "preview_url": null,
+    "site_preview_url": "/wzory/preview/202-wrap.png",
+    "spec": "{\"productId\":502,\"typeId\":1,\"sizeId\":21,\"width_mm\":200,\"height_mm\":85,\"page_count\":1,\"import\":{\"status\":\"none\"}}",
+    "is_active": 1,
+    "sort_order": 2,
+    "usage_fee": 6,
+    "created_at": "2026-11-01T10:00:00.000Z",
+    "updated_at": "2026-11-04T12:00:00.000Z",
+    "available_size_ids": [
+      21
+    ],
+    "variant_by_size": {
+      "21": 202
+    }
+  },
+  {
+    "id": 203,
+    "design_code": "000203",
+    "name": "Имя и дата",
+    "description": null,
+    "category_id": 4,
+    "category": "Imiona",
+    "preview_url": null,
+    "site_preview_url": "/wzory/preview/203-wrap.png",
+    "spec": "{\"productId\":502,\"typeId\":1,\"sizeId\":21,\"width_mm\":200,\"height_mm\":85,\"page_count\":1,\"import\":{\"status\":\"none\"}}",
+    "is_active": 1,
+    "sort_order": 3,
+    "usage_fee": 5,
+    "created_at": "2026-11-01T10:00:00.000Z",
+    "updated_at": "2026-11-04T12:00:00.000Z",
+    "available_size_ids": [
+      21
+    ],
+    "variant_by_size": {
+      "21": 203
+    }
+  },
+  {
+    "id": 901,
+    "design_code": "000901",
+    "name": "Кружка 210×95 (ошибка)",
+    "description": null,
+    "category_id": 2,
+    "category": "Śmieszne",
+    "preview_url": null,
+    "site_preview_url": "/wzory/preview/901-wrap.png",
+    "spec": "{\"productId\":502,\"typeId\":1,\"sizeId\":21,\"width_mm\":210,\"height_mm\":95,\"page_count\":1,\"import\":{\"status\":\"none\"}}",
+    "is_active": 1,
+    "sort_order": 9,
+    "usage_fee": 4,
+    "created_at": "2026-11-01T10:00:00.000Z",
+    "updated_at": "2026-11-04T12:00:00.000Z",
+    "available_size_ids": [
+      21
+    ],
+    "variant_by_size": {
+      "21": 901
+    }
+  }
+]

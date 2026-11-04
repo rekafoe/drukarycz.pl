@@ -7,6 +7,11 @@ import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
+import { CartWzorLine, WzorOrderFields } from "@/components/wzory/cart-wzor";
+import { ChosenWzor } from "@/components/wzory/chosen-wzor";
+import { WzoryStrip } from "@/components/wzory/wzory-strip";
+import { dropForeignDesign, withoutDesign } from "@/lib/wzory/choose";
+import { useWzorFonts } from "@/lib/wzory/fonts-client";
 import {
   emptyOrder,
   initialWork,
@@ -86,6 +91,7 @@ export function MerchFlow() {
   const workRef = useRef(work);
   const readyRef = useRef(false);
   workRef.current = work;
+  const fontsReady = useWzorFonts(work.design?.fonts);
 
   function updateWork(patch: (current: WorkSnapshot) => WorkSnapshot) {
     const next = patch(workRef.current);
@@ -290,17 +296,24 @@ export function MerchFlow() {
     setLeaving(id);
     window.setTimeout(() => {
       const next = productById(id);
-      updateWork((current) => ({
-        ...current,
-        product: id,
-        zone: next.zones[0].id,
-        step: "shop",
-      }));
+      updateWork((current) =>
+        dropForeignDesign({
+          ...current,
+          product: id,
+          zone: next.zones[0].id,
+          step: "shop",
+        }),
+      );
       setLeaving(null);
     }, 480);
   }
 
-  if (!ready) {
+  function startOwn() {
+    if (workRef.current.design && !window.confirm("Zacząć od pustego arkusza? Wybrany wzór zniknie z projektu.")) return;
+    updateWork((current) => ({ ...withoutDesign(current), step: "editor" }));
+  }
+
+  if (!ready || !fontsReady) {
     return (
       <main className="grid min-h-screen place-items-center px-6 text-center">
         <div className="grid gap-3">
@@ -434,16 +447,34 @@ export function MerchFlow() {
                 }}
               />
               <p className="mt-2 text-xs text-muted">Tak będzie wyglądać powierzchnia nadruku.</p>
+              {work.design ? (
+                <ChosenWzor
+                  work={work}
+                  onEdit={() => updateWork((current) => ({ ...current, step: "editor" }))}
+                  onRemove={() => updateWork(withoutDesign)}
+                  onCart={(printFiles, previewUrl, note) => {
+                    setPrintNote(note);
+                    updateWork((current) => ({
+                      ...current,
+                      cartFrom: "shop",
+                      step: "cart",
+                      printFiles,
+                      previewUrl: previewUrl ?? current.previewUrl,
+                    }));
+                  }}
+                />
+              ) : null}
               <button
                 type="button"
                 className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white hover:bg-[#2c2a26]"
-                onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
+                onClick={startOwn}
               >
                 Zrób własny
               </button>
               <p className="mt-3 text-sm text-muted">Własny plik podepniemy razem z zamówieniem.</p>
             </div>
           </div>
+          <WzoryStrip product={work.product} color={work.color} />
           <SiteFooter />
         </section>
       ) : null}
@@ -544,9 +575,7 @@ export function MerchFlow() {
               </p>
               <p className="mt-1 font-bold">{seller.priceFrom}</p>
               <p className="text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
-              <p className="text-sm text-muted">
-                {work.previewUrl ? "Projekt przygotowany w edytorze" : "Arkusz jest jeszcze pusty"}
-              </p>
+              <CartWzorLine work={work} />
               {work.quality.length > 0 ? (
                 <ul className="mt-2 grid gap-1 text-sm text-ink">
                   {work.quality.map((issue) => (
@@ -572,6 +601,7 @@ export function MerchFlow() {
               <li>nakład: {work.qty}</li>
               <li>wykończenie: {finishName} — tylko rodzaj, bez szerokości rolki</li>
               <li>editorKind: souvenir_3d</li>
+              <WzorOrderFields work={work} />
               <li>
                 strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
               </li>

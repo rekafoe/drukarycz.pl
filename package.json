@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --import ./tests/register.mjs --test tests/*.test.ts",
+    "wzory:fixtures": "node scripts/wzory-fixtures.ts && npm run wzory:previews",
+    "wzory:previews": "node --import ./tests/register.mjs scripts/wzory-previews.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -15,7 +18,8 @@
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

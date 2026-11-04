@@ -1,4 +1,5 @@
 import { quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import { pagesFingerprint } from "@/lib/wzory/fingerprint";
 
 export type Step = "doors" | "shop" | "editor" | "cart";
 export type Finish = "none" | "matte" | "gloss";
@@ -32,6 +33,19 @@ export type OrderDetails = {
   consentAt: string;
 };
 
+/** Готовый wzór из витрины. Ставит только сервер, клиент может лишь убрать его (`design: null`). */
+export type WorkDesign = {
+  templateId: number;
+  code: string;
+  /** Ровно usage_fee шаблона в злотых, один раз на позицию. */
+  usageFee: number;
+  product: ProductId;
+  fingerprint: string;
+  modified: boolean;
+  fonts: Array<{ family: string; url: string }>;
+  previews: Partial<Record<PrintAreaId, string>>;
+};
+
 export type WorkSnapshot = {
   step: Step;
   cartFrom: CartFrom;
@@ -47,6 +61,7 @@ export type WorkSnapshot = {
   printFiles: PrintFiles;
   order: OrderDetails;
   placed: boolean;
+  design: WorkDesign | null;
 };
 
 export type PublicUser = {
@@ -134,6 +149,7 @@ export function initialWork(): WorkSnapshot {
     printFiles: {},
     order: emptyOrder(),
     placed: false,
+    design: null,
   };
 }
 
@@ -267,6 +283,11 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
   }
 
   const orderState = sanitizeOrder(raw.order, previous, raw.placed === true, allowPlaced);
+  const design = keepDesign(previous?.design, raw.design, product, pages);
+  // Смена вещи снимает wzór вместе с его листами, чтобы макет не остался без платы за дизайн.
+  if (previous?.design && !design && raw.design !== null) {
+    for (const key of zoneIds[previous.design.product]) delete pages[key];
+  }
 
   return {
     step,
@@ -283,5 +304,16 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
     printFiles: {},
     order: orderState.order,
     placed: orderState.placed,
+    design,
   };
+}
+
+function keepDesign(
+  previous: WorkDesign | null | undefined,
+  incoming: unknown,
+  product: ProductId,
+  pages: Record<string, object>,
+): WorkDesign | null {
+  if (!previous || incoming === null || previous.product !== product) return null;
+  return { ...previous, modified: pagesFingerprint(pages) !== previous.fingerprint };
 }
