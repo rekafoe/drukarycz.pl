@@ -189,6 +189,14 @@ export function ensureSession(existingId: string | null) {
   });
 }
 
+/** Только чтение для серверной отрисовки страницы: новую сессию не заводит и файл не пишет. */
+export function peekSession(sessionId: string) {
+  const store = readStore();
+  const session = store.sessions.find((item) => item.id === sessionId);
+  if (!session) return null;
+  return structuredClone(viewSession(session, store));
+}
+
 export function saveWork(sessionId: string, input: unknown) {
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);

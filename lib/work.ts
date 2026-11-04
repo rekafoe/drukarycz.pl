@@ -137,6 +137,12 @@ export function initialWork(): WorkSnapshot {
   };
 }
 
+/** Как клик по двери: лавка выбранной вещи, листы обеих вещей остаются. */
+export function openShop(work: WorkSnapshot, product: ProductId): WorkSnapshot {
+  if (work.step === "shop" && work.product === product) return work;
+  return { ...work, product, zone: zoneIds[product][0], step: "shop" };
+}
+
 export function samePages(a: Record<string, object>, b: Record<string, object>) {
   return (["front", "back", "wrap"] as const).every((key) => JSON.stringify(a[key] ?? null) === JSON.stringify(b[key] ?? null));
 }

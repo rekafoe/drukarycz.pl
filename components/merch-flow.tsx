@@ -9,7 +9,6 @@ import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
 import {
   emptyOrder,
-  initialWork,
   type PrintAreaId,
   type PrintFiles,
   type PublicUser,
@@ -23,6 +22,7 @@ const EditorCanvas = dynamic(
 );
 import {
   productById,
+  productPaths,
   quantities,
   shirtColors,
   sizes,
@@ -63,13 +63,11 @@ const finishes = [
   { id: "gloss", label: "Błyszczące" },
 ] as const;
 
-export function MerchFlow() {
-  const [ready, setReady] = useState(false);
-  const [bootError, setBootError] = useState<string | null>(null);
-  const [user, setUser] = useState<PublicUser | null>(null);
-  const [designId, setDesignId] = useState<string | null>(null);
-  const [work, setWork] = useState<WorkSnapshot>(() => initialWork());
-  const [orderName, setOrderName] = useState("");
+export function MerchFlow({ initial }: { initial: SessionView }) {
+  const [user, setUser] = useState<PublicUser | null>(initial.user);
+  const [designId, setDesignId] = useState<string | null>(initial.designId);
+  const [work, setWork] = useState<WorkSnapshot>(initial.work);
+  const [orderName, setOrderName] = useState(initial.user?.name ?? "");
   const [loginOpen, setLoginOpen] = useState(false);
   const [leaving, setLeaving] = useState<ProductId | null>(null);
   const [saveError, setSaveError] = useState(false);
@@ -84,7 +82,6 @@ export function MerchFlow() {
   const [editorFailed, setEditorFailed] = useState(false);
   const editorOpen = work.step === "editor" && readyFor === editorKey && !editorFailed;
   const workRef = useRef(work);
-  const readyRef = useRef(false);
   workRef.current = work;
 
   function updateWork(patch: (current: WorkSnapshot) => WorkSnapshot) {
@@ -112,25 +109,9 @@ export function MerchFlow() {
   }
 
   useEffect(() => {
-    let cancel = false;
-    fetch("/api/session")
-      .then((response) => {
-        if (!response.ok) throw new Error("session");
-        return response.json() as Promise<SessionView>;
-      })
-      .then((view) => {
-        if (cancel) return;
-        applySession(view);
-        readyRef.current = true;
-        setReady(true);
-      })
-      .catch(() => {
-        if (!cancel) setBootError("Nie udało się otworzyć serwera");
-      });
-    return () => {
-      cancel = true;
-    };
-  }, []);
+    const path = work.step === "shop" ? productPaths[work.product] : "/";
+    if (window.location.pathname !== path) window.history.replaceState(window.history.state, "", path);
+  }, [work.step, work.product]);
 
   useEffect(() => {
     warmModel(DEFAULT_TSHIRT_MODEL_URL);
@@ -155,7 +136,6 @@ export function MerchFlow() {
   }, [work.step, editorOpen, editorFailed, editorKey]);
 
   useEffect(() => {
-    if (!ready) return;
     const body = JSON.stringify(workRef.current);
     const handle = window.setTimeout(() => {
       void fetch("/api/session", {
@@ -175,11 +155,10 @@ export function MerchFlow() {
         .catch(() => setSaveError(true));
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [ready, work]);
+  }, [work]);
 
   useEffect(() => {
     const flush = () => {
-      if (!readyRef.current) return;
       void fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -300,21 +279,6 @@ export function MerchFlow() {
     }, 480);
   }
 
-  if (!ready) {
-    return (
-      <main className="grid min-h-screen place-items-center px-6 text-center">
-        <div className="grid gap-3">
-          <p className="text-muted">{bootError ?? "Otwieramy…"}</p>
-          {bootError ? (
-            <button type="button" className="font-bold" onClick={() => window.location.reload()}>
-              Jeszcze raz
-            </button>
-          ) : null}
-        </div>
-      </main>
-    );
-  }
-
   const account = (
     <AccountLinks
       user={user}
@@ -328,6 +292,9 @@ export function MerchFlow() {
     <main className="min-h-full">
       {work.step === "doors" ? (
         <section className="doors relative flex min-h-screen flex-col overflow-hidden md:flex-row">
+          <h1 className="sr-only">
+            {seller.brand} — koszulki i kubki z własnym nadrukiem, {seller.priceFrom}
+          </h1>
           <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
             <a
               href="/prawne/regulamin"
@@ -531,7 +498,12 @@ export function MerchFlow() {
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
             {work.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={work.previewUrl} alt="" className="h-24 w-24 object-contain" style={{ background: work.color }} />
+              <img
+                src={work.previewUrl}
+                alt={`Podgląd projektu: ${product.name}`}
+                className="h-24 w-24 object-contain"
+                style={{ background: work.color }}
+              />
             ) : (
               <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
             )}
@@ -937,9 +909,13 @@ function Door({
   const gone = leaving !== null && leaving !== self;
   const taken = leaving === self;
   return (
-    <button
-      type="button"
-      onClick={onPick}
+    <a
+      href={productPaths[self]}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        onPick();
+      }}
       className={`door flex min-h-[52vh] flex-1 flex-col justify-end gap-2 overflow-hidden px-6 py-8 text-left md:min-h-screen md:px-10 md:py-10 ${
         tone === "dark" ? "bg-[#171614] text-[#f6f3ee]" : "bg-[#f6f3ee] text-[#171614]"
       } ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
@@ -954,6 +930,6 @@ function Door({
       >
         Wybierz
       </span>
-    </button>
+    </a>
   );
 }

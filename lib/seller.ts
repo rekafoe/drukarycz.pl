@@ -1,12 +1,15 @@
 /** Пустые слоты заполняет организация. Не подставлять вымышленные NIP, KRS, адрес и телефон. */
 export const sessionCookieName = "drukarycz_session";
 
+const priceFromPln = 5;
+
 export const seller = {
   brand: "drukarycz.pl",
   city: "Warszawa",
   country: "Polska",
   leadTime: "1–2 dni robocze",
-  priceFrom: "od 5 zł",
+  priceFromPln,
+  priceFrom: `od ${priceFromPln} zł`,
   legalName: "",
   street: "",
   postalCode: "",

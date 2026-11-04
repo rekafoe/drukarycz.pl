@@ -46,3 +46,9 @@ export const quantities = ["1", "5", "10", "20"] as const;
 export function productById(id: ProductId) {
   return catalog.find((item) => item.id === id) ?? catalog[0];
 }
+
+/** Адрес лавки вещи. Двери, sitemap и canonical берут его отсюда. */
+export const productPaths: Record<ProductId, string> = {
+  tshirt: "/koszulka",
+  mug: "/kubek",
+};
