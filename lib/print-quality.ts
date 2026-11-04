@@ -107,12 +107,18 @@ function pageObjects(page: unknown): unknown[] {
   return Array.isArray(objects) ? objects : [];
 }
 
+/** Ukryta warstwa nie idzie na koszulkę, więc nie zgłasza uwag. */
+function isShown(raw: unknown) {
+  if (!raw || typeof raw !== "object") return false;
+  return (raw as { visible?: unknown }).visible !== false;
+}
+
 export function issuesForArea(
   area: { id: string; label: string; widthMm: number; heightMm: number },
   page: unknown,
 ): QualityIssue[] {
   const { widthPx, heightPx } = printAreaFabricPx(area.widthMm, area.heightMm, 1);
-  const objects = pageObjects(page).map(measureObject).filter((item): item is Measured => item !== null);
+  const objects = pageObjects(page).filter(isShown).map(measureObject).filter((item): item is Measured => item !== null);
   const issues: QualityIssue[] = [];
   if (objects.some((object) => outside(object, widthPx, heightPx))) {
     issues.push({

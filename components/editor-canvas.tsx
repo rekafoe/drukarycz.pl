@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Canvas, FabricImage, IText, StaticCanvas } from "fabric";
+import { useEffect, useRef, useState } from "react";
+import { Canvas, Circle, FabricImage, FabricObject, Line, Rect, StaticCanvas, Textbox, Triangle, loadSVGFromString, util } from "fabric";
+import "@/app/print-fonts.css";
+import { EditorOptions, type CropEdges, type EditorLayer, type ShapeKind, type ZoneAlign } from "@/components/editor-options";
 import { Souvenir3dPreview } from "@/components/souvenir3d/Souvenir3dPreview";
 import {
   DEFAULT_PRINT_AREA_MUG,
@@ -11,37 +13,18 @@ import {
 import { printAreaFabricPx, productionMultiplier } from "@/components/souvenir3d/scale";
 import type { ProductId } from "@/lib/catalog";
 import { issuesForAreas, SAFE_MARGIN_MM } from "@/lib/print-quality";
+import { fontByFamily, fontById, loadPrintFont } from "@/lib/print-fonts";
+import { stickerById } from "@/lib/stickers";
 import { defaultPrintText, inkForFabric, type QualityIssue } from "@/lib/work";
-import {
-  AlignCenterIcon,
-  AlignLeftIcon,
-  AlignRightIcon,
-  BackwardIcon,
-  CenterIcon,
-  DuplicateIcon,
-  FitIcon,
-  ForwardIcon,
-  LargerIcon,
-  PhotoIcon,
-  RedoIcon,
-  RotateIcon,
-  SmallerIcon,
-  TextIcon,
-  TrashIcon,
-  UndoIcon,
-} from "@/components/editor-icons";
 
 /** Как forcedPageSize у souvenir_3d: координаты зоны в масштабе 1. */
 const SCENE_SCALE = 1;
 
-const textInks = [
-  { id: "czarny", label: "Czarny", value: "#1a1916" },
-  { id: "bordowy", label: "Bordowy", value: "#7d1d1d" },
-  { id: "granatowy", label: "Granatowy", value: "#1e3a5f" },
-  { id: "bialy", label: "Biały", value: "#ffffff" },
-] as const;
-
 const MAX_PRINT_BYTES = 8_000_000;
+
+for (const key of ["merchKind", "merchName", "merchId"]) {
+  if (!FabricObject.customProperties.includes(key)) FabricObject.customProperties.push(key);
+}
 
 export type EditorHandle = {
   exportProduction: () => Promise<Array<{ area: string; blob: Blob } | { area: string; error: "large" }>>;
@@ -51,6 +34,76 @@ type HistoryBucket = { past: string[]; future: string[] };
 
 function isTextObject(object: { type?: string }) {
   return object.type === "i-text" || object.type === "text" || object.type === "textbox";
+}
+
+function isImageObject(object: { type?: string }) {
+  return object.type?.toLowerCase() === "image";
+}
+
+function weightOf(value: unknown) {
+  if (value === "bold") return 700;
+  if (value === "normal") return 400;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 400;
+}
+
+function textMmOf(object: { get: (key: string) => unknown; scaleY?: number }, pxPerMm: number) {
+  const font = object.get("fontSize");
+  const scale = object.scaleY || 1;
+  return Math.max(1, Math.round(((typeof font === "number" ? font : 32) * Math.abs(scale)) / pxPerMm));
+}
+
+function layerName(object: FabricObject) {
+  const named = object.get("merchName");
+  if (typeof named === "string" && named.trim()) return named.trim();
+  if (isTextObject(object)) {
+    const text = String(object.get("text") ?? "").trim().split("\n")[0] ?? "";
+    return text ? text.slice(0, 28) : "Napis";
+  }
+  if (isImageObject(object)) return "Zdjęcie";
+  if (object.type === "rect") return "Prostokąt";
+  if (object.type === "circle") return "Koło";
+  if (object.type === "triangle") return "Trójkąt";
+  if (object.type === "line") return "Linia";
+  return "Obiekt";
+}
+
+function newMerchId() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function paintInk(object: FabricObject, ink: string) {
+  const fill = object.fill;
+  const stroke = object.stroke;
+  if (typeof fill === "string" && fill && fill !== "none" && fill !== "transparent") object.set("fill", ink);
+  if (typeof stroke === "string" && stroke && stroke !== "none" && stroke !== "transparent") object.set("stroke", ink);
+  const kids = (object as { getObjects?: () => FabricObject[] }).getObjects?.() ?? [];
+  for (const kid of kids) paintInk(kid, ink);
+}
+
+function reflowText(object: FabricObject) {
+  if (!isTextObject(object)) return;
+  (object as { initDimensions?: () => void }).initDimensions?.();
+}
+
+function readCrop(image: FabricImage): CropEdges {
+  const original = image.getOriginalSize();
+  const width = original.width || image.width || 1;
+  const height = original.height || image.height || 1;
+  const cropX = image.cropX || 0;
+  const cropY = image.cropY || 0;
+  const shownW = image.width || width;
+  const shownH = image.height || height;
+  return {
+    left: cropX / width,
+    top: cropY / height,
+    right: Math.max(0, (width - cropX - shownW) / width),
+    bottom: Math.max(0, (height - cropY - shownH) / height),
+  };
+}
+
+function clampEdge(value: number) {
+  return Math.min(0.6, Math.max(0, value));
 }
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -149,6 +202,22 @@ export function EditorCanvas({
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
+  const [hasSelection, setHasSelection] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [shapeSelected, setShapeSelected] = useState(false);
+  const [fontId, setFontId] = useState("manrope");
+  const [bold, setBold] = useState(true);
+  const [italic, setItalic] = useState(false);
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
+  const [charSpacing, setCharSpacing] = useState(0);
+  const [stroke, setStroke] = useState("");
+  const [strokeWidth, setStrokeWidth] = useState(0);
+  const [opacity, setOpacity] = useState(100);
+  const [crop, setCrop] = useState<CropEdges>({ left: 0, right: 0, top: 0, bottom: 0 });
+  const [layers, setLayers] = useState<EditorLayer[]>([]);
+  const quiet = useRef(false);
+  const quietTimer = useRef(0);
+  const readSelectionRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -197,7 +266,7 @@ export function EditorCanvas({
     let timer = 0;
     let readyToEmit = false;
     const remember = () => {
-      if (!readyToEmit || applying.current || skipRemember.current || stopped) return;
+      if (!readyToEmit || applying.current || skipRemember.current || stopped || quiet.current) return;
       const shot = JSON.stringify(canvas.toObject());
       const current = bucket();
       if (current.past[current.past.length - 1] === shot) return;
@@ -219,6 +288,7 @@ export function EditorCanvas({
       remember();
       emitPages();
       reportIssues();
+      readSelectionRef.current();
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         if (stopped) return;
@@ -260,20 +330,7 @@ export function EditorCanvas({
       setIssues(nextIssues);
       onIssuesRef.current?.(nextIssues);
     };
-    const onSelect = () => {
-      const objects = canvas.getActiveObjects();
-      const text = objects.find((object) => isTextObject(object));
-      setCanDelete(objects.length > 0);
-      setTextSelected(Boolean(text));
-      setImageSelected(objects.some((object) => object.type === "image"));
-      setTextFill(text && typeof text.fill === "string" ? text.fill : null);
-      if (text) {
-        const font = text.get("fontSize");
-        const scale = text.scaleY || 1;
-        const mm = ((typeof font === "number" ? font : 32) * Math.abs(scale)) / (widthPx / active.widthMm);
-        setTextMm(Math.max(1, Math.round(mm)));
-      }
-    };
+    const onSelect = () => readSelectionRef.current();
     canvas.on("object:modified", onChange);
     canvas.on("object:added", onChange);
     canvas.on("object:removed", onChange);
@@ -297,27 +354,128 @@ export function EditorCanvas({
       stopped = true;
       publishRef.current = () => {};
       window.clearTimeout(timer);
+      window.clearTimeout(quietTimer.current);
       canvas.dispose();
       fabricRef.current = null;
     };
   }, [active.id, active.heightMm, active.widthMm, bodyColor, heightPx, product, widthPx]);
 
-  function addText() {
+  function placeNew(object: FabricObject) {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const text = new IText(defaultPrintText, {
+    object.set({
       left: canvas.getWidth() / 2,
       top: canvas.getHeight() / 2,
       originX: "center",
       originY: "center",
-      fontFamily: "Manrope, sans-serif",
-      fontSize: Math.round(canvas.getWidth() / 8),
-      fill: inkForFabric(bodyColor),
-      fontWeight: "800",
     });
-    canvas.add(text);
-    canvas.setActiveObject(text);
+    if (!object.get("merchId")) object.set("merchId", newMerchId());
+    canvas.add(object);
+    canvas.setActiveObject(object);
     canvas.requestRenderAll();
+  }
+
+  function readSelection() {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = canvas.getObjects();
+    const activeObjects = canvas.getActiveObjects();
+    setLayers(
+      objects
+        .map((object, index) => ({
+          id: String(object.get("merchId") || `n-${index}`),
+          name: layerName(object),
+          visible: object.visible !== false,
+          locked: Boolean(object.lockMovementX),
+          active: activeObjects.includes(object),
+        }))
+        .reverse(),
+    );
+    setHasSelection(activeObjects.length > 0);
+    setCanDelete(activeObjects.some((object) => !object.lockMovementX));
+    const text = activeObjects.find((object) => isTextObject(object));
+    const image = activeObjects.find((object): object is FabricImage => isImageObject(object));
+    const shape = activeObjects.find((object) => {
+      const kind = object.get("merchKind");
+      return kind === "shape" || kind === "sticker";
+    });
+    setTextSelected(Boolean(text));
+    setImageSelected(Boolean(image));
+    setShapeSelected(Boolean(shape) && !text);
+    if (text) {
+      const fill = text.get("fill");
+      setTextFill(typeof fill === "string" ? fill : null);
+      setTextMm(textMmOf(text, widthPx / active.widthMm));
+      setFontId(fontByFamily(String(text.get("fontFamily") || "Manrope")).id);
+      setBold(weightOf(text.get("fontWeight")) >= 600);
+      setItalic(String(text.get("fontStyle") || "").includes("italic"));
+      const align = text.get("textAlign");
+      setTextAlign(align === "left" || align === "right" ? align : "center");
+      const spacing = Number(text.get("charSpacing"));
+      setCharSpacing(Number.isFinite(spacing) ? spacing : 0);
+      const width = Number(text.get("strokeWidth"));
+      setStrokeWidth(Number.isFinite(width) ? width : 0);
+      const strokeValue = text.get("stroke");
+      setStroke(typeof strokeValue === "string" ? strokeValue : "");
+    } else if (shape) {
+      const fill = shape.get("fill");
+      const strokeValue = shape.get("stroke");
+      const ink = typeof fill === "string" && fill ? fill : strokeValue;
+      setTextFill(typeof ink === "string" ? ink : null);
+    }
+    if (image) setCrop(readCrop(image));
+    const current = canvas.getActiveObject();
+    if (current) {
+      const value = Number(current.opacity);
+      setOpacity(Number.isFinite(value) ? Math.round(value * 100) : 100);
+      setLocked(Boolean(current.lockMovementX));
+    } else {
+      setOpacity(100);
+      setLocked(false);
+    }
+  }
+  readSelectionRef.current = readSelection;
+
+  function previewQuiet(mutate: () => void) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    quiet.current = true;
+    mutate();
+    canvas.requestRenderAll();
+    publishRef.current();
+    window.clearTimeout(quietTimer.current);
+    quietTimer.current = window.setTimeout(() => {
+      quiet.current = false;
+      publishRef.current();
+    }, 320);
+  }
+
+  async function addText() {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const font = fontById(fontId);
+    const weight = bold ? 800 : 400;
+    const style = italic && font.italic ? "italic" : "normal";
+    await loadPrintFont(font.family, weight === 800 ? 700 : weight, style === "italic");
+    if (fabricRef.current !== canvas) return;
+    const ink = inkForFabric(bodyColor);
+    const text = new Textbox(defaultPrintText, {
+      width: canvas.getWidth() * 0.72,
+      fontFamily: font.family,
+      fontSize: Math.round(canvas.getWidth() / 8),
+      fontWeight: weight,
+      fontStyle: style,
+      textAlign,
+      charSpacing,
+      fill: ink,
+      stroke: strokeWidth > 0 ? stroke || ink : "",
+      strokeWidth: strokeWidth > 0 ? strokeWidth : 0,
+      strokeLineJoin: "round",
+    });
+    text.set("paintFirst", "stroke");
+    text.set("merchKind", "text");
+    text.set("merchId", newMerchId());
+    placeNew(text);
   }
 
   async function addPhoto(file: File) {
@@ -335,6 +493,9 @@ export function EditorCanvas({
       scaleX: scale,
       scaleY: scale,
     });
+    image.set("merchKind", "image");
+    image.set("merchName", "Zdjęcie");
+    image.set("merchId", newMerchId());
     canvas.add(image);
     canvas.setActiveObject(image);
     canvas.requestRenderAll();
@@ -343,15 +504,11 @@ export function EditorCanvas({
   function removeSelected() {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const selected = canvas.getActiveObjects();
+    const selected = canvas.getActiveObjects().filter((object) => !object.lockMovementX);
     if (selected.length === 0) return;
     canvas.remove(...selected);
     canvas.discardActiveObject();
     canvas.requestRenderAll();
-    setCanDelete(false);
-    setTextSelected(false);
-    setImageSelected(false);
-    setTextFill(null);
   }
 
   function touch() {
@@ -364,7 +521,7 @@ export function EditorCanvas({
   function centerSelected() {
     const canvas = fabricRef.current;
     const activeObject = canvas?.getActiveObject();
-    if (!canvas || !activeObject) return;
+    if (!canvas || !activeObject || activeObject.lockMovementX) return;
     canvas.centerObject(activeObject);
     activeObject.setCoords();
     touch();
@@ -373,7 +530,7 @@ export function EditorCanvas({
   function rotateSelected() {
     const canvas = fabricRef.current;
     const activeObject = canvas?.getActiveObject();
-    if (!canvas || !activeObject) return;
+    if (!canvas || !activeObject || activeObject.lockMovementX) return;
     activeObject.rotate(((activeObject.angle || 0) + 15) % 360);
     activeObject.setCoords();
     touch();
@@ -385,6 +542,7 @@ export function EditorCanvas({
     const objects = canvas.getActiveObjects();
     if (objects.length === 0) return;
     for (const object of objects) {
+      if (object.lockMovementX) continue;
       if (isTextObject(object)) {
         const current = object.get("fontSize");
         const size = Math.round((typeof current === "number" ? current : 32) * factor);
@@ -407,7 +565,18 @@ export function EditorCanvas({
     const clones = await Promise.all(objects.map((object) => object.clone()));
     canvas.discardActiveObject();
     for (const clone of clones) {
-      clone.set({ left: (clone.left || 0) + 24, top: (clone.top || 0) + 24 });
+      clone.set({
+        left: (clone.left || 0) + 24,
+        top: (clone.top || 0) + 24,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        lockRotation: false,
+        hasControls: true,
+      });
+      if (isTextObject(clone)) clone.set("editable", true);
+      clone.set("merchId", newMerchId());
       canvas.add(clone);
     }
     if (clones.length === 1) canvas.setActiveObject(clones[0]);
@@ -420,6 +589,7 @@ export function EditorCanvas({
     const objects = canvas.getActiveObjects();
     if (objects.length === 0) return;
     for (const object of objects) {
+      if (object.lockMovementX) continue;
       if (forward) canvas.bringObjectForward(object);
       else canvas.sendObjectBackwards(object);
     }
@@ -427,17 +597,14 @@ export function EditorCanvas({
   }
 
   function readTextMm(object: { get: (key: string) => unknown; scaleY?: number }) {
-    const font = object.get("fontSize");
-    const scale = object.scaleY || 1;
-    const mm = ((typeof font === "number" ? font : 32) * Math.abs(scale)) / (widthPx / active.widthMm);
-    return Math.max(1, Math.round(mm));
+    return textMmOf(object, widthPx / active.widthMm);
   }
 
   function applyTextMm(mm: number) {
     const canvas = fabricRef.current;
     if (!canvas) return;
     const pxPerMm = widthPx / active.widthMm;
-    const texts = canvas.getActiveObjects().filter((object) => isTextObject(object));
+    const texts = canvas.getActiveObjects().filter((object) => isTextObject(object) && !object.lockMovementX);
     if (texts.length === 0) return;
     for (const object of texts) {
       const scale = object.scaleY || 1;
@@ -449,19 +616,21 @@ export function EditorCanvas({
     touch();
   }
 
-  function alignSelected(side: "left" | "center" | "right") {
+  function alignSelected(side: ZoneAlign) {
     const canvas = fabricRef.current;
     const object = canvas?.getActiveObject();
-    if (!canvas || !object) return;
+    if (!canvas || !object || object.lockMovementX) return;
     const bounds = object.getBoundingRect();
     const margin = SAFE_MARGIN_MM * (widthPx / active.widthMm);
-    const dx =
-      side === "left"
-        ? margin - bounds.left
-        : side === "right"
-          ? canvas.getWidth() - margin - (bounds.left + bounds.width)
-          : (canvas.getWidth() - bounds.width) / 2 - bounds.left;
-    object.set({ left: (object.left || 0) + dx });
+    let dx = 0;
+    let dy = 0;
+    if (side === "left") dx = margin - bounds.left;
+    else if (side === "right") dx = canvas.getWidth() - margin - (bounds.left + bounds.width);
+    else if (side === "center") dx = (canvas.getWidth() - bounds.width) / 2 - bounds.left;
+    else if (side === "top") dy = margin - bounds.top;
+    else if (side === "bottom") dy = canvas.getHeight() - margin - (bounds.top + bounds.height);
+    else dy = (canvas.getHeight() - bounds.height) / 2 - bounds.top;
+    object.set({ left: (object.left || 0) + dx, top: (object.top || 0) + dy });
     object.setCoords();
     touch();
   }
@@ -469,7 +638,7 @@ export function EditorCanvas({
   function fitSelected() {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const images = canvas.getActiveObjects().filter((object) => object.type === "image");
+    const images = canvas.getActiveObjects().filter((object) => isImageObject(object) && !object.lockMovementX);
     if (images.length === 0) return;
     for (const image of images) {
       const scale = Math.min(canvas.getWidth() / Math.max(image.width || 1, 1), canvas.getHeight() / Math.max(image.height || 1, 1));
@@ -483,7 +652,7 @@ export function EditorCanvas({
   function moveSelected(dx: number, dy: number) {
     const canvas = fabricRef.current;
     const object = canvas?.getActiveObject();
-    if (!canvas || !object) return;
+    if (!canvas || !object || object.lockMovementX) return;
     object.set({ left: (object.left || 0) + dx, top: (object.top || 0) + dy });
     object.setCoords();
     touch();
@@ -507,11 +676,246 @@ export function EditorCanvas({
   function paintText(fill: string) {
     const canvas = fabricRef.current;
     if (!canvas) return;
-    const texts = canvas.getActiveObjects().filter((object) => isTextObject(object));
-    if (texts.length === 0) return;
-    for (const object of texts) object.set("fill", fill);
+    const targets = canvas.getActiveObjects().filter((object) => !object.lockMovementX);
+    if (targets.length === 0) return;
+    for (const object of targets) {
+      if (object.type === "line") object.set("stroke", fill);
+      else if (object.get("merchKind") === "sticker") paintInk(object, fill);
+      else object.set("fill", fill);
+    }
     setTextFill(fill);
     touch();
+  }
+
+  function editableObjects() {
+    return fabricRef.current?.getActiveObjects().filter((object) => !object.lockMovementX) ?? [];
+  }
+
+  function textsOf() {
+    return editableObjects().filter((object) => isTextObject(object));
+  }
+
+  async function applyFont(id: string) {
+    const font = fontById(id);
+    const nextItalic = italic && font.italic;
+    const weight = bold ? 800 : 400;
+    await loadPrintFont(font.family, weight === 800 ? 700 : weight, nextItalic);
+    for (const object of textsOf()) {
+      object.set({ fontFamily: font.family, fontWeight: weight, fontStyle: nextItalic ? "italic" : "normal" });
+      reflowText(object);
+    }
+    setFontId(font.id);
+    if (!font.italic) setItalic(false);
+    touch();
+  }
+
+  async function applyBold() {
+    const next = !bold;
+    const font = fontById(fontId);
+    await loadPrintFont(font.family, next ? 700 : 400, italic && font.italic);
+    for (const object of textsOf()) {
+      object.set("fontWeight", next ? 800 : 400);
+      reflowText(object);
+    }
+    setBold(next);
+    touch();
+  }
+
+  async function applyItalic() {
+    const font = fontById(fontId);
+    if (!font.italic) return;
+    const next = !italic;
+    await loadPrintFont(font.family, bold ? 700 : 400, next);
+    for (const object of textsOf()) {
+      object.set("fontStyle", next ? "italic" : "normal");
+      reflowText(object);
+    }
+    setItalic(next);
+    touch();
+  }
+
+  function applyTextAlign(side: "left" | "center" | "right") {
+    for (const object of textsOf()) {
+      object.set("textAlign", side);
+      reflowText(object);
+    }
+    setTextAlign(side);
+    touch();
+  }
+
+  function applySpacing(value: number) {
+    previewQuiet(() => {
+      for (const object of textsOf()) {
+        object.set("charSpacing", value);
+        reflowText(object);
+      }
+    });
+    setCharSpacing(value);
+  }
+
+  function applyStroke(color: string) {
+    const width = strokeWidth > 0 ? strokeWidth : 2;
+    for (const object of textsOf()) {
+      object.set({ stroke: color, strokeWidth: width, strokeLineJoin: "round" });
+      object.set("paintFirst", "stroke");
+    }
+    setStroke(color);
+    setStrokeWidth(width);
+    touch();
+  }
+
+  function applyStrokeWidth(width: number) {
+    const next = Math.min(8, Math.max(0, width));
+    previewQuiet(() => {
+      for (const object of textsOf()) {
+        object.set({
+          strokeWidth: next,
+          stroke: next > 0 ? stroke || "#ffffff" : "",
+          strokeLineJoin: "round",
+        });
+        object.set("paintFirst", "stroke");
+      }
+    });
+    setStrokeWidth(next);
+    if (next > 0 && !stroke) setStroke("#ffffff");
+  }
+
+  function applyOpacity(value: number) {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object || object.lockMovementX) return;
+    previewQuiet(() => object.set("opacity", value / 100));
+    setOpacity(value);
+  }
+
+  function flipSelected(axis: "x" | "y") {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object || object.lockMovementX) return;
+    if (axis === "x") object.set("flipX", !object.flipX);
+    else object.set("flipY", !object.flipY);
+    object.setCoords();
+    touch();
+  }
+
+  function applyCrop(next: CropEdges) {
+    const left = clampEdge(next.left);
+    const right = clampEdge(next.right);
+    const top = clampEdge(next.top);
+    const bottom = clampEdge(next.bottom);
+    const edges = {
+      left,
+      right: left + right > 0.85 ? Math.max(0, 0.85 - left) : right,
+      top,
+      bottom: top + bottom > 0.85 ? Math.max(0, 0.85 - top) : bottom,
+    };
+    previewQuiet(() => {
+      for (const object of editableObjects()) {
+        if (!isImageObject(object)) continue;
+        const image = object as FabricImage;
+        const original = image.getOriginalSize();
+        const visualW = (image.width || original.width || 1) * (image.scaleX || 1);
+        const visualH = (image.height || original.height || 1) * (image.scaleY || 1);
+        const cropX = Math.round(original.width * edges.left);
+        const cropY = Math.round(original.height * edges.top);
+        const width = Math.max(1, Math.round(original.width * (1 - edges.left - edges.right)));
+        const height = Math.max(1, Math.round(original.height * (1 - edges.top - edges.bottom)));
+        image.set({ cropX, cropY, width, height, scaleX: visualW / width, scaleY: visualH / height });
+        image.setCoords();
+      }
+    });
+    setCrop(edges);
+  }
+
+  function findLayer(id: string) {
+    return fabricRef.current?.getObjects().find((object, index) => String(object.get("merchId") || `n-${index}`) === id);
+  }
+
+  function setObjectLocked(object: FabricObject, next: boolean) {
+    object.set({
+      lockMovementX: next,
+      lockMovementY: next,
+      lockScalingX: next,
+      lockScalingY: next,
+      lockRotation: next,
+      hasControls: !next,
+    });
+    if (isTextObject(object)) object.set("editable", !next);
+  }
+
+  function toggleLock(id?: string) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = id ? [findLayer(id)].filter((object): object is FabricObject => Boolean(object)) : canvas.getActiveObjects();
+    if (objects.length === 0) return;
+    const next = !objects[0].lockMovementX;
+    for (const object of objects) setObjectLocked(object, next);
+    touch();
+  }
+
+  function toggleVisible(id: string) {
+    const canvas = fabricRef.current;
+    const object = findLayer(id);
+    if (!canvas || !object) return;
+    const show = object.visible === false;
+    object.set("visible", show);
+    if (!show && canvas.getActiveObjects().includes(object)) canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    touch();
+  }
+
+  function selectLayer(id: string) {
+    const canvas = fabricRef.current;
+    const object = findLayer(id);
+    if (!canvas || !object) return;
+    canvas.setActiveObject(object);
+    canvas.requestRenderAll();
+    readSelection();
+  }
+
+  async function addShape(kind: ShapeKind) {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const ink = inkForFabric(bodyColor);
+    const width = canvas.getWidth() * 0.28;
+    let object: FabricObject;
+    if (kind === "rect") {
+      object = new Rect({ width, height: width * 0.62, rx: 18, ry: 18, fill: ink });
+      object.set("merchName", "Prostokąt");
+    } else if (kind === "circle") {
+      object = new Circle({ radius: width / 2, fill: ink });
+      object.set("merchName", "Koło");
+    } else if (kind === "triangle") {
+      object = new Triangle({ width, height: width * 0.86, fill: ink });
+      object.set("merchName", "Trójkąt");
+    } else {
+      object = new Line([0, 0, width, 0], { stroke: ink, strokeWidth: Math.max(12, width / 14), strokeLineCap: "round" });
+      object.set("merchName", "Linia");
+    }
+    object.set("merchKind", "shape");
+    object.set("merchId", newMerchId());
+    placeNew(object);
+  }
+
+  async function addSticker(id: string) {
+    const sticker = stickerById(id);
+    const canvas = fabricRef.current;
+    if (!sticker || !canvas) return;
+    const parsed = await loadSVGFromString(sticker.svg);
+    if (fabricRef.current !== canvas) return;
+    const parts = parsed.objects.filter((item): item is FabricObject => item !== null);
+    if (parts.length === 0) return;
+    const grouped = util.groupSVGElements(parts);
+    const ink = inkForFabric(bodyColor);
+    paintInk(grouped, ink);
+    const target = canvas.getWidth() * 0.28;
+    const scale = target / Math.max(grouped.width || 64, grouped.height || 64, 1);
+    grouped.scaleX = scale;
+    grouped.scaleY = scale;
+    grouped.set("merchKind", "sticker");
+    grouped.set("merchName", sticker.label);
+    grouped.set("merchId", newMerchId());
+    placeNew(grouped);
   }
 
   async function stepHistory(forward: boolean) {
@@ -563,6 +967,26 @@ export function EditorCanvas({
   useEffect(() => {
     if (sheetReady && modelReady) onEditorReadyRef.current?.();
   }, [sheetReady, modelReady]);
+
+  useEffect(() => {
+    const jobs = [
+      loadPrintFont("Manrope", 400, false),
+      loadPrintFont("Manrope", 700, false),
+      loadPrintFont("Source Serif 4", 400, false),
+      loadPrintFont("Source Serif 4", 700, false),
+      loadPrintFont("Source Serif 4", 400, true),
+      loadPrintFont("Source Serif 4", 700, true),
+      loadPrintFont("Oswald", 400, false),
+      loadPrintFont("Oswald", 700, false),
+      loadPrintFont("Nunito", 400, false),
+      loadPrintFont("Nunito", 700, false),
+      loadPrintFont("Nunito", 400, true),
+      loadPrintFont("Nunito", 700, true),
+      loadPrintFont("Caveat", 400, false),
+      loadPrintFont("Caveat", 700, false),
+    ];
+    void Promise.all(jobs);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -620,6 +1044,7 @@ export function EditorCanvas({
         renderOnAddRemove: false,
       });
       try {
+        await document.fonts.ready;
         await off.loadFromJSON(page);
         if (off.getObjects().length === 0) continue;
         const painted = off.toCanvasElement(productionMultiplier(areaWidth, area.widthMm));
@@ -684,152 +1109,66 @@ export function EditorCanvas({
       </div>
       <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
-        <div className="shrink-0 border-b border-line bg-card px-3 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <ToolButton label="Tekst" tone="primary" onClick={addText}>
-              <TextIcon />
-            </ToolButton>
-            <label
-              title="Zdjęcie"
-              aria-label="Zdjęcie"
-              className="grid h-10 w-10 cursor-pointer place-items-center rounded-xl bg-ink text-white hover:bg-[#2c2a26]"
-            >
-              <PhotoIcon />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void addPhoto(file);
-                  event.target.value = "";
-                }}
-              />
-            </label>
-            <span className="mx-1 hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
-            <ToolButton label="Cofnij" disabled={!canUndo} onClick={() => void stepHistory(false)}>
-              <UndoIcon />
-            </ToolButton>
-            <ToolButton label="Ponów" disabled={!canRedo} onClick={() => void stepHistory(true)}>
-              <RedoIcon />
-            </ToolButton>
-            <span className="mx-1 hidden h-6 w-px bg-line sm:block" aria-hidden="true" />
-            <ToolButton label="Środek" disabled={!canDelete} onClick={centerSelected}>
-              <CenterIcon />
-            </ToolButton>
-            <ToolButton label="Obróć" disabled={!canDelete} onClick={rotateSelected}>
-              <RotateIcon />
-            </ToolButton>
-            <ToolButton label="Duplikuj" disabled={!canDelete} onClick={() => void duplicateSelected()}>
-              <DuplicateIcon />
-            </ToolButton>
-            <ToolButton label="Większy" disabled={!canDelete} onClick={() => resizeSelected(1.15)}>
-              <LargerIcon />
-            </ToolButton>
-            <ToolButton label="Mniejszy" disabled={!canDelete} onClick={() => resizeSelected(1 / 1.15)}>
-              <SmallerIcon />
-            </ToolButton>
-            <ToolButton label="Wyżej" disabled={!canDelete} onClick={() => liftSelected(true)}>
-              <ForwardIcon />
-            </ToolButton>
-            <ToolButton label="Niżej" disabled={!canDelete} onClick={() => liftSelected(false)}>
-              <BackwardIcon />
-            </ToolButton>
-            <ToolButton label="Usuń" disabled={!canDelete} onClick={removeSelected}>
-              <TrashIcon />
-            </ToolButton>
-            <div className="ml-auto flex flex-wrap gap-2">
-              {areas.map((area) => (
-                <button
-                  key={area.id}
-                  type="button"
-                  aria-pressed={area.id === active.id}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold ${
-                    area.id === active.id ? "bg-ink text-white" : "border border-line bg-paper text-ink hover:border-ink"
-                  }`}
-                  onClick={() => onActiveId(area.id)}
-                >
-                  {area.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {textSelected || imageSelected || areas.length > 1 ? (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {textSelected
-                ? textInks.map((ink) => {
-                    const selected = textFill?.toLowerCase() === ink.value;
-                    return (
-                      <button
-                        key={ink.id}
-                        type="button"
-                        aria-label={ink.label}
-                        title={ink.label}
-                        aria-pressed={selected}
-                        className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-card" : "border-line"}`}
-                        style={{ background: ink.value }}
-                        onClick={() => paintText(ink.value)}
-                      />
-                    );
-                  })
-                : null}
-              {textSelected ? (
-                <label className="flex items-center gap-1 text-sm">
-                  <span className="sr-only">Rozmiar napisu w milimetrach</span>
-                  <input
-                    type="number"
-                    min={3}
-                    max={80}
-                    value={textMm}
-                    aria-label="Rozmiar napisu w milimetrach"
-                    className="h-9 w-16 rounded-lg border border-line bg-paper px-2"
-                    onChange={(event) => {
-                      const mm = Number(event.target.value);
-                      if (!Number.isFinite(mm)) return;
-                      applyTextMm(Math.min(80, Math.max(3, Math.round(mm))));
-                    }}
-                  />
-                  <span className="text-muted">mm</span>
-                </label>
-              ) : null}
-              {textSelected ? (
-                <>
-                  <ToolButton label="Do lewej" onClick={() => alignSelected("left")}>
-                    <AlignLeftIcon />
-                  </ToolButton>
-                  <ToolButton label="W poziomie na środek" onClick={() => alignSelected("center")}>
-                    <AlignCenterIcon />
-                  </ToolButton>
-                  <ToolButton label="Do prawej" onClick={() => alignSelected("right")}>
-                    <AlignRightIcon />
-                  </ToolButton>
-                </>
-              ) : null}
-              {imageSelected ? (
-                <ToolButton label="Na strefę" onClick={fitSelected}>
-                  <FitIcon />
-                </ToolButton>
-              ) : null}
-              {areas.length > 1 ? (
-                <button
-                  type="button"
-                  className="rounded-full border border-line bg-paper px-3.5 py-2 text-sm font-semibold disabled:opacity-35"
-                  disabled={sheetEmpty}
-                  onClick={copyZone}
-                >
-                  {active.id === "back" ? "Kopiuj na przód" : "Kopiuj na tył"}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-          {issues.length > 0 ? (
-            <ul className="mt-2 grid gap-1 text-sm text-muted" role="status">
-              {issues.map((issue) => (
-                <li key={`${issue.areaId}-${issue.code}`}>{issue.message}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+        <EditorOptions
+          areas={areas.map((area) => ({ id: area.id, label: area.label }))}
+          activeId={active.id}
+          onActiveId={onActiveId}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          hasSelection={hasSelection}
+          locked={locked}
+          sheetEmpty={sheetEmpty}
+          textSelected={textSelected}
+          imageSelected={imageSelected}
+          shapeSelected={shapeSelected}
+          fontId={fontId}
+          italicAvailable={fontById(fontId).italic}
+          bold={bold}
+          italic={italic}
+          textAlign={textAlign}
+          textMm={textMm}
+          charSpacing={charSpacing}
+          fill={textFill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          opacity={opacity}
+          crop={crop}
+          layers={layers}
+          issues={issues}
+          copyLabel={areas.length > 1 ? (active.id === "back" ? "Kopiuj na przód" : "Kopiuj na tył") : null}
+          onAddText={() => void addText()}
+          onAddPhoto={(file) => void addPhoto(file)}
+          onUndo={() => void stepHistory(false)}
+          onRedo={() => void stepHistory(true)}
+          onDelete={removeSelected}
+          onShape={(kind) => void addShape(kind)}
+          onSticker={(id) => void addSticker(id)}
+          onFont={(id) => void applyFont(id)}
+          onBold={() => void applyBold()}
+          onItalic={() => void applyItalic()}
+          onTextAlign={applyTextAlign}
+          onTextMm={applyTextMm}
+          onSpacing={applySpacing}
+          onFill={paintText}
+          onStroke={applyStroke}
+          onStrokeWidth={applyStrokeWidth}
+          onOpacity={applyOpacity}
+          onFlip={flipSelected}
+          onAlign={alignSelected}
+          onCenter={centerSelected}
+          onRotate={rotateSelected}
+          onDuplicate={() => void duplicateSelected()}
+          onResize={resizeSelected}
+          onLift={liftSelected}
+          onFit={fitSelected}
+          onCrop={applyCrop}
+          onResetCrop={() => applyCrop({ left: 0, right: 0, top: 0, bottom: 0 })}
+          onLock={() => toggleLock()}
+          onSelectLayer={selectLayer}
+          onToggleVisible={toggleVisible}
+          onToggleLock={(id) => toggleLock(id)}
+          onCopy={copyZone}
+        />
         <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 pb-3">
           <div className="grid justify-items-center gap-1">
             <span className="text-[11px] tracking-wide text-muted">
@@ -867,7 +1206,7 @@ export function EditorCanvas({
                     className="pointer-events-none absolute inset-0 grid place-items-center text-sm"
                     style={{ color: inkForFabric(bodyColor) === "#ffffff" ? "rgba(255,255,255,0.72)" : "var(--muted)" }}
                   >
-                    Tekst albo zdjęcie
+                    Tekst, zdjęcie albo kształt
                   </p>
                 ) : null}
               </div>
@@ -894,36 +1233,5 @@ export function EditorCanvas({
 
 export function editorAreas(product: ProductId) {
   return areasFor(product);
-}
-
-function ToolButton({
-  label,
-  children,
-  onClick,
-  disabled,
-  tone = "plain",
-}: {
-  label: string;
-  children: ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  tone?: "primary" | "plain";
-}) {
-  const look =
-    tone === "primary"
-      ? "bg-ink text-white hover:bg-[#2c2a26]"
-      : "border border-line bg-paper text-ink hover:border-ink";
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={onClick}
-      className={`grid h-10 w-10 place-items-center rounded-xl disabled:cursor-default disabled:opacity-35 disabled:hover:border-line disabled:hover:bg-paper ${look}`}
-    >
-      {children}
-    </button>
-  );
 }
 
