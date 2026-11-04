@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { LegalArticle, isLegalSlug, legalSlugs, legalTitles } from "@/components/legal-documents";
 import { SiteFooter } from "@/components/site-footer";
 import { seller } from "@/lib/seller";
+import { legalDescriptions, pageMetadata } from "@/lib/seo";
+
+export const dynamicParams = false;
 
 export function generateStaticParams() {
   return legalSlugs.map((slug) => ({ slug }));
@@ -11,7 +14,11 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   if (!isLegalSlug(slug)) return { title: seller.brand };
-  return { title: `${legalTitles[slug]} — ${seller.brand}` };
+  return pageMetadata({
+    title: `${legalTitles[slug]} — ${seller.brand}`,
+    description: legalDescriptions[slug],
+    path: `/prawne/${slug}`,
+  });
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {

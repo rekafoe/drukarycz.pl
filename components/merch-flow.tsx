@@ -12,7 +12,6 @@ import { defaultAccent, type AccentId } from "@/components/variants/accents";
 import type { Variant } from "@/components/variants/kit";
 import {
   emptyOrder,
-  initialWork,
   type PrintAreaId,
   type PrintFiles,
   type PublicUser,
@@ -24,7 +23,7 @@ const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
   { ssr: false, loading: () => null },
 );
-import { finishes, productById, shirtColors, type ProductId } from "@/lib/catalog";
+import { finishes, productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
 import { seller } from "@/lib/seller";
 
@@ -55,22 +54,22 @@ function printZoneNames(work: WorkSnapshot) {
 }
 
 export function MerchFlow({
+  initial,
   variant = "a",
   compare = false,
   accent = defaultAccent,
   accentPanel = false,
 }: {
+  initial: SessionView;
   variant?: Variant;
   compare?: boolean;
   accent?: AccentId;
   accentPanel?: boolean;
 }) {
-  const [ready, setReady] = useState(false);
-  const [bootError, setBootError] = useState<string | null>(null);
-  const [user, setUser] = useState<PublicUser | null>(null);
-  const [designId, setDesignId] = useState<string | null>(null);
-  const [work, setWork] = useState<WorkSnapshot>(() => initialWork());
-  const [orderName, setOrderName] = useState("");
+  const [user, setUser] = useState<PublicUser | null>(initial.user);
+  const [designId, setDesignId] = useState<string | null>(initial.designId);
+  const [work, setWork] = useState<WorkSnapshot>(initial.work);
+  const [orderName, setOrderName] = useState(initial.user?.name ?? "");
   const [loginOpen, setLoginOpen] = useState(false);
   const [leaving, setLeaving] = useState<ProductId | null>(null);
   const [saveError, setSaveError] = useState(false);
@@ -85,12 +84,15 @@ export function MerchFlow({
   const [editorFailed, setEditorFailed] = useState(false);
   const editorOpen = work.step === "editor" && readyFor === editorKey && !editorFailed;
   const workRef = useRef(work);
-  const readyRef = useRef(false);
   workRef.current = work;
+  /** Экран с сервера не выезжает: с opacity 0 на первом кадре Chrome не засчитывает отрисовку (FCP, LCP). */
+  const [stepMoved, setStepMoved] = useState(false);
+  const rise = stepMoved ? "rise" : "";
 
   function updateWork(patch: (current: WorkSnapshot) => WorkSnapshot) {
     const next = patch(workRef.current);
     if (next === workRef.current) return;
+    if (next.step !== workRef.current.step) setStepMoved(true);
     workRef.current = next;
     setWork(next);
   }
@@ -113,25 +115,9 @@ export function MerchFlow({
   }
 
   useEffect(() => {
-    let cancel = false;
-    fetch("/api/session")
-      .then((response) => {
-        if (!response.ok) throw new Error("session");
-        return response.json() as Promise<SessionView>;
-      })
-      .then((view) => {
-        if (cancel) return;
-        applySession(view);
-        readyRef.current = true;
-        setReady(true);
-      })
-      .catch(() => {
-        if (!cancel) setBootError("Nie udało się otworzyć serwera");
-      });
-    return () => {
-      cancel = true;
-    };
-  }, []);
+    const path = work.step === "shop" ? productPaths[work.product] : "/";
+    if (window.location.pathname !== path) window.history.replaceState(window.history.state, "", path);
+  }, [work.step, work.product]);
 
   useEffect(() => {
     warmModel(DEFAULT_TSHIRT_MODEL_URL);
@@ -156,7 +142,6 @@ export function MerchFlow({
   }, [work.step, editorOpen, editorFailed, editorKey]);
 
   useEffect(() => {
-    if (!ready) return;
     const body = JSON.stringify(workRef.current);
     const handle = window.setTimeout(() => {
       void fetch("/api/session", {
@@ -176,11 +161,10 @@ export function MerchFlow({
         .catch(() => setSaveError(true));
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [ready, work]);
+  }, [work]);
 
   useEffect(() => {
     const flush = () => {
-      if (!readyRef.current) return;
       void fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -305,20 +289,6 @@ export function MerchFlow({
     updateWork((current) => ({ ...current, product: id, zone: productById(id).zones[0].id, step: "shop" }));
   }
 
-  if (!ready) {
-    return (
-      <main className="grid min-h-screen place-items-center px-6 text-center">
-        <div className="grid gap-3">
-          <p className="text-muted">{bootError ?? "Otwieramy…"}</p>
-          {bootError ? (
-            <button type="button" className="font-bold" onClick={() => window.location.reload()}>
-              Jeszcze raz
-            </button>
-          ) : null}
-        </div>
-      </main>
-    );
-  }
 
   const account = (
     <AccountLinks
@@ -331,8 +301,13 @@ export function MerchFlow({
 
   return (
     <main className="min-h-full">
-      {compare && (work.step === "doors" || work.step === "shop") ? <VariantSwitch variant={variant} /> : null}
-      {accentPanel && variant === "a" && (work.step === "doors" || work.step === "shop") ? (
+      {process.env.NODE_ENV !== "production" && compare && (work.step === "doors" || work.step === "shop") ? (
+        <VariantSwitch variant={variant} />
+      ) : null}
+      {process.env.NODE_ENV !== "production" &&
+      accentPanel &&
+      variant === "a" &&
+      (work.step === "doors" || work.step === "shop") ? (
         <AccentPanel accent={accent} raised={work.step === "shop"} lowered={compare} />
       ) : null}
 
@@ -429,7 +404,7 @@ export function MerchFlow({
 
       {work.step === "cart" ? (
         <>
-        <section className="rise mx-auto max-w-3xl px-7 py-8">
+        <section className={`${rise} mx-auto max-w-3xl px-7 py-8`}>
           <button
             type="button"
             className="font-bold"
@@ -444,7 +419,12 @@ export function MerchFlow({
           <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
             {work.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={work.previewUrl} alt="" className="h-24 w-24 object-contain" style={{ background: work.color }} />
+              <img
+                src={work.previewUrl}
+                alt={`Podgląd projektu: ${product.name}`}
+                className="h-24 w-24 object-contain"
+                style={{ background: work.color }}
+              />
             ) : (
               <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
             )}
