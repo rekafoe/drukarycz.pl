@@ -126,7 +126,7 @@ export const accents = [
 
 export type AccentId = (typeof accents)[number]["id"];
 
-export const defaultAccent: AccentId = "koral";
+export const defaultAccent: AccentId = "kobalt";
 
 export function parseAccent(value: unknown): AccentId {
   return accents.find((item) => item.id === value)?.id ?? defaultAccent;
