@@ -26,6 +26,33 @@ test("фото в полный лист с телефона проходит 300
   assert.equal(issuesForArea(front, { objects: [sharp] }).some((item) => item.code === "low_dpi"), false);
 });
 
+test("ukryty obiekt nie wchodzi w uwagi, textbox tak", () => {
+  const hidden = {
+    type: "image",
+    visible: false,
+    left: -80,
+    top: -80,
+    width: 40,
+    height: 40,
+    scaleX: 8,
+    scaleY: 8,
+  };
+  assert.equal(issuesForArea(front, { objects: [hidden] }).length, 0);
+  const box = {
+    type: "textbox",
+    left: 40,
+    top: 40,
+    width: 90,
+    height: 30,
+    fontSize: 12,
+    scaleX: 1,
+    scaleY: 1,
+    originX: "left",
+    originY: "top",
+  };
+  assert.equal(issuesForArea(front, { objects: [box] }).some((item) => item.code === "small_text"), true);
+});
+
 test("текст ниже 5 мм и объект за краем", () => {
   const tiny = { type: "i-text", left: 100, top: 100, width: 80, height: 20, fontSize: 12, scaleX: 1, scaleY: 1, originX: "left", originY: "top" };
   const readable = { ...tiny, fontSize: 40 };
@@ -37,6 +64,25 @@ test("текст ниже 5 мм и объект за краем", () => {
     issues.map((item) => item.code),
     ["out_of_bounds", "small_text"],
   );
+});
+
+test("Fabric 7 itext, i-text и IText входят в проверку размера", () => {
+  for (const type of ["itext", "i-text", "IText", "textbox", "Textbox"]) {
+    const tiny = {
+      type,
+      left: 100,
+      top: 100,
+      width: 80,
+      height: 20,
+      fontSize: 12,
+      scaleX: 1,
+      scaleY: 1,
+      originX: "left",
+      originY: "top",
+    };
+    assert.equal(measureObject(tiny)?.kind, "text", type);
+    assert.equal(issuesForArea(front, { objects: [tiny] }).some((item) => item.code === "small_text"), true, type);
+  }
 });
 
 test("Fabric 7 пишет тип IText и Image", () => {

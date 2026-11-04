@@ -41,10 +41,17 @@ function originY(value: unknown): OriginY {
   return value === "center" || value === "bottom" ? value : "top";
 }
 
+/** Fabric 7 пишет IText как `itext`, старый холст — как `i-text`. */
+export function isTextType(type: unknown): boolean {
+  if (typeof type !== "string") return false;
+  const name = type.toLowerCase().replace(/-/g, "");
+  return name === "itext" || name === "text" || name === "textbox";
+}
+
 function kindOf(type: unknown): Measured["kind"] {
-  const name = typeof type === "string" ? type.toLowerCase().replace("-", "") : "";
+  const name = typeof type === "string" ? type.toLowerCase().replace(/-/g, "") : "";
   if (name === "image" || name === "fabricimage") return "image";
-  if (name === "itext" || name === "text" || name === "textbox") return "text";
+  if (isTextType(type)) return "text";
   return "other";
 }
 
@@ -107,12 +114,18 @@ function pageObjects(page: unknown): unknown[] {
   return Array.isArray(objects) ? objects : [];
 }
 
+/** Ukryta warstwa nie idzie na koszulkę, więc nie zgłasza uwag. */
+function isShown(raw: unknown) {
+  if (!raw || typeof raw !== "object") return false;
+  return (raw as { visible?: unknown }).visible !== false;
+}
+
 export function issuesForArea(
   area: { id: string; label: string; widthMm: number; heightMm: number },
   page: unknown,
 ): QualityIssue[] {
   const { widthPx, heightPx } = printAreaFabricPx(area.widthMm, area.heightMm, 1);
-  const objects = pageObjects(page).map(measureObject).filter((item): item is Measured => item !== null);
+  const objects = pageObjects(page).filter(isShown).map(measureObject).filter((item): item is Measured => item !== null);
   const issues: QualityIssue[] = [];
   if (objects.some((object) => outside(object, widthPx, heightPx))) {
     issues.push({

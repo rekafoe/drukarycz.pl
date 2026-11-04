@@ -175,3 +175,165 @@ export function TrashIcon() {
     </Glyph>
   );
 }
+
+export function BoldIcon() {
+  return (
+    <Glyph>
+      <path d="M7 19V5h6.2a3.4 3.4 0 0 1 0 6.8H7" />
+      <path d="M7 11.8h7.2a3.6 3.6 0 0 1 0 7.2H7" />
+    </Glyph>
+  );
+}
+
+export function ItalicIcon() {
+  return (
+    <Glyph>
+      <path d="M14 5H9" />
+      <path d="m10 19 4-14" />
+      <path d="M8 19h6" />
+    </Glyph>
+  );
+}
+
+export function SpacingIcon() {
+  return (
+    <Glyph>
+      <path d="M4 7v10" />
+      <path d="M20 7v10" />
+      <path d="M8 12h8" />
+      <path d="m10 9-2 3 2 3" />
+      <path d="m14 9 2 3-2 3" />
+    </Glyph>
+  );
+}
+
+export function StrokeIcon() {
+  return (
+    <Glyph>
+      <path d="M8 17 16 7" />
+      <circle cx="8" cy="17" r="2.2" />
+      <circle cx="16" cy="7" r="2.2" />
+    </Glyph>
+  );
+}
+
+export function RectIcon() {
+  return (
+    <Glyph>
+      <rect x="5" y="7" width="14" height="10" rx="1.5" />
+    </Glyph>
+  );
+}
+
+export function CircleIcon() {
+  return (
+    <Glyph>
+      <circle cx="12" cy="12" r="6.5" />
+    </Glyph>
+  );
+}
+
+export function TriangleIcon() {
+  return (
+    <Glyph>
+      <path d="M12 5 20 19H4Z" />
+    </Glyph>
+  );
+}
+
+export function LineIcon() {
+  return (
+    <Glyph>
+      <path d="M5 16 19 8" />
+    </Glyph>
+  );
+}
+
+export function FlipHIcon() {
+  return (
+    <Glyph>
+      <path d="M12 4v16" />
+      <path d="M8 8 4 12l4 4" />
+      <path d="m16 8 4 4-4 4" />
+    </Glyph>
+  );
+}
+
+export function FlipVIcon() {
+  return (
+    <Glyph>
+      <path d="M4 12h16" />
+      <path d="m8 8 4-4 4 4" />
+      <path d="m8 16 4 4 4-4" />
+    </Glyph>
+  );
+}
+
+export function LockIcon() {
+  return (
+    <Glyph>
+      <rect x="6" y="11" width="12" height="8" rx="1.5" />
+      <path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11" />
+    </Glyph>
+  );
+}
+
+export function UnlockIcon() {
+  return (
+    <Glyph>
+      <rect x="6" y="11" width="12" height="8" rx="1.5" />
+      <path d="M8.5 11V8.5a3.5 3.5 0 0 1 6.2-2" />
+    </Glyph>
+  );
+}
+
+export function EyeIcon() {
+  return (
+    <Glyph>
+      <path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z" />
+      <circle cx="12" cy="12" r="2.2" />
+    </Glyph>
+  );
+}
+
+export function EyeOffIcon() {
+  return (
+    <Glyph>
+      <path d="M4 5 20 19" />
+      <path d="M9.5 6.4A9 9 0 0 1 12 6c5.5 0 9 6 9 6a16 16 0 0 1-3.1 3.6" />
+      <path d="M6.2 8.2C4.2 9.8 3 12 3 12s3.5 6 9 6a8 8 0 0 0 3-.6" />
+    </Glyph>
+  );
+}
+
+export function AlignTopIcon() {
+  return (
+    <Glyph>
+      <path d="M5 5h14" />
+      <path d="M8 9h8" />
+      <path d="M10 13h4" />
+      <path d="M8 17h8" />
+    </Glyph>
+  );
+}
+
+export function AlignMiddleIcon() {
+  return (
+    <Glyph>
+      <path d="M4 12h16" />
+      <path d="M8 8h8" />
+      <path d="M8 16h8" />
+    </Glyph>
+  );
+}
+
+export function AlignBottomIcon() {
+  return (
+    <Glyph>
+      <path d="M5 19h14" />
+      <path d="M8 15h8" />
+      <path d="M10 11h4" />
+      <path d="M8 7h8" />
+    </Glyph>
+  );
+}

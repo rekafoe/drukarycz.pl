@@ -66,6 +66,21 @@ export function mugWrapArcFromHandle(options: {
 }
 
 /**
+ * Середина рисунка на обхвате.
+ * CylinderGeometry: x = sin(theta), z = cos(theta), theta 0 смотрит в +Z.
+ * Ручка кружки стоит на +X, поэтому середина типовой зоны — напротив ручки.
+ */
+export function mugPrintCenterAngle(options: {
+  widthMm: number;
+  circumferenceMm?: number;
+  startMmFromHandle?: number;
+}): { theta: number; x: number; z: number } {
+  const arc = mugWrapArcFromHandle(options);
+  const theta = arc.thetaStart + arc.thetaLength / 2;
+  return { theta, x: Math.sin(theta), z: Math.cos(theta) };
+}
+
+/**
  * Высота печатного пояса: мм зоны / 110 мм высоты кружки.
  */
 export function mugPrintHeightScene(

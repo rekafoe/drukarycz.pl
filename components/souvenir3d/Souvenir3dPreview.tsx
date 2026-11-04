@@ -6,7 +6,7 @@ import { GltfPrintModel } from './GltfPrintModel';
 import { ProceduralProduct } from './ProceduralProduct';
 import type { PrintAreaConfig, SouvenirSurfacePointerHandler } from './types';
 import { isMugPrintArea, isTshirtBackPrintArea, resolveActivePrintArea } from './types';
-import { MUG_OUTER_CIRCUMFERENCE_MM, mugWrapArcFromHandle } from './scale';
+import { MUG_OUTER_CIRCUMFERENCE_MM, mugPrintCenterAngle, mugWrapArcFromHandle } from './scale';
 import './souvenir3dPreview.css';
 
 export type Souvenir3dPreviewProps = {
@@ -285,12 +285,26 @@ export const Souvenir3dPreview: React.FC<Souvenir3dPreviewProps> = ({
   const hasGltf = Boolean(modelUrl);
 
   const cameraPos = useMemo<[number, number, number]>(() => {
-    if (isMug) return hasGltf ? [1.55, 1.02, 2.35] : [2.5, 1.25, 2.75];
+    if (isMug && hasGltf && active) {
+      const face = mugPrintCenterAngle({
+        widthMm: active.widthMm,
+        circumferenceMm: MUG_OUTER_CIRCUMFERENCE_MM,
+        startMmFromHandle: active.wrapStartMmFromHandle,
+      });
+      // Середина дуги цилиндра смотрит в -X. У подогнанной кружки слово
+      // оказывается на кромке, пока камеру не довернуть к +Z примерно на 1.25 рад.
+      const yaw = 1.25;
+      const x = face.x * Math.cos(yaw) + face.z * Math.sin(yaw);
+      const z = -face.x * Math.sin(yaw) + face.z * Math.cos(yaw);
+      const distance = 2.8;
+      return [x * distance, 1.02, z * distance];
+    }
+    if (isMug) return [2.5, 1.25, 2.75];
     if (hasGltf) {
       return isBack ? [0.2, 1.2, -6.2] : [0.2, 1.2, 6.2];
     }
     return isBack ? [0.15, 0.55, -4.15] : [0.15, 0.55, 4.15];
-  }, [isBack, isMug, hasGltf]);
+  }, [active, isBack, isMug, hasGltf]);
 
   const lookAt = useMemo<[number, number, number]>(
     () => (isMug ? (hasGltf ? [0, 0.68, 0] : [0, 0.05, 0]) : hasGltf ? [0, 1.05, 0] : [0, 0.08, 0]),
