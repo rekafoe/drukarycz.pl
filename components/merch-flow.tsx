@@ -2,10 +2,19 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  ArrowIcon,
+  BagIcon,
+  BrandMark,
+  PriceChip,
+  coralButton,
+  fieldInput,
+  inkButton,
+} from "@/components/brand";
 import type { EditorHandle } from "@/components/editor-canvas";
 import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
-import { ProductArt } from "@/components/product-art";
+import { ProductArt, ProductStage } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
 import {
   emptyOrder,
@@ -22,6 +31,7 @@ const EditorCanvas = dynamic(
   { ssr: false, loading: () => null },
 );
 import {
+  catalog,
   productById,
   quantities,
   shirtColors,
@@ -62,6 +72,17 @@ const finishes = [
   { id: "matte", label: "Matowe" },
   { id: "gloss", label: "Błyszczące" },
 ] as const;
+
+const productLines: Record<ProductId, string> = {
+  tshirt: "Nadruk z przodu i z tyłu",
+  mug: "Nadruk dookoła · 330 ml",
+};
+
+function zoneSizes(id: ProductId) {
+  return productById(id)
+    .zones.map((item) => `${item.label} ${item.widthMm}×${item.heightMm} mm`)
+    .join(" · ");
+}
 
 export function MerchFlow() {
   const [ready, setReady] = useState(false);
@@ -300,16 +321,35 @@ export function MerchFlow() {
     }, 480);
   }
 
+  function switchProduct(id: ProductId) {
+    const next = productById(id);
+    updateWork((current) =>
+      current.product === id && current.step === "shop"
+        ? current
+        : { ...current, product: id, zone: next.zones[0].id, step: "shop" },
+    );
+  }
+
   if (!ready) {
     return (
-      <main className="grid min-h-screen place-items-center px-6 text-center">
-        <div className="grid gap-3">
-          <p className="text-muted">{bootError ?? "Otwieramy…"}</p>
+      <main className="halftone-ink grid min-h-dvh place-items-center bg-cream px-6 text-center text-poster">
+        <div className="grid justify-items-center gap-5" role="status">
+          <BrandMark className="text-3xl md:text-4xl" />
           {bootError ? (
-            <button type="button" className="font-bold" onClick={() => window.location.reload()}>
-              Jeszcze raz
-            </button>
-          ) : null}
+            <>
+              <p className="max-w-xs text-muted">{bootError}. Sprawdź połączenie i spróbuj jeszcze raz.</p>
+              <button type="button" className={`${inkButton} px-6 py-3`} onClick={() => window.location.reload()}>
+                Jeszcze raz
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="relative h-1 w-40 overflow-hidden rounded-full bg-line" aria-hidden="true">
+                <span className="boot-bar absolute inset-y-0 left-0 w-1/3 rounded-full bg-coral" />
+              </span>
+              <p className="text-sm text-muted">Otwieramy…</p>
+            </>
+          )}
         </div>
       </main>
     );
@@ -327,63 +367,108 @@ export function MerchFlow() {
   return (
     <main className="min-h-full">
       {work.step === "doors" ? (
-        <section className="doors relative flex min-h-screen flex-col overflow-hidden md:flex-row">
-          <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
-            <a
-              href="/prawne/regulamin"
-              className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-ink"
-            >
-              Prawne
-            </a>
-            {account}
-          </div>
+        <section className="doors relative flex min-h-dvh flex-col overflow-hidden md:flex-row">
+          <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-3 px-5 py-4 md:px-10 md:py-6">
+            <BrandMark className="pointer-events-auto text-lg text-cream md:text-2xl" />
+            <div className="pointer-events-auto flex items-center gap-2">
+              <a
+                href="/prawne/regulamin"
+                className="rounded-full border border-poster/10 bg-white px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-poster hover:border-poster sm:px-4"
+              >
+                Prawne
+              </a>
+              {account}
+            </div>
+          </header>
           <Door
             tone="dark"
             title="Koszulka"
-            line={`Przód i tył · ${seller.priceFrom}`}
+            line={productLines.tshirt}
             leaving={leaving}
             self="tshirt"
             onPick={() => openProduct("tshirt")}
           >
-            <div className="door-art">
-              <ProductArt product="tshirt" color="#f4f1ea" text="" size={300} hidePrint />
-            </div>
+            <ProductStage
+              product="tshirt"
+              color="#171614"
+              tilt={-6}
+              className="door-art w-[min(46vw,25dvh)] md:w-[min(30vw,46dvh,440px)]"
+            />
           </Door>
           <Door
             tone="light"
             title="Kubek"
-            line={`Obwód · ${seller.priceFrom}`}
+            line={productLines.mug}
             leaving={leaving}
             self="mug"
             onPick={() => openProduct("mug")}
           >
-            <div className="door-art door-art-late">
-              <ProductArt product="mug" color="#f7f4ef" text="" size={260} hidePrint />
-            </div>
+            <ProductStage
+              product="mug"
+              color="#f7f4ef"
+              board="clay"
+              tilt={5}
+              className="door-art door-art-late w-[min(46vw,25dvh)] md:w-[min(30vw,46dvh,440px)]"
+            />
           </Door>
         </section>
       ) : null}
 
       {work.step === "shop" ? (
-        <section className="rise">
+        <>
+        <section className="rise min-h-dvh bg-cream pb-24 text-poster md:pb-0">
           <Top
+            product={work.product}
+            onProduct={switchProduct}
             onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
             onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
             account={account}
           />
-          <div className="grid items-start gap-7 px-5 pb-10 md:items-center md:px-7 md:grid-cols-[1.15fr_0.85fr]">
-            <div className="grid min-h-[240px] place-items-center rounded-[20px] border border-line bg-card md:min-h-[520px]">
-              <ProductArt product={work.product} color={work.color} text="" size={300} hidePrint />
+          <div className="mx-4 mt-3 grid grid-cols-2 rounded-full border border-line bg-white p-1 md:hidden">
+            {catalog.map((item) => {
+              const selected = item.id === work.product;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={selected}
+                  className={`rounded-full py-2 text-sm font-bold ${selected ? "bg-poster text-cream" : "text-muted"}`}
+                  onClick={() => switchProduct(item.id)}
+                >
+                  {item.name}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mx-auto grid max-w-7xl items-start gap-6 px-4 pt-4 pb-10 md:px-7 md:pt-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-12">
+            <div className="on-poster halftone relative grid min-h-[300px] place-items-center overflow-hidden rounded-[28px] bg-poster px-4 py-10 sm:min-h-[440px] lg:sticky lg:top-24 lg:min-h-[620px]">
+              <span className="absolute top-4 left-4 rounded-full border border-cream/15 px-3 py-1 text-xs font-semibold text-cream/70">
+                {zoneSizes(work.product)}
+              </span>
+              <ProductStage
+                key={work.product}
+                product={work.product}
+                color={work.color}
+                board={work.product === "mug" ? "clay" : "board"}
+                tilt={work.product === "mug" ? 4 : -4}
+                className="rise w-[min(64vw,300px)] sm:w-[360px] lg:w-[min(36vw,500px)]"
+              />
+              <span className="absolute bottom-4 left-4 text-xs text-cream/55">Przykładowy nadruk. Swój zrobisz w edytorze.</span>
             </div>
-            <div>
-              <h1 className="text-[40px] font-extrabold tracking-tight">{product.name}</h1>
-              <p className="mt-1.5 text-[15px] text-muted">
+            <div className="lg:py-2">
+              <p className="text-[12px] font-bold tracking-[0.16em] text-muted uppercase">{productLines[work.product]}</p>
+              <h1 className="mt-2 font-display text-[40px] leading-[0.95] font-extrabold tracking-[-0.03em] md:text-[60px]">
+                {product.name}
+              </h1>
+              <p className="mt-3 text-[15px] text-muted">
                 {seller.city} · gotowe w {seller.leadTime}
               </p>
-              <p className="mt-4 text-[28px] font-extrabold tracking-tight">{seller.priceFrom}</p>
-              <p className="mt-1 text-sm text-muted">
-                Cena wyjściowa brutto. Wiążąca cena i koszt dostawy — przed płatnością.
-              </p>
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <PriceChip size="lg" />
+                <p className="max-w-[300px] text-sm leading-snug text-muted">
+                  Cena wyjściowa brutto. Wiążąca cena i koszt dostawy — przed płatnością.
+                </p>
+              </div>
               {work.product === "tshirt" ? (
                 <>
                   <FieldLabel>Rozmiar</FieldLabel>
@@ -396,11 +481,11 @@ export function MerchFlow() {
               ) : (
                 <>
                   <FieldLabel>Pojemność</FieldLabel>
-                  <p className="text-sm font-semibold">330 ml</p>
+                  <p className="w-fit rounded-full border border-poster bg-poster px-3.5 py-2 font-semibold text-cream">330 ml</p>
                 </>
               )}
               <FieldLabel>Kolor</FieldLabel>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 {shirtColors.map((swatch) => {
                   const selected = work.color === swatch.value;
                   return (
@@ -409,13 +494,13 @@ export function MerchFlow() {
                       type="button"
                       aria-label={swatch.label}
                       aria-pressed={selected}
-                      className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-paper" : "border-line"}`}
+                      className={`h-10 w-10 rounded-full border transition-transform hover:scale-105 ${selected ? "border-poster ring-2 ring-poster ring-offset-2 ring-offset-cream" : "border-poster/20"}`}
                       style={{ background: swatch.value }}
                       onClick={() => updateWork((current) => ({ ...current, color: swatch.value }))}
                     />
                   );
                 })}
-                <span className="ml-1 text-sm text-muted">{colorName}</span>
+                <span className="ml-1 text-sm font-semibold text-muted">{colorName}</span>
               </div>
               <FieldLabel>Nakład</FieldLabel>
               <Pills
@@ -436,16 +521,34 @@ export function MerchFlow() {
               <p className="mt-2 text-xs text-muted">Tak będzie wyglądać powierzchnia nadruku.</p>
               <button
                 type="button"
-                className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white hover:bg-[#2c2a26]"
+                className={`${coralButton} mt-7 hidden w-full px-5 py-4 text-lg md:flex`}
                 onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
               >
                 Zrób własny
+                <ArrowIcon className="h-5 w-5" />
               </button>
               <p className="mt-3 text-sm text-muted">Własny plik podepniemy razem z zamówieniem.</p>
+              <ul className="mt-7 grid gap-3 border-t border-line pt-6 text-sm sm:grid-cols-3">
+                <ShopFact title={`Gotowe w ${seller.leadTime}`} line={`Miejsce druku: ${seller.city}`} />
+                <ShopFact title="Od 1 sztuki" line="Bez minimalnego nakładu" />
+                <ShopFact title="Plik 300 dpi" line="Edytor ostrzeże przed słabą jakością" />
+              </ul>
             </div>
           </div>
           <SiteFooter />
         </section>
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-line bg-cream/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur md:hidden">
+          <PriceChip />
+          <button
+            type="button"
+            className={`${coralButton} flex-1 px-4 py-3.5 text-base`}
+            onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
+          >
+            Zrób własny
+            <ArrowIcon />
+          </button>
+        </div>
+        </>
       ) : null}
 
       {work.step === "editor" ? (
@@ -515,275 +618,345 @@ export function MerchFlow() {
       ) : null}
 
       {work.step === "cart" ? (
-        <>
-        <section className="rise mx-auto max-w-3xl px-7 py-8">
-          <button
-            type="button"
-            className="font-bold"
-            onClick={() => updateWork((current) => ({ ...current, step: current.cartFrom }))}
-          >
-            {work.cartFrom === "shop" ? "← Do rzeczy" : "← Do edytora"}
-          </button>
-          <div className="mt-4 flex items-center justify-between gap-4">
-            <h1 className="text-4xl font-extrabold tracking-tight">Koszyk</h1>
-            {account}
-          </div>
-          <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
-            {work.previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={work.previewUrl} alt="" className="h-24 w-24 object-contain" style={{ background: work.color }} />
-            ) : (
-              <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
-            )}
-            <div>
-              <h2 className="text-xl font-extrabold">{product.name}</h2>
-              <p className="text-muted">
-                {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label, finishName]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-              <p className="mt-1 font-bold">{seller.priceFrom}</p>
-              <p className="text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
-              <p className="text-sm text-muted">
-                {work.previewUrl ? "Projekt przygotowany w edytorze" : "Arkusz jest jeszcze pusty"}
-              </p>
-              {work.quality.length > 0 ? (
-                <ul className="mt-2 grid gap-1 text-sm text-ink">
-                  {work.quality.map((issue) => (
-                    <li key={`${issue.areaId}-${issue.code}`}>{issue.message}</li>
-                  ))}
-                </ul>
-              ) : null}
-              <p className="mt-2 text-sm text-muted">
-                {printZoneNames(work).length > 0
-                  ? `Plik do druku 300 dpi jest na serwerze ${seller.brand}: ${printZoneNames(work).join(", ")}.`
-                  : "Plik do druku 300 dpi zapisze się w drodze z edytora."}
-              </p>
-              {printNote ? <p className="mt-2 text-sm text-ink">{printNote}</p> : null}
-            </div>
-          </article>
-          <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
-            <h2 className="font-bold text-ink">Pola przyszłego zamówienia</h2>
-            <p className="mt-1">Trzymane na serwerze {seller.brand}. Do CRM nie wychodzą.</p>
-            <ul className="mt-3 grid gap-1">
-              <li>rzecz: {product.name}</li>
-              <li>{work.product === "tshirt" ? `rozmiar: ${work.size}` : "pojemność: 330 ml"}</li>
-              <li>kolor rzeczy: {colorName}</li>
-              <li>nakład: {work.qty}</li>
-              <li>wykończenie: {finishName} — tylko rodzaj, bez szerokości rolki</li>
-              <li>editorKind: souvenir_3d</li>
-              <li>
-                strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
-              </li>
-              <li>editorDraftToken: pojawi się, gdy szkic zacznie iść do CRM</li>
-              <li>plik do druku: {printZoneNames(work).length > 0 ? printZoneNames(work).join(", ") : "jeszcze nie"}</li>
-              {work.order.email ? <li>e-mail: {work.order.email}</li> : null}
-              {work.order.street ? (
-                <li>
-                  adres: {work.order.street}, {work.order.postalCode} {work.order.city}
-                </li>
-              ) : null}
-              {work.order.nip ? <li>NIP: {work.order.nip}</li> : null}
-              {work.order.acceptTerms || work.order.acceptCustom || work.order.marketing ? (
-                <>
-                  <li>regulamin: {work.order.acceptTerms ? "tak" : "nie"}</li>
-                  <li>rzecz indywidualna, bez 14 dni: {work.order.acceptCustom ? "tak" : "nie"}</li>
-                  <li>marketing: {work.order.marketing ? "tak" : "nie"}</li>
-                </>
-              ) : null}
-            </ul>
-          </section>
-          {user && designId ? (
-            <p className="mt-4 text-sm text-muted">
-              Własny projekt:{" "}
-              <a className="font-semibold text-ink underline" href={`/m/${designId}`}>
-                /m/{designId}
-              </a>
-            </p>
-          ) : null}
-          {saveError ? <p className="mt-4 text-sm text-muted">Nie zapisano</p> : null}
-          {work.placed && user ? (
-            <div className="mt-6 grid gap-3">
-              <p className="rounded-2xl bg-ink px-4 py-4 text-white">
-                Zgłoszenie zapisane na serwerze {seller.brand}. Płatności nie pobieramy i nie wysyłamy go do CRM. Umowa sprzedaży
-                powstanie dopiero po podaniu ceny z podatkiem i dostawą oraz po płatności.
-              </p>
-              <OrderSummary order={work.order} />
-              <button
-                type="button"
-                className="text-sm font-semibold"
-                onClick={() =>
-                  updateWork((current) => ({
-                    ...current,
-                    placed: false,
-                    order: { ...current.order, consentAt: "" },
-                  }))
-                }
-              >
-                Popraw dane
-              </button>
-            </div>
-          ) : user ? (
-            <form className="mt-6 grid gap-3" onSubmit={(event) => void placeOrder(event)}>
-              <label className="grid gap-1 text-sm font-bold">
-                Imię
-                <input
-                  required
-                  autoComplete="name"
-                  placeholder="Jak się do Ciebie zwracać"
-                  value={orderName}
-                  onChange={(event) => setOrderName(event.target.value)}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-bold">
-                Telefon
-                <input
-                  readOnly
-                  type="tel"
-                  value={user.phone}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-bold">
-                E-mail
-                <input
-                  required
-                  type="email"
-                  autoComplete="email"
-                  maxLength={120}
-                  value={work.order.email}
-                  onChange={(event) => setOrder({ email: event.target.value })}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-                />
-              </label>
-              <label className="grid gap-1 text-sm font-bold">
-                Ulica i numer
-                <input
-                  required
-                  autoComplete="street-address"
-                  maxLength={120}
-                  value={work.order.street}
-                  onChange={(event) => setOrder({ street: event.target.value })}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-                />
-              </label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1 text-sm font-bold">
-                  Kod pocztowy
-                  <input
-                    required
-                    autoComplete="postal-code"
-                    inputMode="numeric"
-                    pattern="\d{2}-\d{3}"
-                    placeholder="00-001"
-                    maxLength={6}
-                    value={work.order.postalCode}
-                    onChange={(event) => setOrder({ postalCode: event.target.value })}
-                    className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-                  />
-                </label>
-                <label className="grid gap-1 text-sm font-bold">
-                  Miejscowość
-                  <input
-                    required
-                    autoComplete="address-level2"
-                    maxLength={120}
-                    value={work.order.city}
-                    onChange={(event) => setOrder({ city: event.target.value })}
-                    className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-                  />
-                </label>
+        <section className="rise min-h-dvh bg-cream text-poster">
+          <Top
+            product={work.product}
+            onProduct={switchProduct}
+            onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
+            onCart={() => undefined}
+            current="cart"
+            account={account}
+          />
+          <div className="mx-auto max-w-6xl px-4 pt-6 pb-14 md:px-7 md:pt-8">
+            <button
+              type="button"
+              className="text-sm font-semibold text-muted hover:text-poster"
+              onClick={() => updateWork((current) => ({ ...current, step: current.cartFrom }))}
+            >
+              {work.cartFrom === "shop" ? "← Do rzeczy" : "← Do edytora"}
+            </button>
+            <h1 className="mt-3 font-display text-[40px] leading-none font-extrabold tracking-[-0.03em] md:text-[56px]">
+              Koszyk
+            </h1>
+            <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
+              <div className="grid min-w-0 gap-6">
+                <article className="grid gap-4 rounded-[24px] border border-line bg-white p-4 sm:grid-cols-[140px_minmax(0,1fr)] sm:p-5">
+                  <div
+                    className="grid aspect-square w-full max-w-[200px] place-items-center overflow-hidden rounded-2xl sm:max-w-none"
+                    style={{ background: work.previewUrl ? work.color : "var(--board)" }}
+                  >
+                    {work.previewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={work.previewUrl} alt="" className="h-full w-full object-contain p-2" />
+                    ) : (
+                      <ProductArt product={work.product} color={work.color} text="" size={112} hidePrint />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <h2 className="font-display text-2xl font-extrabold tracking-tight">{product.name}</h2>
+                      <PriceChip />
+                    </div>
+                    <p className="mt-1 text-muted">
+                      {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label, finishName]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    <p className="mt-1 text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
+                    {work.previewUrl ? (
+                      <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-semibold">
+                        Projekt przygotowany w edytorze
+                        <button
+                          type="button"
+                          className="text-muted underline underline-offset-2 hover:text-poster"
+                          onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
+                        >
+                          Popraw projekt
+                        </button>
+                      </p>
+                    ) : (
+                      <div className="mt-4 rounded-2xl border border-dashed border-poster/25 bg-cream p-4">
+                        <p className="font-bold">Arkusz jest jeszcze pusty</p>
+                        <p className="mt-1 text-sm text-muted">Dodaj tekst albo zdjęcie. Podgląd pojawi się tutaj.</p>
+                        <button
+                          type="button"
+                          className={`${coralButton} mt-3 px-4 py-2.5 text-sm`}
+                          onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
+                        >
+                          Zrób własny
+                          <ArrowIcon />
+                        </button>
+                      </div>
+                    )}
+                    {work.quality.length > 0 ? (
+                      <ul className="mt-3 grid gap-1.5 rounded-2xl bg-sun/25 p-3 text-sm">
+                        {work.quality.map((issue) => (
+                          <li key={`${issue.areaId}-${issue.code}`} className="flex gap-2">
+                            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-coral" aria-hidden="true" />
+                            {issue.message}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <p className="mt-3 text-sm text-muted">
+                      {printZoneNames(work).length > 0
+                        ? `Plik do druku 300 dpi jest na serwerze ${seller.brand}: ${printZoneNames(work).join(", ")}.`
+                        : "Plik do druku 300 dpi zapisze się w drodze z edytora."}
+                    </p>
+                    {printNote ? <p className="mt-2 text-sm font-semibold text-coral">{printNote}</p> : null}
+                  </div>
+                </article>
+
+                {work.placed && user ? (
+                  <div className="grid gap-4">
+                    <div className="on-poster rounded-[24px] bg-poster p-5 text-cream md:p-6">
+                      <span className="inline-flex rounded-md bg-sun px-2 py-0.5 text-xs font-extrabold tracking-wide text-poster uppercase">
+                        Zapisane
+                      </span>
+                      <p className="mt-3 leading-relaxed">
+                        Zgłoszenie zapisane na serwerze {seller.brand}. Płatności nie pobieramy i nie wysyłamy go do CRM.
+                        Umowa sprzedaży powstanie dopiero po podaniu ceny z podatkiem i dostawą oraz po płatności.
+                      </p>
+                    </div>
+                    <div className="rounded-[24px] border border-line bg-white p-5">
+                      <OrderSummary order={work.order} />
+                      <button
+                        type="button"
+                        className="mt-4 text-sm font-semibold underline underline-offset-2"
+                        onClick={() =>
+                          updateWork((current) => ({
+                            ...current,
+                            placed: false,
+                            order: { ...current.order, consentAt: "" },
+                          }))
+                        }
+                      >
+                        Popraw dane
+                      </button>
+                    </div>
+                  </div>
+                ) : user ? (
+                  <form
+                    className="grid gap-4 rounded-[24px] border border-line bg-white p-5 md:p-6"
+                    onSubmit={(event) => void placeOrder(event)}
+                  >
+                    <h2 className="font-display text-xl font-extrabold tracking-tight">Dane do zgłoszenia</h2>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="grid gap-1.5 text-sm font-bold">
+                        Imię
+                        <input
+                          required
+                          autoComplete="name"
+                          placeholder="Jak się do Ciebie zwracać"
+                          value={orderName}
+                          onChange={(event) => setOrderName(event.target.value)}
+                          className={fieldInput}
+                        />
+                      </label>
+                      <label className="grid gap-1.5 text-sm font-bold">
+                        Telefon
+                        <input readOnly type="tel" value={user.phone} className={`${fieldInput} bg-cream`} />
+                      </label>
+                    </div>
+                    <label className="grid gap-1.5 text-sm font-bold">
+                      E-mail
+                      <input
+                        required
+                        type="email"
+                        autoComplete="email"
+                        maxLength={120}
+                        value={work.order.email}
+                        onChange={(event) => setOrder({ email: event.target.value })}
+                        className={fieldInput}
+                      />
+                    </label>
+                    <label className="grid gap-1.5 text-sm font-bold">
+                      Ulica i numer
+                      <input
+                        required
+                        autoComplete="street-address"
+                        maxLength={120}
+                        value={work.order.street}
+                        onChange={(event) => setOrder({ street: event.target.value })}
+                        className={fieldInput}
+                      />
+                    </label>
+                    <div className="grid gap-4 sm:grid-cols-[160px_minmax(0,1fr)]">
+                      <label className="grid gap-1.5 text-sm font-bold">
+                        Kod pocztowy
+                        <input
+                          required
+                          autoComplete="postal-code"
+                          inputMode="numeric"
+                          pattern="\d{2}-\d{3}"
+                          placeholder="00-001"
+                          maxLength={6}
+                          value={work.order.postalCode}
+                          onChange={(event) => setOrder({ postalCode: event.target.value })}
+                          className={fieldInput}
+                        />
+                      </label>
+                      <label className="grid gap-1.5 text-sm font-bold">
+                        Miejscowość
+                        <input
+                          required
+                          autoComplete="address-level2"
+                          maxLength={120}
+                          value={work.order.city}
+                          onChange={(event) => setOrder({ city: event.target.value })}
+                          className={fieldInput}
+                        />
+                      </label>
+                    </div>
+                    <label className="grid gap-1.5 text-sm font-bold">
+                      <span>
+                        NIP <span className="font-medium text-muted">opcjonalnie, do faktury</span>
+                      </span>
+                      <input
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={13}
+                        placeholder="10 cyfr"
+                        value={work.order.nip}
+                        onChange={(event) => setOrder({ nip: event.target.value })}
+                        className={fieldInput}
+                      />
+                    </label>
+                    <div className="grid gap-3 rounded-2xl bg-cream p-4">
+                      <label className="flex items-start gap-3 text-sm font-medium">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={work.order.acceptTerms}
+                          onChange={(event) => setOrder({ acceptTerms: event.target.checked })}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-[#16130f]"
+                        />
+                        <span>
+                          Akceptuję <a href="/prawne/regulamin" className="underline">regulamin</a>.
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-3 text-sm font-medium">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={work.order.acceptCustom}
+                          onChange={(event) => setOrder({ acceptCustom: event.target.checked })}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-[#16130f]"
+                        />
+                        <span>
+                          Zamawiam rzecz na indywidualne zamówienie i przyjmuję do wiadomości, że tracę prawo odstąpienia od
+                          umowy w ciągu 14 dni.{" "}
+                          <a href="/prawne/odstapienie" className="underline">
+                            Odstąpienie
+                          </a>
+                        </span>
+                      </label>
+                      <label className="flex items-start gap-3 text-sm font-medium">
+                        <input
+                          type="checkbox"
+                          checked={work.order.marketing}
+                          onChange={(event) => setOrder({ marketing: event.target.checked })}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-[#16130f]"
+                        />
+                        <span>
+                          Chcę dostawać informacje o ofercie e-mailem lub SMS-em. To zgoda dobrowolna i nie jest warunkiem
+                          zgłoszenia.
+                        </span>
+                      </label>
+                    </div>
+                    <p className="text-sm font-medium text-muted">
+                      Dane przetwarzamy według{" "}
+                      <a className="text-poster underline" href="/prawne/prywatnosc">
+                        polityki prywatności
+                      </a>
+                      .
+                    </p>
+                    {orderError ? <p className="text-sm font-semibold text-coral">{orderError}</p> : null}
+                    <button type="submit" disabled={orderBusy} className={`${inkButton} px-4 py-4 text-base`}>
+                      Zapisz zgłoszenie
+                    </button>
+                    <p className="text-sm text-muted">
+                      Płatności nie pobieramy. To jeszcze nie jest zamówienie z obowiązkiem zapłaty.
+                    </p>
+                  </form>
+                ) : (
+                  <div className="grid gap-3 rounded-[24px] border border-line bg-white p-5 md:p-6">
+                    <h2 className="font-display text-xl font-extrabold tracking-tight">Zapisz zgłoszenie</h2>
+                    <p className="text-sm text-muted">
+                      Zgłoszenie i ponowne otwarcie projektu są dostępne po zalogowaniu. Płatności nie pobieramy.
+                    </p>
+                    <button type="button" className={`${inkButton} px-4 py-4`} onClick={() => setLoginOpen(true)}>
+                      Zaloguj się i zapisz zgłoszenie
+                    </button>
+                  </div>
+                )}
+
+                <details className="group rounded-[20px] border border-dashed border-line bg-white/60 p-4 text-sm text-muted">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-bold text-poster [&::-webkit-details-marker]:hidden">
+                    Pola przyszłego zamówienia
+                    <span className="text-muted transition-transform group-open:rotate-45" aria-hidden="true">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-2">Trzymane na serwerze {seller.brand}. Do CRM nie wychodzą.</p>
+                  <ul className="mt-3 grid gap-1">
+                    <li>rzecz: {product.name}</li>
+                    <li>{work.product === "tshirt" ? `rozmiar: ${work.size}` : "pojemność: 330 ml"}</li>
+                    <li>kolor rzeczy: {colorName}</li>
+                    <li>nakład: {work.qty}</li>
+                    <li>wykończenie: {finishName} — tylko rodzaj, bez szerokości rolki</li>
+                    <li>editorKind: souvenir_3d</li>
+                    <li>
+                      strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
+                    </li>
+                    <li>editorDraftToken: pojawi się, gdy szkic zacznie iść do CRM</li>
+                    <li>plik do druku: {printZoneNames(work).length > 0 ? printZoneNames(work).join(", ") : "jeszcze nie"}</li>
+                    {work.order.email ? <li>e-mail: {work.order.email}</li> : null}
+                    {work.order.street ? (
+                      <li>
+                        adres: {work.order.street}, {work.order.postalCode} {work.order.city}
+                      </li>
+                    ) : null}
+                    {work.order.nip ? <li>NIP: {work.order.nip}</li> : null}
+                    {work.order.acceptTerms || work.order.acceptCustom || work.order.marketing ? (
+                      <>
+                        <li>regulamin: {work.order.acceptTerms ? "tak" : "nie"}</li>
+                        <li>rzecz indywidualna, bez 14 dni: {work.order.acceptCustom ? "tak" : "nie"}</li>
+                        <li>marketing: {work.order.marketing ? "tak" : "nie"}</li>
+                      </>
+                    ) : null}
+                  </ul>
+                </details>
               </div>
-              <label className="grid gap-1 text-sm font-bold">
-                NIP
-                <span className="font-medium text-muted"> opcjonalnie, do faktury</span>
-                <input
-                  inputMode="numeric"
-                  autoComplete="off"
-                  maxLength={13}
-                  placeholder="10 cyfr"
-                  value={work.order.nip}
-                  onChange={(event) => setOrder({ nip: event.target.value })}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-                />
-              </label>
-              <label className="flex items-start gap-2 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  required
-                  checked={work.order.acceptTerms}
-                  onChange={(event) => setOrder({ acceptTerms: event.target.checked })}
-                  className="mt-1"
-                />
-                <span>
-                  Akceptuję <a href="/prawne/regulamin" className="underline">regulamin</a>.
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  required
-                  checked={work.order.acceptCustom}
-                  onChange={(event) => setOrder({ acceptCustom: event.target.checked })}
-                  className="mt-1"
-                />
-                <span>
-                  Zamawiam rzecz na indywidualne zamówienie i przyjmuję do wiadomości, że tracę prawo odstąpienia od
-                  umowy w ciągu 14 dni.{" "}
-                  <a href="/prawne/odstapienie" className="underline">
-                    Odstąpienie
-                  </a>
-                </span>
-              </label>
-              <p className="text-sm font-medium text-muted">
-                Dane przetwarzamy według{" "}
-                <a className="text-ink underline" href="/prawne/prywatnosc">
-                  polityki prywatności
-                </a>
-                .
-              </p>
-              <label className="flex items-start gap-2 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  checked={work.order.marketing}
-                  onChange={(event) => setOrder({ marketing: event.target.checked })}
-                  className="mt-1"
-                />
-                <span>
-                  Chcę dostawać informacje o ofercie e-mailem lub SMS-em. To zgoda dobrowolna i nie jest warunkiem
-                  zgłoszenia.
-                </span>
-              </label>
-              {orderError ? <p className="text-sm text-ink">{orderError}</p> : null}
-              <button
-                type="submit"
-                disabled={orderBusy}
-                className="rounded-xl bg-ink px-4 py-4 font-bold text-white disabled:opacity-60"
-              >
-                Zapisz zgłoszenie
-              </button>
-              <p className="text-sm text-muted">
-                Płatności nie pobieramy. To jeszcze nie jest zamówienie z obowiązkiem zapłaty.
-              </p>
-            </form>
-          ) : (
-            <div className="mt-6 grid gap-3">
-              <p className="text-sm text-muted">
-                Zgłoszenie i ponowne otwarcie projektu są dostępne po zalogowaniu. Płatności nie pobieramy.
-              </p>
-              <button
-                type="button"
-                className="rounded-xl bg-ink px-4 py-4 font-bold text-white"
-                onClick={() => setLoginOpen(true)}
-              >
-                Zaloguj się i zapisz zgłoszenie
-              </button>
+
+              <aside className="on-poster grid gap-4 rounded-[24px] bg-poster p-6 text-cream lg:sticky lg:top-24">
+                <p className="text-[12px] font-bold tracking-[0.16em] text-cream/60 uppercase">Razem</p>
+                <PriceChip size="lg" />
+                <ul className="grid gap-1.5 text-sm text-cream/80">
+                  <li>
+                    {product.name} · {work.qty} szt.
+                  </li>
+                  <li>Cena wyjściowa brutto</li>
+                  <li>Koszt dostawy — przed płatnością</li>
+                </ul>
+                <hr className="border-cream/15" />
+                <p className="text-sm leading-relaxed text-cream/70">
+                  Płatności nie pobieramy. „Zapisz zgłoszenie” zapisuje projekt i dane na serwerze {seller.brand}.
+                </p>
+                {user && designId ? (
+                  <p className="text-sm text-cream/70">
+                    Własny projekt:{" "}
+                    <a className="font-semibold text-cream underline" href={`/m/${designId}`}>
+                      /m/{designId}
+                    </a>
+                  </p>
+                ) : null}
+                {saveError ? <p className="text-sm font-semibold text-sun">Nie zapisano</p> : null}
+              </aside>
             </div>
-          )}
+          </div>
+          <SiteFooter />
         </section>
-        <SiteFooter />
-        </>
       ) : null}
 
       {loginOpen ? (
@@ -812,21 +985,36 @@ function AccountLinks({
 }) {
   if (!user) {
     return (
-      <button type="button" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink" onClick={onLogin}>
-        Zaloguj się
+      <button
+        type="button"
+        className="rounded-full border border-poster/15 bg-white px-3.5 py-2 text-sm font-semibold whitespace-nowrap text-poster hover:border-poster sm:px-4"
+        onClick={onLogin}
+      >
+        Zaloguj<span className="hidden sm:inline"> się</span>
       </button>
     );
   }
   return (
-    <span className="flex items-center gap-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink">
-      <span>{user.name}</span>
-      <button type="button" className="text-muted" onClick={onLogout}>
-        Wyloguj
-      </button>
-      <button type="button" className="text-muted" onClick={onDelete}>
-        Usuń konto
-      </button>
-    </span>
+    <details className="relative">
+      <summary
+        className="flex cursor-pointer list-none items-center gap-2 rounded-full border border-poster/15 bg-white py-1.5 pr-3 pl-1.5 text-sm font-semibold text-poster hover:border-poster [&::-webkit-details-marker]:hidden"
+        aria-label={`Konto: ${user.name}`}
+      >
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-sun font-display text-xs font-extrabold" aria-hidden="true">
+          {user.name.trim().charAt(0).toUpperCase() || "?"}
+        </span>
+        <span className="hidden max-w-[9rem] truncate sm:inline">{user.name}</span>
+      </summary>
+      <div className="absolute right-0 z-40 mt-2 grid w-52 gap-1 rounded-2xl border border-line bg-white p-2 text-sm text-poster shadow-[0_18px_40px_-16px_rgba(22,19,15,0.45)]">
+        <p className="truncate px-3 pt-1 pb-2 text-xs text-muted">{user.phone}</p>
+        <button type="button" className="rounded-xl px-3 py-2 text-left font-semibold hover:bg-cream" onClick={onLogout}>
+          Wyloguj
+        </button>
+        <button type="button" className="rounded-xl px-3 py-2 text-left font-semibold text-coral hover:bg-cream" onClick={onDelete}>
+          Usuń konto
+        </button>
+      </div>
+    </details>
   );
 }
 
@@ -855,32 +1043,64 @@ function Top({
   onHome,
   onCart,
   account,
+  product,
+  onProduct,
+  current,
 }: {
   onHome: () => void;
   onCart: () => void;
   account: ReactNode;
+  product?: ProductId;
+  onProduct?: (id: ProductId) => void;
+  current?: "cart";
 }) {
   return (
-    <header className="flex items-center justify-between gap-4 px-7 py-4">
-      <button type="button" onClick={onHome} className="text-lg font-extrabold tracking-tight">
-        {seller.brand}
-      </button>
-      <nav className="flex items-center gap-4 text-sm font-semibold text-muted">
-        <button type="button" className="hover:text-ink" onClick={onHome}>
-          Drzwi
+    <header className="sticky top-0 z-20 border-b border-line/80 bg-cream/90 text-poster backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:gap-3 md:px-7">
+        <button type="button" onClick={onHome} className="text-[17px] sm:text-lg md:text-xl" aria-label={`${seller.brand} — start`}>
+          <BrandMark />
         </button>
+        {onProduct ? (
+          <nav className="ml-4 hidden items-center gap-1 md:flex" aria-label="Rzeczy">
+            {catalog.map((item) => {
+              const selected = current !== "cart" && product === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={selected ? "page" : undefined}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                    selected ? "bg-poster text-cream" : "text-poster/70 hover:text-poster"
+                  }`}
+                  onClick={() => onProduct(item.id)}
+                >
+                  {item.name}
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
+        <div className="flex-1" />
         {account}
-        <button type="button" className="hover:text-ink" onClick={onCart}>
+        <button
+          type="button"
+          aria-current={current === "cart" ? "page" : undefined}
+          className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-semibold whitespace-nowrap ${
+            current === "cart" ? "border-poster bg-poster text-cream" : "border-poster/15 bg-white hover:border-poster"
+          }`}
+          onClick={onCart}
+        >
+          <BagIcon />
           Koszyk
         </button>
-      </nav>
+      </div>
     </header>
   );
 }
 
 function FieldLabel({ children }: { children: string }) {
   return (
-    <p className="mt-3.5 mb-2 text-[12px] font-bold tracking-[0.06em] text-muted uppercase">{children}</p>
+    <p className="mt-5 mb-2.5 text-[12px] font-bold tracking-[0.14em] text-muted uppercase">{children}</p>
   );
 }
 
@@ -904,8 +1124,8 @@ function Pills({
             key={value}
             type="button"
             aria-pressed={selected}
-            className={`rounded-full border px-3.5 py-2 font-semibold ${
-              selected ? "border-ink bg-ink text-white" : "border-line bg-card hover:border-ink"
+            className={`min-w-12 rounded-full border px-4 py-2 font-semibold transition-colors ${
+              selected ? "border-poster bg-poster text-cream" : "border-poster/15 bg-white hover:border-poster"
             }`}
             onClick={() => onPick(value)}
           >
@@ -914,6 +1134,15 @@ function Pills({
         );
       })}
     </div>
+  );
+}
+
+function ShopFact({ title, line }: { title: string; line: string }) {
+  return (
+    <li className="grid gap-0.5">
+      <span className="font-bold">{title}</span>
+      <span className="text-muted">{line}</span>
+    </li>
   );
 }
 
@@ -936,23 +1165,33 @@ function Door({
 }) {
   const gone = leaving !== null && leaving !== self;
   const taken = leaving === self;
+  const dark = tone === "dark";
   return (
     <button
       type="button"
       onClick={onPick}
-      className={`door flex min-h-[52vh] flex-1 flex-col justify-end gap-2 overflow-hidden px-6 py-8 text-left md:min-h-screen md:px-10 md:py-10 ${
-        tone === "dark" ? "bg-[#171614] text-[#f6f3ee]" : "bg-[#f6f3ee] text-[#171614]"
+      className={`door relative flex min-h-[50dvh] flex-1 flex-col overflow-hidden px-6 pb-7 text-left md:min-h-dvh md:px-12 md:pt-24 md:pb-12 ${
+        dark ? "on-poster halftone bg-poster pt-16 text-cream" : "halftone-ink bg-cream pt-6 text-poster"
       } ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
     >
-      {children}
-      <span className="text-[44px] leading-[0.95] font-extrabold tracking-tight md:text-[64px]">{title}</span>
-      <span className="text-lg opacity-70">{line}</span>
-      <span
-        className={`mt-4 w-fit rounded-full px-4 py-3 font-bold ${
-          tone === "dark" ? "bg-[#f6f3ee] text-[#171614]" : "bg-[#171614] text-[#f6f3ee]"
-        }`}
-      >
-        Wybierz
+      <span className="flex flex-1 items-center justify-center py-2 md:py-6">{children}</span>
+      <span className="relative z-10 grid gap-2 md:gap-3">
+        <span className={`text-[12px] font-bold tracking-[0.16em] uppercase ${dark ? "text-cream/60" : "text-poster/55"}`}>
+          {line}
+        </span>
+        <span className="font-display text-[42px] leading-[0.92] font-extrabold tracking-[-0.03em] md:text-[clamp(56px,6.4vw,100px)]">
+          {title}
+        </span>
+        <span className="mt-1 flex flex-wrap items-center gap-3">
+          <PriceChip />
+          <span className={`door-cta ${coralButton} px-5 py-3 text-base`}>
+            Zrób własny
+            <ArrowIcon />
+          </span>
+        </span>
+        <span className={`text-sm ${dark ? "text-cream/55" : "text-poster/55"}`}>
+          {seller.city} · gotowe w {seller.leadTime}
+        </span>
       </span>
     </button>
   );

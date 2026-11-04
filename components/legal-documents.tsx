@@ -28,9 +28,7 @@ export const legalTitles: Record<LegalSlug, string> = {
 
 export function LegalArticle({ slug }: { slug: LegalSlug }) {
   return (
-    <div className="mt-6 grid gap-4 text-[15px] leading-relaxed">
-      <h1 className="text-4xl font-extrabold tracking-tight">{legalTitles[slug]}</h1>
-      <p className="text-sm text-muted">{seller.brand} · wersja serwisu z 28 października 2026</p>
+    <div className="grid gap-4 text-[16px] leading-[1.7] text-poster/90 [&_a]:underline [&_a]:underline-offset-2">
       {slug === "kontakt" ? <Kontakt /> : null}
       {slug === "regulamin" ? <Regulamin /> : null}
       {slug === "prywatnosc" ? <Prywatnosc /> : null}
@@ -43,21 +41,27 @@ export function LegalArticle({ slug }: { slug: LegalSlug }) {
 }
 
 function H2({ children }: { children: string }) {
-  return <h2 className="mt-6 text-xl font-extrabold tracking-tight">{children}</h2>;
+  return <h2 className="mt-6 font-display text-xl leading-tight font-extrabold tracking-[-0.02em] text-poster">{children}</h2>;
 }
 
 function SellerFacts() {
   return (
-    <ul className="grid gap-1">
-      <li>Oznaczenie: {seller.brand}</li>
-      <li>
-        Miasto: {seller.city}, {seller.country}
+    <ul className="grid overflow-hidden rounded-2xl border border-line bg-white text-[15px]">
+      <li className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-b border-line px-4 py-3">
+        <span className="font-semibold">Oznaczenie:</span> <span>{seller.brand}</span>
+      </li>
+      <li className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-b border-line px-4 py-3">
+        <span className="font-semibold">Miasto:</span>{" "}
+        <span>
+          {seller.city}, {seller.country}
+        </span>
       </li>
       {sellerGaps.map(([key, label]) => {
         const value = seller[key].trim();
         return (
-          <li key={key}>
-            {label}: {value || "do uzupełnienia przed rozpoczęciem sprzedaży"}
+          <li key={key} className="flex flex-wrap justify-between gap-x-4 gap-y-0.5 border-b border-line px-4 py-3 last:border-b-0">
+            <span className="font-semibold">{label}:</span>{" "}
+            {value ? <span>{value}</span> : <span className="text-muted italic">do uzupełnienia przed rozpoczęciem sprzedaży</span>}
           </li>
         );
       })}
@@ -241,7 +245,7 @@ function Odstapienie() {
         przypadek i na czas, gdy sprzedaż już będzie zawierana.
       </p>
       <H2>Wzór formularza odstąpienia</H2>
-      <div className="rounded-2xl border border-line bg-card p-4 text-sm">
+      <div className="rounded-2xl border border-line bg-white p-5 text-sm">
         <p className="font-bold">Wzór formularza odstąpienia od umowy</p>
         <p className="mt-2 text-muted">Wypełnij i odeślij tylko wtedy, gdy chcesz odstąpić od umowy.</p>
         <p className="mt-3">

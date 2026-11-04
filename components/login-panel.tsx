@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
+import { BrandMark, fieldInput, inkButton } from "@/components/brand";
 import type { SessionView } from "@/lib/work";
 
 export function LoginPanel({
@@ -19,6 +20,7 @@ export function LoginPanel({
   const [needsName, setNeedsName] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const phoneId = useId();
 
   async function requestCode() {
     setBusy(true);
@@ -70,43 +72,62 @@ export function LoginPanel({
   }
 
   const form = (
-      <form onSubmit={verify} className="grid w-full max-w-md gap-3 rounded-2xl bg-paper p-6 text-ink">
+      <form
+        onSubmit={verify}
+        className="grid w-full max-w-md gap-4 rounded-[28px] bg-cream p-6 text-poster shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] md:p-7"
+        aria-label="Logowanie telefonem"
+      >
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-2xl font-extrabold tracking-tight">Logowanie telefonem</h2>
+          <div>
+            <BrandMark className="text-sm" />
+            <h2 className="mt-2 font-display text-[26px] leading-tight font-extrabold tracking-[-0.02em]">
+              Logowanie telefonem
+            </h2>
+          </div>
           {onClose ? (
-            <button type="button" className="text-sm text-muted" onClick={onClose}>
+            <button
+              type="button"
+              className="rounded-full border border-poster/15 bg-white px-3 py-1.5 text-sm font-semibold hover:border-poster"
+              onClick={onClose}
+            >
               Zamknij
             </button>
           ) : null}
         </div>
         <p className="text-sm text-muted">SMS-ów nie wysyłamy. W tym prototypie kod widać na ekranie.</p>
-        <label className="grid gap-1 text-sm font-bold">
-          Telefon
-          <input
-            required
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="+48 500 600 700"
-            value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-          />
-        </label>
-        <button
-          type="button"
-          disabled={busy}
-          className="rounded-xl border border-ink px-4 py-3 font-bold"
-          onClick={() => void requestCode()}
-        >
-          Pobierz kod
-        </button>
+        <div className="grid gap-1.5">
+          <label htmlFor={phoneId} className="text-sm font-bold">
+            Telefon
+          </label>
+          <div className="flex gap-2">
+            <input
+              id={phoneId}
+              required
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="+48 500 600 700"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              className={`${fieldInput} min-w-0 flex-1`}
+            />
+            <button
+              type="button"
+              disabled={busy}
+              className="shrink-0 rounded-xl border border-poster bg-white px-4 font-bold hover:bg-poster hover:text-cream disabled:opacity-60"
+              onClick={() => void requestCode()}
+            >
+              Pobierz kod
+            </button>
+          </div>
+        </div>
         {devCode ? (
-          <p className="rounded-xl border border-line bg-card px-3 py-3 text-sm">
-            Kod testowy: <span className="font-extrabold tracking-[0.2em]">{devCode}</span>
+          <p className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-sun px-4 py-3 text-sm font-semibold">
+            Kod testowy
+            <span className="font-display text-xl font-extrabold tracking-[0.25em]">{devCode}</span>
           </p>
         ) : null}
-        <label className="grid gap-1 text-sm font-bold">
+        <label className="grid gap-1.5 text-sm font-bold">
           Kod
           <input
             required
@@ -114,11 +135,11 @@ export function LoginPanel({
             autoComplete="one-time-code"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium tracking-[0.2em]"
+            className={`${fieldInput} tracking-[0.3em]`}
           />
         </label>
         {needsName ? (
-          <label className="grid gap-1 text-sm font-bold">
+          <label className="grid gap-1.5 text-sm font-bold">
             Imię
             <input
               required
@@ -126,17 +147,28 @@ export function LoginPanel({
               placeholder="Jak się do Ciebie zwracać"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
+              className={fieldInput}
             />
           </label>
         ) : null}
-        {error ? <p className="text-sm font-semibold">{error}</p> : null}
-        <button type="submit" disabled={busy} className="rounded-xl bg-ink px-4 py-4 font-bold text-white">
+        {error ? <p className="text-sm font-semibold text-coral">{error}</p> : null}
+        <button type="submit" disabled={busy} className={`${inkButton} px-4 py-4 text-base`}>
           Wejdź
         </button>
       </form>
   );
 
   if (embedded) return form;
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-[#1a1916]/40 px-4">{form}</div>;
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-poster/60 px-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}
+    >
+      {form}
+    </div>
+  );
 }
