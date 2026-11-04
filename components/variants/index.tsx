@@ -24,7 +24,7 @@ export function VariantSwitch({ variant }: { variant: Variant }) {
     <nav
       aria-label="Warianty wyglądu"
       data-variant-switch
-      className="font-ui fixed bottom-24 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-1 rounded-full bg-[#141414]/90 p-1 text-[12px] text-white shadow-lg backdrop-blur md:bottom-5 md:left-5 md:translate-x-0"
+      className="font-ui fixed bottom-24 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-1 rounded-full bg-[#141414]/90 p-1 text-[12px] text-white shadow-lg backdrop-blur md:top-3.5 md:bottom-auto"
     >
       <span className="px-2.5 font-semibold text-white/60">Wariant</span>
       {(Object.keys(variantNames) as Variant[]).map((id) => (

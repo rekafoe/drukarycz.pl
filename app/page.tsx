@@ -3,5 +3,6 @@ import { parseVariant } from "@/components/variants/kit";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const { v } = await searchParams;
-  return <MerchFlow variant={parseVariant(v)} />;
+  const picked = parseVariant(v);
+  return <MerchFlow variant={picked ?? "a"} compare={picked !== null} />;
 }

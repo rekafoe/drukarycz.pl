@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { EditorHandle } from "@/components/editor-canvas";
 import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
@@ -23,14 +23,7 @@ const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
   { ssr: false, loading: () => null },
 );
-import {
-  finishes,
-  productById,
-  quantities,
-  shirtColors,
-  sizes,
-  type ProductId,
-} from "@/lib/catalog";
+import { finishes, productById, shirtColors, type ProductId } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
 import { seller } from "@/lib/seller";
 
@@ -60,7 +53,7 @@ function printZoneNames(work: WorkSnapshot) {
     .map((id) => labels[id] ?? id);
 }
 
-export function MerchFlow({ variant = null }: { variant?: Variant | null }) {
+export function MerchFlow({ variant = "a", compare = false }: { variant?: Variant; compare?: boolean }) {
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -327,9 +320,9 @@ export function MerchFlow({ variant = null }: { variant?: Variant | null }) {
 
   return (
     <main className="min-h-full">
-      {variant && (work.step === "doors" || work.step === "shop") ? <VariantSwitch variant={variant} /> : null}
+      {compare && (work.step === "doors" || work.step === "shop") ? <VariantSwitch variant={variant} /> : null}
 
-      {variant && work.step === "doors" ? (
+      {work.step === "doors" ? (
         <VariantDoors
           variant={variant}
           leaving={leaving}
@@ -339,7 +332,7 @@ export function MerchFlow({ variant = null }: { variant?: Variant | null }) {
         />
       ) : null}
 
-      {variant && work.step === "shop" ? (
+      {work.step === "shop" ? (
         <VariantShop
           variant={variant}
           work={work}
@@ -350,128 +343,6 @@ export function MerchFlow({ variant = null }: { variant?: Variant | null }) {
           onEditor={() => updateWork((current) => ({ ...current, step: "editor" }))}
           account={account}
         />
-      ) : null}
-
-      {!variant && work.step === "doors" ? (
-        <section className="doors relative flex min-h-screen flex-col overflow-hidden md:flex-row">
-          <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
-            <a
-              href="/prawne/regulamin"
-              className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-ink"
-            >
-              Prawne
-            </a>
-            {account}
-          </div>
-          <Door
-            tone="dark"
-            title="Koszulka"
-            line={`Przód i tył · ${seller.priceFrom}`}
-            leaving={leaving}
-            self="tshirt"
-            onPick={() => openProduct("tshirt")}
-          >
-            <div className="door-art">
-              <ProductArt product="tshirt" color="#f4f1ea" text="" size={300} hidePrint />
-            </div>
-          </Door>
-          <Door
-            tone="light"
-            title="Kubek"
-            line={`Obwód · ${seller.priceFrom}`}
-            leaving={leaving}
-            self="mug"
-            onPick={() => openProduct("mug")}
-          >
-            <div className="door-art door-art-late">
-              <ProductArt product="mug" color="#f7f4ef" text="" size={260} hidePrint />
-            </div>
-          </Door>
-        </section>
-      ) : null}
-
-      {!variant && work.step === "shop" ? (
-        <section className="rise">
-          <Top
-            onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
-            onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
-            account={account}
-          />
-          <div className="grid items-start gap-7 px-5 pb-10 md:items-center md:px-7 md:grid-cols-[1.15fr_0.85fr]">
-            <div className="grid min-h-[240px] place-items-center rounded-[20px] border border-line bg-card md:min-h-[520px]">
-              <ProductArt product={work.product} color={work.color} text="" size={300} hidePrint />
-            </div>
-            <div>
-              <h1 className="text-[40px] font-extrabold tracking-tight">{product.name}</h1>
-              <p className="mt-1.5 text-[15px] text-muted">
-                {seller.city} · gotowe w {seller.leadTime}
-              </p>
-              <p className="mt-4 text-[28px] font-extrabold tracking-tight">{seller.priceFrom}</p>
-              <p className="mt-1 text-sm text-muted">
-                Cena wyjściowa brutto. Wiążąca cena i koszt dostawy — przed płatnością.
-              </p>
-              {work.product === "tshirt" ? (
-                <>
-                  <FieldLabel>Rozmiar</FieldLabel>
-                  <Pills
-                    values={sizes}
-                    current={work.size}
-                    onPick={(size) => updateWork((current) => ({ ...current, size }))}
-                  />
-                </>
-              ) : (
-                <>
-                  <FieldLabel>Pojemność</FieldLabel>
-                  <p className="text-sm font-semibold">330 ml</p>
-                </>
-              )}
-              <FieldLabel>Kolor</FieldLabel>
-              <div className="flex items-center gap-2.5">
-                {shirtColors.map((swatch) => {
-                  const selected = work.color === swatch.value;
-                  return (
-                    <button
-                      key={swatch.id}
-                      type="button"
-                      aria-label={swatch.label}
-                      aria-pressed={selected}
-                      className={`h-9 w-9 rounded-full border ${selected ? "border-ink ring-2 ring-ink ring-offset-2 ring-offset-paper" : "border-line"}`}
-                      style={{ background: swatch.value }}
-                      onClick={() => updateWork((current) => ({ ...current, color: swatch.value }))}
-                    />
-                  );
-                })}
-                <span className="ml-1 text-sm text-muted">{colorName}</span>
-              </div>
-              <FieldLabel>Nakład</FieldLabel>
-              <Pills
-                values={quantities}
-                current={work.qty}
-                format={(value) => `${value} szt.`}
-                onPick={(qty) => updateWork((current) => ({ ...current, qty }))}
-              />
-              <FieldLabel>Wykończenie</FieldLabel>
-              <Pills
-                values={finishes.map((item) => item.label)}
-                current={finishes.find((item) => item.id === work.finish)?.label ?? "Bez wykończenia"}
-                onPick={(label) => {
-                  const next = finishes.find((item) => item.label === label);
-                  if (next) updateWork((current) => ({ ...current, finish: next.id }));
-                }}
-              />
-              <p className="mt-2 text-xs text-muted">Tak będzie wyglądać powierzchnia nadruku.</p>
-              <button
-                type="button"
-                className="mt-6 w-full rounded-xl bg-ink px-4 py-4 text-base font-bold text-white hover:bg-[#2c2a26]"
-                onClick={() => updateWork((current) => ({ ...current, step: "editor" }))}
-              >
-                Zrób własny
-              </button>
-              <p className="mt-3 text-sm text-muted">Własny plik podepniemy razem z zamówieniem.</p>
-            </div>
-          </div>
-          <SiteFooter />
-        </section>
       ) : null}
 
       {work.step === "editor" ? (
@@ -874,112 +745,5 @@ function OrderSummary({ order }: { order: WorkSnapshot["order"] }) {
       <li>marketing: {order.marketing ? "tak" : "nie"}</li>
       {when ? <li>zapis zgód: {when}</li> : null}
     </ul>
-  );
-}
-
-function Top({
-  onHome,
-  onCart,
-  account,
-}: {
-  onHome: () => void;
-  onCart: () => void;
-  account: ReactNode;
-}) {
-  return (
-    <header className="flex items-center justify-between gap-4 px-7 py-4">
-      <button type="button" onClick={onHome} className="text-lg font-extrabold tracking-tight">
-        {seller.brand}
-      </button>
-      <nav className="flex items-center gap-4 text-sm font-semibold text-muted">
-        <button type="button" className="hover:text-ink" onClick={onHome}>
-          Drzwi
-        </button>
-        {account}
-        <button type="button" className="hover:text-ink" onClick={onCart}>
-          Koszyk
-        </button>
-      </nav>
-    </header>
-  );
-}
-
-function FieldLabel({ children }: { children: string }) {
-  return (
-    <p className="mt-3.5 mb-2 text-[12px] font-bold tracking-[0.06em] text-muted uppercase">{children}</p>
-  );
-}
-
-function Pills({
-  values,
-  current,
-  onPick,
-  format,
-}: {
-  values: readonly string[];
-  current: string;
-  onPick: (value: string) => void;
-  format?: (value: string) => string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {values.map((value) => {
-        const selected = value === current;
-        return (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={selected}
-            className={`rounded-full border px-3.5 py-2 font-semibold ${
-              selected ? "border-ink bg-ink text-white" : "border-line bg-card hover:border-ink"
-            }`}
-            onClick={() => onPick(value)}
-          >
-            {format ? format(value) : value}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function Door({
-  tone,
-  title,
-  line,
-  leaving,
-  self,
-  onPick,
-  children,
-}: {
-  tone: "dark" | "light";
-  title: string;
-  line: string;
-  leaving: ProductId | null;
-  self: ProductId;
-  onPick: () => void;
-  children: ReactNode;
-}) {
-  const gone = leaving !== null && leaving !== self;
-  const taken = leaving === self;
-  return (
-    <button
-      type="button"
-      onClick={onPick}
-      className={`door flex min-h-[52vh] flex-1 flex-col justify-end gap-2 overflow-hidden px-6 py-8 text-left md:min-h-screen md:px-10 md:py-10 ${
-        tone === "dark" ? "bg-[#171614] text-[#f6f3ee]" : "bg-[#f6f3ee] text-[#171614]"
-      } ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
-    >
-      {children}
-      <span className="text-[44px] leading-[0.95] font-extrabold tracking-tight md:text-[64px]">{title}</span>
-      <span className="text-lg opacity-70">{line}</span>
-      <span
-        className={`mt-4 w-fit rounded-full px-4 py-3 font-bold ${
-          tone === "dark" ? "bg-[#f6f3ee] text-[#171614]" : "bg-[#171614] text-[#f6f3ee]"
-        }`}
-      >
-        Wybierz
-      </span>
-    </button>
   );
 }

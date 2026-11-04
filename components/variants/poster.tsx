@@ -55,9 +55,9 @@ function CartButton({ onCart }: { onCart: () => void }) {
 
 export function PosterDoors({ leaving, onPick, onCart, account }: DoorsViewProps) {
   return (
-    <section className="font-ui doors relative flex min-h-svh flex-col overflow-hidden bg-[#16130F] md:flex-row">
+    <section className="font-ui doors relative flex min-h-svh flex-col overflow-hidden bg-[#16130F] md:h-svh md:min-h-[600px] md:flex-row">
       <h1 className="sr-only">Twój nadruk na koszulce i kubku — {seller.brand}</h1>
-      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 px-5 py-4 md:px-8 md:py-6">
+      <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 px-5 py-3 md:px-8 md:py-5">
         <Wordmark className="text-[#F3EEE4]" />
         <div className="flex items-center gap-2">
           <CartButton onCart={onCart} />
@@ -66,13 +66,16 @@ export function PosterDoors({ leaving, onPick, onCart, account }: DoorsViewProps
       </header>
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-[68px] z-20 px-5 text-[#F3EEE4] mix-blend-difference md:top-[12vh] md:text-center"
+        className="pointer-events-none absolute inset-x-0 top-[58px] z-20 px-5 text-[#F3EEE4] mix-blend-difference md:top-[max(80px,11vh)] md:text-center"
       >
-        <p className="poster-headline font-poster text-[36px] leading-[0.95] font-black md:text-[clamp(64px,8.4vw,150px)]">
+        <p className="poster-headline font-poster text-[32px] leading-[0.95] font-black md:text-[length:clamp(60px,min(8.4vw,13.5vh),150px)]">
           <span>Twój</span> <span>nadruk.</span>
         </p>
-        <p className="mt-3 max-w-[32ch] text-[14px] leading-snug font-semibold md:mx-auto md:mt-5 md:max-w-none md:text-[18px]">
-          Koszulka albo kubek z Twoim projektem · druk w Warszawie, gotowe w {seller.leadTime}
+        <p className="mt-2 text-[13px] leading-snug font-semibold md:mt-4 md:text-[17px]">
+          <span className="md:hidden">Druk w Warszawie · gotowe w {seller.leadTime}</span>
+          <span className="hidden md:inline">
+            Koszulka albo kubek z Twoim projektem · druk w Warszawie, gotowe w {seller.leadTime}
+          </span>
         </p>
       </div>
       <PosterDoor product="tshirt" index={1} dark leaving={leaving} onPick={onPick} />
@@ -109,18 +112,18 @@ function PosterDoor({
       type="button"
       onClick={() => onPick(product)}
       className={`door relative flex flex-1 overflow-hidden text-left ${
-        dark ? "min-h-[53svh] bg-[#16130F] pt-[146px] text-[#F3EEE4]" : "min-h-[47svh] bg-[#F3EEE4] text-[#16130F]"
-      } md:min-h-svh md:pt-0 ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
+        dark ? "bg-[#16130F] pt-[118px] text-[#F3EEE4]" : "bg-[#F3EEE4] pb-5 text-[#16130F]"
+      } md:pt-0 md:pb-0 ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
     >
-      <div className="flex w-full items-center gap-3 px-5 pb-6 md:flex-col md:items-stretch md:gap-0 md:px-10 md:pt-[30vh] md:pb-9">
+      <div className="flex w-full items-center gap-3 px-5 py-3 md:h-full md:flex-col md:items-stretch md:gap-0 md:px-10 md:pt-[max(220px,31vh)] md:pb-[max(28px,4.5vh)]">
         <div className="order-2 flex min-w-0 flex-1 flex-col md:order-2 md:flex-none">
           <p className="text-[12px] font-extrabold tracking-[0.14em] uppercase opacity-70 md:text-[13px]">
             0{index} — {isMug ? "Nadruk dookoła · 330 ml" : "Przód i tył · S–XL"}
           </p>
-          <p className="font-poster mt-1.5 text-[28px] leading-[0.95] font-black md:mt-2 md:text-[clamp(48px,5vw,80px)]">
+          <p className="font-poster mt-1 text-[28px] leading-[0.95] font-black md:mt-2 md:text-[length:clamp(44px,min(5vw,8vh),80px)]">
             {isMug ? "Kubek" : "Koszulka"}
           </p>
-          <div className="mt-4 flex flex-col items-start gap-2.5 md:mt-5 md:flex-row md:items-center md:gap-3">
+          <div className="mt-3 flex flex-col items-start gap-2 md:mt-[min(20px,2.4vh)] md:flex-row md:items-center md:gap-3">
             <PriceChip />
             <span className="poster-cta inline-flex items-center gap-2 rounded-full bg-[#E23B2F] px-5 py-3 text-[15px] font-extrabold text-white shadow-[0_14px_30px_-14px_rgba(226,59,47,0.9)] md:px-6 md:py-3.5 md:text-[16px]">
               Zrób własny
@@ -128,10 +131,10 @@ function PosterDoor({
             </span>
           </div>
         </div>
-        <div className="door-art relative order-3 grid w-[42%] shrink-0 place-items-center md:order-1 md:mb-6 md:w-full md:flex-1">
+        <div className="door-art relative order-3 grid w-[40%] shrink-0 place-items-center md:order-1 md:min-h-0 md:w-full md:flex-1">
           <span
-            className={`poster-disc absolute aspect-square rounded-full bg-[#C46A4A] ${
-              isMug ? "h-[118px] md:h-[min(34vh,330px)]" : "h-[150px] md:h-[min(42vh,400px)]"
+            className={`poster-disc absolute aspect-square rounded-full bg-[#C46A4A] md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 ${
+              isMug ? "h-[108px] md:h-[74%]" : "h-[132px] md:h-[88%]"
             }`}
           />
           <Image
@@ -141,8 +144,8 @@ function PosterDoor({
             alt=""
             priority
             sizes="(max-width: 768px) 45vw, 40vw"
-            className={`relative w-auto drop-shadow-[0_24px_30px_rgba(0,0,0,0.35)] ${
-              isMug ? "h-[150px] md:h-[min(36vh,340px)]" : "h-[188px] md:h-[min(46vh,440px)]"
+            className={`relative w-auto max-w-none drop-shadow-[0_24px_30px_rgba(0,0,0,0.35)] md:absolute md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 ${
+              isMug ? "h-[136px] md:h-[80%]" : "h-[164px] md:h-full"
             }`}
           />
         </div>
@@ -195,11 +198,11 @@ function PosterTop({
 }
 
 function Label({ children }: { children: ReactNode }) {
-  return <p className="mt-5 mb-2 text-[12px] font-extrabold tracking-[0.14em] uppercase">{children}</p>;
+  return <p className="mt-5 mb-2 text-[12px] font-extrabold tracking-[0.14em] uppercase md:mt-[min(20px,2.2vh)] md:mb-1.5">{children}</p>;
 }
 
 function choice(selected: boolean) {
-  return `rounded-xl border-2 px-4 py-2.5 text-[15px] font-bold transition-colors ${
+  return `rounded-xl border-2 px-4 py-2.5 text-[15px] font-bold transition-colors md:py-2 ${
     selected ? "border-[#16130F] bg-[#16130F] text-[#F3EEE4]" : "border-[#16130F]/12 bg-white/60 hover:border-[#16130F]"
   }`;
 }
@@ -254,12 +257,12 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
             ))}
           </div>
         </div>
-        <div className="px-5 py-7 md:px-12 md:py-9 lg:px-16">
+        <div className="px-5 py-7 md:px-12 md:pt-[min(36px,4vh)] md:pb-6 lg:px-16">
           <p className="text-[12px] font-extrabold tracking-[0.14em] text-[#6b6358] uppercase md:text-[13px]">
             Druk w Warszawie · gotowe w {seller.leadTime}
           </p>
-          <h1 className="font-poster mt-2 text-[44px] leading-[0.95] font-black md:text-[60px]">{m.product.name}</h1>
-          <div className="mt-4 flex items-center gap-3">
+          <h1 className="font-poster mt-2 text-[44px] leading-[0.95] font-black md:text-[length:clamp(40px,7vh,60px)]">{m.product.name}</h1>
+          <div className="mt-4 flex items-center gap-3 md:mt-3">
             <PriceChip big />
             <p className="text-[13px] leading-snug text-[#6b6358]">
               Cena wyjściowa brutto.
@@ -300,7 +303,7 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
                 type="button"
                 aria-label={swatch.label}
                 aria-pressed={work.color === swatch.value}
-                className={`h-10 w-10 rounded-full border border-black/15 transition-transform hover:scale-105 ${
+                className={`h-10 w-10 rounded-full border border-black/15 transition-transform hover:scale-105 md:h-9 md:w-9 ${
                   work.color === swatch.value ? "ring-[3px] ring-[#E23B2F] ring-offset-2 ring-offset-[#F3EEE4]" : ""
                 }`}
                 style={{ background: swatch.value }}
@@ -336,15 +339,17 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={onEditor}
-            className="poster-cta mt-7 hidden w-full items-center justify-center gap-2 rounded-full bg-[#E23B2F] px-6 py-5 text-[18px] font-extrabold text-white shadow-[0_18px_40px_-18px_rgba(226,59,47,0.9)] hover:bg-[#cf3127] md:flex"
-          >
-            Zrób własny
-            <ArrowIcon />
-          </button>
-          <p className="mt-3 text-[14px] text-[#6b6358]">Masz gotowy plik? Podepniemy go razem z zamówieniem.</p>
+          <div className="sticky bottom-0 z-10 -mx-3 mt-6 hidden bg-[#F3EEE4] px-3 pt-2 pb-3 md:block">
+            <button
+              type="button"
+              onClick={onEditor}
+              className="poster-cta flex w-full items-center justify-center gap-2 rounded-full bg-[#E23B2F] px-6 py-4 text-[18px] font-extrabold text-white shadow-[0_18px_40px_-18px_rgba(226,59,47,0.9)] hover:bg-[#cf3127]"
+            >
+              Zrób własny
+              <ArrowIcon />
+            </button>
+          </div>
+          <p className="mt-3 text-[14px] text-[#6b6358] md:mt-1">Masz gotowy plik? Podepniemy go razem z zamówieniem.</p>
         </div>
       </div>
       <SiteFooter />
