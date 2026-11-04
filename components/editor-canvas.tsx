@@ -12,7 +12,7 @@ import {
 } from "@/components/souvenir3d/types";
 import { printAreaFabricPx, productionMultiplier } from "@/components/souvenir3d/scale";
 import type { ProductId } from "@/lib/catalog";
-import { issuesForAreas, SAFE_MARGIN_MM } from "@/lib/print-quality";
+import { isTextType, issuesForAreas, SAFE_MARGIN_MM } from "@/lib/print-quality";
 import { fontByFamily, fontById, loadPrintFont } from "@/lib/print-fonts";
 import { stickerById } from "@/lib/stickers";
 import { defaultPrintText, inkForFabric, type QualityIssue } from "@/lib/work";
@@ -33,7 +33,7 @@ export type EditorHandle = {
 type HistoryBucket = { past: string[]; future: string[] };
 
 function isTextObject(object: { type?: string }) {
-  return object.type === "i-text" || object.type === "text" || object.type === "textbox";
+  return isTextType(object.type);
 }
 
 function isImageObject(object: { type?: string }) {
@@ -117,6 +117,16 @@ function fileToDataUrl(file: File): Promise<string> {
 
 function areasFor(product: ProductId): PrintAreaConfig[] {
   return product === "mug" ? [DEFAULT_PRINT_AREA_MUG] : DEFAULT_PRINT_AREAS_TSHIRT;
+}
+
+/** Фон листа — цвет ткани для экрана. В файл для печати и на модель он не входит. */
+function pageWithoutSheetBackground(page: object): object {
+  const copy = { ...(page as Record<string, unknown>) };
+  delete copy.background;
+  delete copy.backgroundColor;
+  delete copy.overlay;
+  delete copy.overlayColor;
+  return copy;
 }
 
 /** Фон листа не входит в текстуру, поэтому белые чернила остаются на модели. */
@@ -302,24 +312,29 @@ export function EditorCanvas({
       }, 180);
     };
 
+    const loadAbort = new AbortController();
     const saved = pages.current[active.id];
     const ready = saved
-      ? canvas.loadFromJSON(saved).then(() => {
+      ? canvas.loadFromJSON(saved, undefined, { signal: loadAbort.signal }).then(() => {
           if (!stopped) canvas.requestRenderAll();
         })
       : Promise.resolve();
-    ready.then(() => {
-      if (stopped) return;
-      readyToEmit = true;
-      const shot = JSON.stringify(canvas.toObject());
-      const current = bucket();
-      if (current.past.length === 0) current.past.push(shot);
-      syncHistoryFlags();
-      publish();
-      window.requestAnimationFrame(() => {
-        if (!stopped) setSheetReady(true);
+    ready
+      .then(() => {
+        if (stopped) return;
+        readyToEmit = true;
+        const shot = JSON.stringify(canvas.toObject());
+        const current = bucket();
+        if (current.past.length === 0) current.past.push(shot);
+        syncHistoryFlags();
+        publish();
+        window.requestAnimationFrame(() => {
+          if (!stopped) setSheetReady(true);
+        });
+      })
+      .catch(() => {
+        // StrictMode снимает холст, пока loadFromJSON ещё не закончился.
       });
-    });
 
     const onChange = () => publish();
     const reportIssues = () => {
@@ -352,9 +367,19 @@ export function EditorCanvas({
         }
       }
       stopped = true;
+      loadAbort.abort();
       publishRef.current = () => {};
       window.clearTimeout(timer);
       window.clearTimeout(quietTimer.current);
+      // Иначе then() у loadFromJSON вызывает clear() уже после dispose и падает на clearRect.
+      const retiring = canvas as Canvas & {
+        clear: () => Canvas;
+        renderAll: () => Canvas;
+        requestRenderAll: () => Canvas;
+      };
+      retiring.clear = () => canvas;
+      retiring.renderAll = () => canvas;
+      retiring.requestRenderAll = () => canvas;
       canvas.dispose();
       fabricRef.current = null;
     };
@@ -1045,7 +1070,11 @@ export function EditorCanvas({
       });
       try {
         await document.fonts.ready;
-        await off.loadFromJSON(page);
+        await off.loadFromJSON(pageWithoutSheetBackground(page));
+        off.backgroundColor = "";
+        off.backgroundImage = undefined;
+        off.overlayColor = "";
+        off.overlayImage = undefined;
         if (off.getObjects().length === 0) continue;
         const painted = off.toCanvasElement(productionMultiplier(areaWidth, area.widthMm));
         const blob = await new Promise<Blob | null>((resolve) => painted.toBlob((value) => resolve(value), "image/png"));

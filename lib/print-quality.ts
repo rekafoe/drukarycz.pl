@@ -41,10 +41,17 @@ function originY(value: unknown): OriginY {
   return value === "center" || value === "bottom" ? value : "top";
 }
 
+/** Fabric 7 пишет IText как `itext`, старый холст — как `i-text`. */
+export function isTextType(type: unknown): boolean {
+  if (typeof type !== "string") return false;
+  const name = type.toLowerCase().replace(/-/g, "");
+  return name === "itext" || name === "text" || name === "textbox";
+}
+
 function kindOf(type: unknown): Measured["kind"] {
-  const name = typeof type === "string" ? type.toLowerCase().replace("-", "") : "";
+  const name = typeof type === "string" ? type.toLowerCase().replace(/-/g, "") : "";
   if (name === "image" || name === "fabricimage") return "image";
-  if (name === "itext" || name === "text" || name === "textbox") return "text";
+  if (isTextType(type)) return "text";
   return "other";
 }
 

@@ -66,6 +66,25 @@ test("текст ниже 5 мм и объект за краем", () => {
   );
 });
 
+test("Fabric 7 itext, i-text и IText входят в проверку размера", () => {
+  for (const type of ["itext", "i-text", "IText", "textbox", "Textbox"]) {
+    const tiny = {
+      type,
+      left: 100,
+      top: 100,
+      width: 80,
+      height: 20,
+      fontSize: 12,
+      scaleX: 1,
+      scaleY: 1,
+      originX: "left",
+      originY: "top",
+    };
+    assert.equal(measureObject(tiny)?.kind, "text", type);
+    assert.equal(issuesForArea(front, { objects: [tiny] }).some((item) => item.code === "small_text"), true, type);
+  }
+});
+
 test("Fabric 7 пишет тип IText и Image", () => {
   const text = { type: "IText", left: 40, top: 40, width: 80, height: 20, fontSize: 11, scaleX: 1, scaleY: 1, originX: "left", originY: "top" };
   const image = { type: "Image", left: 10, top: 10, width: 200, height: 200, scaleX: 1, scaleY: 1 };

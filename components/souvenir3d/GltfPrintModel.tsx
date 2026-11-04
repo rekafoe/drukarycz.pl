@@ -466,7 +466,11 @@ function createPrintAreaBorderTexture(
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  // Мипы усредняют редкие штрихи в серую вуаль на всю зону. На светлой ткани её видно.
+  tex.generateMipmaps = false;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.premultiplyAlpha = false;
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
   tex.needsUpdate = true;
@@ -482,6 +486,7 @@ function usePrintZoneBorderMaterial(widthMm: number, heightMm: number) {
       side: THREE.DoubleSide,
       toneMapped: false,
       transparent: true,
+      premultipliedAlpha: false,
       depthWrite: false,
       polygonOffset: true,
       polygonOffsetFactor: -10,
@@ -493,6 +498,7 @@ function usePrintZoneBorderMaterial(widthMm: number, heightMm: number) {
         '#include <map_fragment>',
         /* glsl */ `
         #include <map_fragment>
+        if (diffuseColor.a < 0.2) discard;
         #ifdef USE_MAP
           if (vMapUv.x < 0.0 || vMapUv.x > 1.0 || vMapUv.y < 0.0 || vMapUv.y > 1.0) discard;
         #endif
