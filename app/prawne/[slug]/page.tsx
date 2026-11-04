@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LegalArticle, isLegalSlug, legalSlugs, legalTitles } from "@/components/legal-documents";
+import { PosterHeader } from "@/components/poster-chrome";
 import { SiteFooter } from "@/components/site-footer";
 import { seller } from "@/lib/seller";
 import { legalDescriptions, pageMetadata } from "@/lib/seo";
@@ -25,11 +27,12 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   if (!isLegalSlug(slug)) notFound();
   return (
-    <main>
+    <main className="min-h-screen bg-[#F3EEE4]">
+      <PosterHeader current="home" />
       <article className="mx-auto max-w-3xl px-5 py-8 md:px-7">
-        <a href="/" className="text-sm font-semibold text-muted">
+        <Link href="/" className="text-sm font-bold text-(--a-mark) hover:underline">
           ← {seller.brand}
-        </a>
+        </Link>
         <LegalArticle slug={slug} />
       </article>
       <SiteFooter />

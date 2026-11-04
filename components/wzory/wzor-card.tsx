@@ -83,7 +83,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
                   key={side}
                   type="button"
                   aria-pressed={view === side}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-bold ${view === side ? "bg-ink text-white" : "text-ink"}`}
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-bold ${view === side ? "bg-(--a-cta) text-white" : "text-ink"}`}
                   onClick={() => setView(side)}
                 >
                   {side === "front" ? "Przód" : "Tył"}
@@ -104,7 +104,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
 
       <div className="pb-28 md:pb-0">
         <p className="text-[12px] font-bold tracking-[0.06em] text-muted uppercase">Gotowy wzór · {product.name}</p>
-        <h1 className="mt-1 text-[40px] leading-tight font-extrabold tracking-tight">{wzorTitle(wzor.code)}</h1>
+        <h1 className="font-poster mt-1 text-[40px] leading-[0.95] font-black tracking-tight md:text-[52px]">{wzorTitle(wzor.code)}</h1>
         <div className="mt-2 flex flex-wrap gap-2 text-sm font-semibold">
           {categoryName ? <span className="rounded-full border border-line bg-card px-3 py-1">{categoryName}</span> : null}
           <span className="rounded-full border border-line bg-card px-3 py-1">{zonesLabel(wzor.product, wzor.usedPrintAreaIds)}</span>
@@ -132,12 +132,12 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
             {error}
           </p>
         ) : null}
-        <div className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-2 gap-2 border-t border-line bg-paper/95 p-3 backdrop-blur md:static md:mt-6 md:grid-cols-1 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+        <div className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-2 gap-2 border-t border-line bg-[#F3EEE4]/95 p-3 backdrop-blur md:static md:mt-6 md:grid-cols-1 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
           {asIs ? (
             <button
               type="button"
               disabled={busy !== null}
-              className="rounded-xl bg-ink px-4 py-4 font-bold text-white hover:bg-[#2c2a26] disabled:opacity-60"
+              className="btn-kobalt py-4"
               onClick={() => void choose("as-is")}
             >
               {busy === "as-is" ? "Chwileczkę…" : "Zamów bez zmian"}
@@ -146,7 +146,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
           <button
             type="button"
             disabled={busy !== null}
-            className={`rounded-xl border border-ink px-4 py-4 font-bold text-ink hover:bg-card disabled:opacity-60 ${asIs ? "" : "col-span-2 md:col-span-1"}`}
+            className={`btn-ghost py-4 ${asIs ? "" : "col-span-2 md:col-span-1"}`}
             onClick={() => void choose("edit")}
           >
             {busy === "edit" ? "Otwieramy edytor…" : "Zmień w edytorze"}
@@ -157,7 +157,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
           <button
             type="button"
             disabled={busy !== null}
-            className="font-bold text-ink underline underline-offset-4"
+            className="font-bold text-(--a-mark) underline underline-offset-4"
             onClick={() => {
               setBusy("own");
               void startOwnDesign(productSlugs[wzor.product], router.push).then((ok) => {

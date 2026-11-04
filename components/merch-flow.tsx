@@ -1,13 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { EditorHandle } from "@/components/editor-canvas";
 import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
-import { AccentPanel, VariantDoors, VariantShop, VariantSwitch } from "@/components/variants";
+import { PosterHeader } from "@/components/poster-chrome";
+import { VariantDoors, VariantShop } from "@/components/variants";
 import { defaultAccent, type AccentId } from "@/components/variants/accents";
 import type { Variant } from "@/components/variants/kit";
 import { CartWzorLine, WzorOrderFields } from "@/components/wzory/cart-wzor";
@@ -31,6 +33,13 @@ const EditorCanvas = dynamic(
 import { finishes, productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
 import { seller } from "@/lib/seller";
+
+const PreviewBars =
+  process.env.NODE_ENV === "production"
+    ? function PreviewBarsOff() {
+        return null;
+      }
+    : dynamic(() => import("@/components/variants/preview-bars").then((mod) => mod.PreviewBars), { ssr: false });
 
 const warmedModels = new Set<string>();
 
@@ -321,14 +330,14 @@ export function MerchFlow({
 
   return (
     <main className="min-h-full">
-      {process.env.NODE_ENV !== "production" && compare && (work.step === "doors" || work.step === "shop") ? (
-        <VariantSwitch variant={variant} />
-      ) : null}
-      {process.env.NODE_ENV !== "production" &&
-      accentPanel &&
-      variant === "a" &&
-      (work.step === "doors" || work.step === "shop") ? (
-        <AccentPanel accent={accent} raised={work.step === "shop"} lowered={compare} />
+      {process.env.NODE_ENV !== "production" && (work.step === "doors" || work.step === "shop") ? (
+        <PreviewBars
+          variant={variant}
+          accent={accent}
+          compare={compare}
+          accentPanel={accentPanel}
+          shop={work.step === "shop"}
+        />
       ) : null}
 
       {work.step === "doors" ? (
@@ -377,30 +386,32 @@ export function MerchFlow({
       ) : null}
 
       {work.step === "editor" ? (
-        <section className="relative flex h-dvh flex-col bg-paper text-ink">
-          <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-4">
+        <section className="relative flex h-dvh flex-col bg-[#F3EEE4] text-ink">
+          <header className="flex h-14 shrink-0 items-center gap-3 bg-[#16130F] px-4 text-[#F3EEE4]">
             <button
               type="button"
-              className="text-sm text-muted"
+              className="text-sm text-[#F3EEE4]/70 hover:text-[#F3EEE4]"
               onClick={() => updateWork((current) => ({ ...current, step: "shop" }))}
             >
               Do rzeczy
             </button>
-            <span className="text-sm font-semibold">{product.name}</span>
-            <span className="hidden text-sm text-muted sm:inline">
+            <span className="font-poster text-sm font-extrabold">{product.name}</span>
+            <span className="hidden text-sm text-[#F3EEE4]/55 sm:inline">
               {work.product === "tshirt" ? `${work.size} · ` : "330 ml · "}
               {colorName} · {work.qty} szt. · {finishName}
             </span>
             <div className="flex-1" />
-            <a href="/prawne/regulamin" className="text-sm text-muted hover:text-ink">
+            <Link href="/prawne/regulamin" className="text-sm text-[#F3EEE4]/70 hover:text-[#F3EEE4]">
               Prawne
-            </a>
-            {saveError ? <span className="text-sm text-muted">Nie zapisano</span> : null}
-            {work.quality.length > 0 ? <span className="text-sm text-muted">Uwagi do druku</span> : null}
-            <span className="text-sm text-muted">{seller.priceFrom}</span>
+            </Link>
+            {saveError ? <span className="text-sm text-[#F3EEE4]/70">Nie zapisano</span> : null}
+            {work.quality.length > 0 ? <span className="text-sm text-(--a-badge)">Uwagi do druku</span> : null}
+            <span className="rounded-full bg-(--a-badge) px-3 py-1 text-sm font-bold text-(--a-badge-text)">
+              {seller.priceFrom}
+            </span>
             <button
               type="button"
-              className="rounded-full bg-ink px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="btn-kobalt btn-kobalt-sm"
               disabled={printBusy}
               onClick={() => void openCart()}
             >
@@ -444,19 +455,17 @@ export function MerchFlow({
 
       {work.step === "cart" ? (
         <>
-        <section className={`${rise} mx-auto max-w-3xl px-7 py-8`}>
+        <PosterHeader account={account} current={work.product === "mug" ? "mug" : "tshirt"} />
+        <section className={`${rise} mx-auto max-w-3xl px-5 py-8 md:px-7`}>
           <button
             type="button"
-            className="font-bold"
+            className="text-sm font-bold text-(--a-mark) hover:underline"
             onClick={() => updateWork((current) => ({ ...current, step: current.cartFrom }))}
           >
             {work.cartFrom === "shop" ? "← Do rzeczy" : "← Do edytora"}
           </button>
-          <div className="mt-4 flex items-center justify-between gap-4">
-            <h1 className="text-4xl font-extrabold tracking-tight">Koszyk</h1>
-            {account}
-          </div>
-          <article className="mt-6 flex items-center gap-4 rounded-2xl border border-line bg-card p-4">
+          <h1 className="font-poster mt-4 text-[40px] leading-[0.95] font-black tracking-tight md:text-[52px]">Koszyk</h1>
+          <article className="mt-6 flex items-center gap-4 rounded-2xl border border-[#16130F]/10 bg-white p-4">
             {work.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -469,13 +478,15 @@ export function MerchFlow({
               <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
             )}
             <div>
-              <h2 className="text-xl font-extrabold">{product.name}</h2>
+              <h2 className="font-poster text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
                 {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label, finishName]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              <p className="mt-1 font-bold">{seller.priceFrom}</p>
+              <p className="mt-1 inline-flex rounded-full bg-(--a-badge) px-3 py-1 text-sm font-bold text-(--a-badge-text)">
+                {seller.priceFrom}
+              </p>
               <p className="text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
               <CartWzorLine work={work} />
               {work.quality.length > 0 ? (
@@ -536,7 +547,7 @@ export function MerchFlow({
           {saveError ? <p className="mt-4 text-sm text-muted">Nie zapisano</p> : null}
           {work.placed && user ? (
             <div className="mt-6 grid gap-3">
-              <p className="rounded-2xl bg-ink px-4 py-4 text-white">
+              <p className="rounded-2xl bg-[#16130F] px-4 py-4 text-[#F3EEE4]">
                 Zgłoszenie zapisane na serwerze {seller.brand}. Płatności nie pobieramy i nie wysyłamy go do CRM. Umowa sprzedaży
                 powstanie dopiero po podaniu ceny z podatkiem i dostawą oraz po płatności.
               </p>
@@ -646,10 +657,10 @@ export function MerchFlow({
                   required
                   checked={work.order.acceptTerms}
                   onChange={(event) => setOrder({ acceptTerms: event.target.checked })}
-                  className="mt-1"
+                  className="mt-1 accent-(--a-mark)"
                 />
                 <span>
-                  Akceptuję <a href="/prawne/regulamin" className="underline">regulamin</a>.
+                  Akceptuję <Link href="/prawne/regulamin" className="underline">regulamin</Link>.
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm font-medium">
@@ -663,16 +674,16 @@ export function MerchFlow({
                 <span>
                   Zamawiam rzecz na indywidualne zamówienie i przyjmuję do wiadomości, że tracę prawo odstąpienia od
                   umowy w ciągu 14 dni.{" "}
-                  <a href="/prawne/odstapienie" className="underline">
+                  <Link href="/prawne/odstapienie" className="underline">
                     Odstąpienie
-                  </a>
+                  </Link>
                 </span>
               </label>
               <p className="text-sm font-medium text-muted">
                 Dane przetwarzamy według{" "}
-                <a className="text-ink underline" href="/prawne/prywatnosc">
+                <Link className="text-ink underline" href="/prawne/prywatnosc">
                   polityki prywatności
-                </a>
+                </Link>
                 .
               </p>
               <label className="flex items-start gap-2 text-sm font-medium">
@@ -691,7 +702,7 @@ export function MerchFlow({
               <button
                 type="submit"
                 disabled={orderBusy}
-                className="rounded-xl bg-ink px-4 py-4 font-bold text-white disabled:opacity-60"
+                className="btn-kobalt w-full py-4"
               >
                 Zapisz zgłoszenie
               </button>
@@ -706,7 +717,7 @@ export function MerchFlow({
               </p>
               <button
                 type="button"
-                className="rounded-xl bg-ink px-4 py-4 font-bold text-white"
+                className="btn-kobalt w-full py-4"
                 onClick={() => setLoginOpen(true)}
               >
                 Zaloguj się i zapisz zgłoszenie
@@ -744,7 +755,7 @@ function AccountLinks({
 }) {
   if (!user) {
     return (
-      <button type="button" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink" onClick={onLogin}>
+      <button type="button" className="rounded-full bg-[#F3EEE4] px-4 py-2 text-sm font-semibold text-[#16130F]" onClick={onLogin}>
         Zaloguj się
       </button>
     );

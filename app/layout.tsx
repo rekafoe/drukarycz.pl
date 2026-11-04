@@ -1,14 +1,9 @@
+import type { ReactNode } from "react";
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
 import { seller } from "@/lib/seller";
 import { homeSeo } from "@/lib/seo";
 import { site } from "@/lib/site";
 import "./globals.css";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin", "latin-ext"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -31,13 +26,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f3f0ea",
+  themeColor: "#F3EEE4",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pl" className={`${manrope.variable} h-full antialiased`}>
-      <body className="min-h-full">{children}</body>
+    <html lang="pl" className="h-full antialiased">
+      <body className="font-ui min-h-full">{children}</body>
     </html>
   );
 }

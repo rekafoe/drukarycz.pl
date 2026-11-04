@@ -133,7 +133,7 @@ export function parseAccent(value: unknown): AccentId {
 }
 
 export function accentById(id: AccentId): AccentPalette {
-  return accents.find((item) => item.id === id) ?? accents[0];
+  return accents.find((item) => item.id === id) ?? accents.find((item) => item.id === defaultAccent)!;
 }
 
 export function accentStyle(id: AccentId): CSSProperties {

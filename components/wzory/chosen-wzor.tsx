@@ -41,7 +41,7 @@ export function ChosenWzor({
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-ink/20 bg-card p-3" aria-label="Wybrany wzór">
+    <section className="mt-6 rounded-2xl border border-(--a-mark)/25 bg-white p-3" aria-label="Wybrany wzór">
       <div className="flex gap-3">
         <div className="h-[104px] w-[84px] shrink-0 overflow-hidden rounded-xl bg-paper p-1">
           {params.designModified && work.previewUrl ? (
@@ -84,7 +84,7 @@ export function ChosenWzor({
         <button
           type="button"
           disabled={busy}
-          className="rounded-xl bg-ink px-4 py-3 font-bold text-white hover:bg-[#2c2a26] disabled:opacity-60"
+          className="btn-kobalt py-3"
           onClick={() => void toCart()}
         >
           {busy ? "Zapisujemy plik…" : "Do koszyka"}
@@ -92,7 +92,7 @@ export function ChosenWzor({
         <button
           type="button"
           disabled={busy}
-          className="rounded-xl border border-ink px-4 py-3 font-bold text-ink hover:bg-paper disabled:opacity-60"
+          className="btn-ghost py-3"
           onClick={onEdit}
         >
           Zmień w edytorze

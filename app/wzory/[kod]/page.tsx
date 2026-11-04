@@ -30,7 +30,7 @@ export default async function WzorPage({ params }: Props) {
   const categories = result?.ok ? await wzorCategories().catch(() => []) : [];
 
   return (
-    <main className="min-h-full">
+    <main className="min-h-full bg-[#F3EEE4]">
       <WzoryHeader />
       <div className="px-5 pb-3 md:px-7">
         <Link href="/wzory" className="text-sm font-bold">
@@ -53,10 +53,10 @@ export default async function WzorPage({ params }: Props) {
               : "Mógł zostać zdjęty z oferty. Zobacz pozostałe wzory."}
           </p>
           <div className="mt-2 flex flex-wrap gap-3">
-            <Link href="/wzory" className="rounded-xl bg-ink px-5 py-3 font-bold text-white">
+            <Link href="/wzory" className="btn-kobalt">
               Zobacz inne wzory
             </Link>
-            <Link href="/" className="rounded-xl border border-ink px-5 py-3 font-bold text-ink">
+            <Link href="/" className="btn-ghost">
               Zrób własny
             </Link>
           </div>

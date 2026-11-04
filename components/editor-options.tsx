@@ -195,7 +195,7 @@ export function EditorOptions({
         <label
           title="Zdjęcie"
           aria-label="Zdjęcie"
-          className="grid h-10 w-10 cursor-pointer place-items-center rounded-xl bg-ink text-white hover:bg-[#2c2a26]"
+          className="tool-kobalt grid h-10 w-10 cursor-pointer place-items-center rounded-xl"
         >
           <PhotoIcon />
           <input
@@ -236,7 +236,7 @@ export function EditorOptions({
               type="button"
               aria-pressed={area.id === activeId}
               className={`rounded-full px-3.5 py-2 text-sm font-semibold ${
-                area.id === activeId ? "bg-ink text-white" : "border border-line bg-paper text-ink hover:border-ink"
+                area.id === activeId ? "bg-(--a-cta) text-white" : "border border-line bg-paper text-ink hover:border-(--a-mark)"
               }`}
               onClick={() => onActiveId(area.id)}
             >
@@ -257,7 +257,7 @@ export function EditorOptions({
               value={opacity}
               aria-label="Krycie"
               disabled={locked}
-              className="min-w-16 flex-1 accent-ink"
+              className="min-w-16 flex-1 accent-kobalt"
               onChange={(event) => onOpacity(Number(event.target.value))}
             />
           </label>
@@ -419,7 +419,7 @@ export function EditorOptions({
               value={charSpacing}
               aria-label="Odstęp liter"
               disabled={locked}
-              className="min-w-24 flex-1 accent-ink"
+              className="min-w-24 flex-1 accent-kobalt"
               onChange={(event) => onSpacing(Number(event.target.value))}
             />
           </label>
@@ -450,7 +450,7 @@ export function EditorOptions({
               value={Math.round(strokeWidth)}
               aria-label="Grubość obwódki"
               disabled={locked}
-              className="w-24 accent-ink"
+              className="w-24 accent-kobalt"
               onChange={(event) => onStrokeWidth(Number(event.target.value))}
             />
           </div>
@@ -568,7 +568,7 @@ function CropSlider({
         value={percent}
         aria-label={`Kadr ${label.toLowerCase()}`}
         disabled={disabled}
-        className="accent-ink"
+        className="accent-kobalt"
         onChange={(event) => onChange(Number(event.target.value) / 100)}
       />
       <span className="text-muted">{percent}</span>
@@ -593,8 +593,8 @@ function ToolButton({
 }) {
   const look =
     tone === "primary"
-      ? "bg-ink text-white hover:bg-[#2c2a26]"
-      : "border border-line bg-paper text-ink hover:border-ink";
+      ? "tool-kobalt"
+      : "border border-line bg-paper text-ink hover:border-(--a-mark)";
   return (
     <button
       type="button"
@@ -603,7 +603,7 @@ function ToolButton({
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
-      className={`grid h-10 w-10 place-items-center rounded-xl disabled:cursor-default disabled:opacity-35 ${look} ${pressed ? "ring-2 ring-ink ring-offset-1" : ""}`}
+      className={`grid h-10 w-10 place-items-center rounded-xl disabled:cursor-default disabled:opacity-35 ${look} ${pressed ? "ring-2 ring-(--a-mark) ring-offset-1" : ""}`}
     >
       {children}
     </button>

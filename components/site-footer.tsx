@@ -12,10 +12,10 @@ const links = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line px-5 py-6 text-sm text-muted md:px-7">
+    <footer className="font-ui border-t border-[#16130F]/10 px-5 py-6 text-sm text-muted md:px-7">
       <nav className="flex flex-wrap gap-x-4 gap-y-2">
         {links.map(([href, label]) => (
-          <a key={href} href={href} className="hover:text-ink">
+          <a key={href} href={href} className="hover:text-(--a-mark)">
             {label}
           </a>
         ))}

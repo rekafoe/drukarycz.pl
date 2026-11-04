@@ -1109,14 +1109,14 @@ export function EditorCanvas({
       <div className="flex shrink-0 items-center gap-5 border-b border-line px-4 py-2 text-sm lg:hidden">
         <button
           type="button"
-          className={`border-b-2 pb-0.5 ${mobilePanel === "model" ? "border-ink font-semibold text-ink" : "border-transparent text-muted"}`}
+          className={`border-b-2 pb-0.5 ${mobilePanel === "model" ? "border-(--a-mark) font-semibold text-ink" : "border-transparent text-muted"}`}
           onClick={() => setMobilePanel("model")}
         >
           Rzecz
         </button>
         <button
           type="button"
-          className={`border-b-2 pb-0.5 ${mobilePanel === "sheet" ? "border-ink font-semibold text-ink" : "border-transparent text-muted"}`}
+          className={`border-b-2 pb-0.5 ${mobilePanel === "sheet" ? "border-(--a-mark) font-semibold text-ink" : "border-transparent text-muted"}`}
           onClick={() => setMobilePanel("sheet")}
         >
           Arkusz
@@ -1210,7 +1210,7 @@ export function EditorCanvas({
               <div className="relative overflow-hidden" style={{ width: sheetW, height: sheetH }}>
                 <div
                   ref={hostRef}
-                  className="absolute top-0 left-0 origin-top-left shadow-[0_0_0_1px_rgba(26,25,22,0.14)]"
+                  className="absolute top-0 left-0 origin-top-left shadow-[0_0_0_2px_#2F5BFF66]"
                   style={{ width: widthPx, height: heightPx, transform: `scale(${fit})`, background: bodyColor }}
                 />
                 <div className="pointer-events-none absolute inset-0" aria-hidden="true">

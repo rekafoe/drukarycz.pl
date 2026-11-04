@@ -29,7 +29,7 @@ export const legalTitles: Record<LegalSlug, string> = {
 export function LegalArticle({ slug }: { slug: LegalSlug }) {
   return (
     <div className="mt-6 grid gap-4 text-[15px] leading-relaxed">
-      <h1 className="text-4xl font-extrabold tracking-tight">{legalTitles[slug]}</h1>
+      <h1 className="font-poster text-[40px] leading-[0.95] font-black tracking-tight md:text-[52px]">{legalTitles[slug]}</h1>
       <p className="text-sm text-muted">{seller.brand} · wersja serwisu z 28 października 2026</p>
       {slug === "kontakt" ? <Kontakt /> : null}
       {slug === "regulamin" ? <Regulamin /> : null}

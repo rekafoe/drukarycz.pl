@@ -74,7 +74,7 @@ export function WzoryBrowser({ initialProduct }: { initialProduct: ProductId }) 
     <section className="px-5 pb-12 md:px-7">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[40px] leading-tight font-extrabold tracking-tight">Gotowe wzory</h1>
+          <h1 className="font-poster text-[40px] leading-[0.95] font-black tracking-tight md:text-[52px]">Gotowe wzory</h1>
           <p className="mt-1 max-w-xl text-[15px] text-muted">
             Wybierz wzór i zamów bez zmian albo zmień tekst, zdjęcie i kolory w edytorze.
           </p>
@@ -85,7 +85,7 @@ export function WzoryBrowser({ initialProduct }: { initialProduct: ProductId }) 
               key={item.id}
               type="button"
               aria-pressed={item.id === product}
-              className={`rounded-full px-4 py-2 text-sm font-bold ${item.id === product ? "bg-ink text-white" : "text-ink hover:bg-paper"}`}
+              className={`rounded-full px-4 py-2 text-sm font-bold ${item.id === product ? "bg-(--a-cta) text-white" : "text-ink hover:bg-paper"}`}
               onClick={() => pickProduct(item.id)}
             >
               {item.name}
@@ -103,7 +103,7 @@ export function WzoryBrowser({ initialProduct }: { initialProduct: ProductId }) 
               type="button"
               aria-pressed={selected}
               className={`shrink-0 rounded-full border px-3.5 py-2 text-sm font-semibold ${
-                selected ? "border-ink bg-ink text-white" : "border-line bg-card hover:border-ink"
+                selected ? "border-(--a-mark) bg-(--a-cta) text-white" : "border-line bg-card hover:border-(--a-mark)"
               }`}
               onClick={() => setCategory(item.id)}
             >
@@ -126,7 +126,7 @@ export function WzoryBrowser({ initialProduct }: { initialProduct: ProductId }) 
           <p className="font-semibold">{wzoryMessages.listError}</p>
           <button
             type="button"
-            className="rounded-full bg-ink px-4 py-2 text-sm font-bold text-white"
+            className="btn-kobalt py-2 text-sm"
             onClick={() => setAttempt((value) => value + 1)}
           >
             {wzoryMessages.retry}
@@ -153,15 +153,15 @@ export function WzoryBrowser({ initialProduct }: { initialProduct: ProductId }) 
         </div>
       )}
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-ink px-5 py-5 text-white md:px-7">
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-[#16130F] px-5 py-5 text-[#F3EEE4] md:px-7">
         <div>
-          <p className="text-lg font-extrabold">Wolisz zacząć od zera?</p>
+          <p className="font-poster text-lg font-extrabold">Wolisz zacząć od zera?</p>
           <p className="text-sm opacity-70">Pusty arkusz, Twój tekst i zdjęcie.</p>
         </div>
         <button
           type="button"
           disabled={ownBusy}
-          className="rounded-xl bg-white px-5 py-3 font-bold text-ink disabled:opacity-60"
+          className="btn-kobalt"
           onClick={() => {
             setOwnBusy(true);
             void startOwnDesign(productSlugs[product], router.push).then((ok) => {

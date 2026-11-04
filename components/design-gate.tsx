@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { LoginPanel } from "@/components/login-panel";
+import { PosterHeader } from "@/components/poster-chrome";
 import type { SessionView } from "@/lib/work";
 
 export function DesignGate({ id }: { id: string }) {
@@ -35,24 +37,26 @@ export function DesignGate({ id }: { id: string }) {
   }, [id]);
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-lg content-center gap-4 px-6">
+    <main className="min-h-screen bg-[#F3EEE4]">
+      <PosterHeader current="home" />
+      <div className="mx-auto grid max-w-lg content-center gap-4 px-6 py-16">
       {phase === "opening" ? <p className="text-muted">Otwieramy projekt…</p> : null}
       {phase === "denied" ? (
         <>
-          <h1 className="text-4xl font-extrabold tracking-tight">Projekt się nie otwiera</h1>
+          <h1 className="font-poster text-[40px] leading-[0.95] font-black tracking-tight">Projekt się nie otwiera</h1>
           <p className="text-muted">Otwiera się tylko własny projekt.</p>
-          <a href="/" className="font-bold">
+          <Link href="/" className="font-extrabold text-(--a-mark)">
             Do drzwi
-          </a>
+          </Link>
         </>
       ) : null}
       {phase === "locked" ? (
         <>
-          <h1 className="text-4xl font-extrabold tracking-tight">Projekt się nie otwiera</h1>
+          <h1 className="font-poster text-[40px] leading-[0.95] font-black tracking-tight">Projekt się nie otwiera</h1>
           <p className="text-muted">Zaloguj się telefonem, na który jest zapisany.</p>
-          <a href="/" className="font-bold">
+          <Link href="/" className="font-extrabold text-(--a-mark)">
             Do drzwi
-          </a>
+          </Link>
           <LoginPanel
             embedded
             onSuccess={() => {
@@ -62,6 +66,7 @@ export function DesignGate({ id }: { id: string }) {
           />
         </>
       ) : null}
+      </div>
     </main>
   );
 }

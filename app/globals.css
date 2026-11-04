@@ -1,11 +1,29 @@
 @import "tailwindcss";
+@import "../components/variants/variants.css";
 
 :root {
-  --ink: #1a1916;
-  --muted: #6d685f;
+  --ink: #16130f;
+  --muted: #6b6358;
   --line: #e4dfd6;
-  --paper: #f3f0ea;
+  --paper: #f3eee4;
   --white: #fffcf8;
+  --kobalt: #2f5bff;
+  --kobalt-hover: #1f45e0;
+  --kobalt-soft: #4f78ff;
+  --a-cta: #2f5bff;
+  --a-cta-hover: #1f45e0;
+  --a-cta-text: #ffffff;
+  --a-cta-edge: transparent;
+  --a-cta-glow: color-mix(in srgb, #2f5bff 80%, transparent);
+  --a-cta-dark: #2f5bff;
+  --a-cta-dark-hover: #1f45e0;
+  --a-cta-dark-text: #ffffff;
+  --a-cta-dark-glow: color-mix(in srgb, #2f5bff 80%, transparent);
+  --a-mark: #2f5bff;
+  --a-pop: #2f5bff;
+  --a-badge: #c9d5ff;
+  --a-badge-text: #16130f;
+  --a-disc: #6f8bff;
 }
 
 @theme inline {
@@ -14,13 +32,68 @@
   --color-line: var(--line);
   --color-paper: var(--paper);
   --color-card: var(--white);
-  --font-sans: var(--font-manrope);
+  --color-kobalt: var(--kobalt);
+  --font-sans: "Manrope Variable", system-ui, sans-serif;
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-family: "Manrope Variable", system-ui, sans-serif;
+}
+
+.btn-kobalt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  border: 2px solid var(--a-cta-edge);
+  background: var(--a-cta);
+  color: var(--a-cta-text);
+  font-weight: 800;
+  padding: 0.85rem 1.4rem;
+  box-shadow: 0 18px 40px -18px var(--a-cta-glow);
+  transition: background-color 0.2s ease;
+}
+
+.btn-kobalt:hover {
+  background: var(--a-cta-hover);
+}
+
+.btn-kobalt:disabled {
+  opacity: 0.6;
+}
+
+.btn-kobalt-sm {
+  padding: 0.4rem 1.15rem;
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  background: color-mix(in srgb, white 70%, transparent);
+  color: var(--ink);
+  font-weight: 800;
+  padding: 0.85rem 1.4rem;
+}
+
+.btn-ghost:hover {
+  border-color: var(--a-mark);
+}
+
+.tool-kobalt {
+  background: var(--a-cta);
+  color: var(--a-cta-text);
+}
+
+.tool-kobalt:hover {
+  background: var(--a-cta-hover);
 }
 
 @media (min-width: 768px) {
@@ -36,12 +109,15 @@ body {
 button:focus-visible,
 input:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--a-mark);
   outline-offset: 2px;
 }
 
 .door {
-  transition: flex 0.55s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.45s ease, padding 0.45s ease;
+  transition:
+    flex 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 0.45s ease,
+    padding 0.45s ease;
 }
 
 .door-art {

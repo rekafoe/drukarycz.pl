@@ -9,13 +9,13 @@ export function WzorTile({ wzor, color }: { wzor: WzorCard; color: string }) {
   return (
     <Link
       href={`/wzory/${wzor.code}`}
-      className="group grid h-full content-start gap-2.5 rounded-2xl border border-line bg-card p-2.5 transition-colors hover:border-ink"
+      className="group grid h-full content-start gap-2.5 rounded-2xl border border-[#16130F]/10 bg-white p-2.5 transition-colors hover:border-(--a-mark)"
     >
       <div className="aspect-[4/5] overflow-hidden rounded-xl bg-paper p-2 transition-transform group-hover:scale-[1.01]">
         <WzorMockup product={wzor.product} color={color} previews={wzor.previews} image={wzor.image} />
       </div>
       <div className="grid gap-1 px-1 pb-1">
-        <p className="font-extrabold tracking-tight">{wzorTitle(wzor.code)}</p>
+        <p className="font-poster font-extrabold tracking-tight">{wzorTitle(wzor.code)}</p>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           <span className="rounded-full border border-line px-2 py-0.5 text-[12px] font-semibold text-muted">
             {zonesLabel(wzor.product, wzor.usedPrintAreaIds)}

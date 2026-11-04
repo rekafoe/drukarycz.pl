@@ -11,9 +11,10 @@ function ascii(text: string) {
   return text;
 }
 
-const ink = "#1a1916";
-const paper = "#f3f0ea";
-const muted = "#6d685f";
+const ink = "#16130F";
+const paper = "#F3EEE4";
+const muted = "#6b6358";
+const kobalt = "#2F5BFF";
 
 function Shirt({ size, color }: { size: number; color: string }) {
   return (
@@ -55,7 +56,7 @@ export function ogCard({ title, line, product }: { title: string; line: string; 
             style={{
               display: "flex",
               alignSelf: "flex-start",
-              background: ink,
+              background: kobalt,
               color: paper,
               borderRadius: 999,
               padding: "14px 30px",

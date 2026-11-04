@@ -70,9 +70,9 @@ export function LoginPanel({
   }
 
   const form = (
-      <form onSubmit={verify} className="grid w-full max-w-md gap-3 rounded-2xl bg-paper p-6 text-ink">
+      <form onSubmit={verify} className="font-ui grid w-full max-w-md gap-3 rounded-3xl bg-[#F3EEE4] p-6 text-ink shadow-[0_24px_60px_-28px_rgba(22,19,15,0.45)]">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-2xl font-extrabold tracking-tight">Logowanie telefonem</h2>
+          <h2 className="font-poster text-[28px] leading-none font-black tracking-tight">Logowanie telefonem</h2>
           {onClose ? (
             <button type="button" className="text-sm text-muted" onClick={onClose}>
               Zamknij
@@ -96,7 +96,7 @@ export function LoginPanel({
         <button
           type="button"
           disabled={busy}
-          className="rounded-xl border border-ink px-4 py-3 font-bold"
+          className="btn-ghost"
           onClick={() => void requestCode()}
         >
           Pobierz kod
@@ -131,12 +131,12 @@ export function LoginPanel({
           </label>
         ) : null}
         {error ? <p className="text-sm font-semibold">{error}</p> : null}
-        <button type="submit" disabled={busy} className="rounded-xl bg-ink px-4 py-4 font-bold text-white">
+        <button type="submit" disabled={busy} className="btn-kobalt w-full py-4">
           Wejdź
         </button>
       </form>
   );
 
   if (embedded) return form;
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-[#1a1916]/40 px-4">{form}</div>;
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-[#16130F]/55 px-4">{form}</div>;
 }

@@ -59,6 +59,12 @@ export const productSeo: Record<ProductId, PageSeo & { name: string; summary: st
   },
 };
 
+export const wzorySeo: PageSeo = {
+  title: `Gotowe wzory — ${seller.brand}`,
+  description: `Gotowe wzory na koszulki i kubki. Zamów bez zmian albo zmień tekst i zdjęcie w edytorze. Druk ${seller.cityIn}, ${seller.priceFrom}.`,
+  path: "/wzory",
+};
+
 export const legalDescriptions: Record<LegalSlug, string> = {
   kontakt: `Dane sprzedawcy ${seller.brand} i sposób kontaktu. Siedziba organizacyjna: ${seller.city}, ${seller.country}.`,
   regulamin: `Regulamin serwisu ${seller.brand}: projekt nadruku, konto, zapis zgłoszenia, cena wyjściowa i prawo polskie.`,

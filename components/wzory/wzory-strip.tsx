@@ -40,15 +40,15 @@ export function WzoryStrip({ product, color }: { product: ProductId; color: stri
   const items = loading ? [] : (state.items ?? []).slice(0, STRIP_LIMIT);
 
   return (
-    <section className="px-5 pb-10 md:px-7" aria-labelledby="gotowe-wzory" aria-busy={loading}>
+    <section className="bg-[#F3EEE4] px-5 pb-10 md:px-8" aria-labelledby="gotowe-wzory" aria-busy={loading}>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h2 id="gotowe-wzory" className="text-2xl font-extrabold tracking-tight">
+          <h2 id="gotowe-wzory" className="font-poster text-[28px] leading-none font-black tracking-tight md:text-[36px]">
             Gotowe wzory
           </h2>
-          <p className="mt-0.5 text-sm text-muted">Zamów bez zmian albo zmień tekst i zdjęcie w edytorze.</p>
+          <p className="mt-1 text-sm text-muted">Zamów bez zmian albo zmień tekst i zdjęcie w edytorze.</p>
         </div>
-        <Link href={`/wzory?produkt=${slug}`} className="shrink-0 text-sm font-bold underline underline-offset-4">
+        <Link href={`/wzory?produkt=${slug}`} className="shrink-0 text-sm font-extrabold text-(--a-mark) underline underline-offset-4">
           Zobacz wszystkie
         </Link>
       </div>
