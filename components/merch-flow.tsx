@@ -7,6 +7,8 @@ import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
+import { VariantDoors, VariantShop, VariantSwitch } from "@/components/variants";
+import type { Variant } from "@/components/variants/kit";
 import {
   emptyOrder,
   initialWork,
@@ -22,6 +24,7 @@ const EditorCanvas = dynamic(
   { ssr: false, loading: () => null },
 );
 import {
+  finishes,
   productById,
   quantities,
   shirtColors,
@@ -57,13 +60,7 @@ function printZoneNames(work: WorkSnapshot) {
     .map((id) => labels[id] ?? id);
 }
 
-const finishes = [
-  { id: "none", label: "Bez wykończenia" },
-  { id: "matte", label: "Matowe" },
-  { id: "gloss", label: "Błyszczące" },
-] as const;
-
-export function MerchFlow() {
+export function MerchFlow({ variant = null }: { variant?: Variant | null }) {
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -300,6 +297,10 @@ export function MerchFlow() {
     }, 480);
   }
 
+  function switchProduct(id: ProductId) {
+    updateWork((current) => ({ ...current, product: id, zone: productById(id).zones[0].id, step: "shop" }));
+  }
+
   if (!ready) {
     return (
       <main className="grid min-h-screen place-items-center px-6 text-center">
@@ -326,7 +327,32 @@ export function MerchFlow() {
 
   return (
     <main className="min-h-full">
-      {work.step === "doors" ? (
+      {variant && (work.step === "doors" || work.step === "shop") ? <VariantSwitch variant={variant} /> : null}
+
+      {variant && work.step === "doors" ? (
+        <VariantDoors
+          variant={variant}
+          leaving={leaving}
+          onPick={openProduct}
+          onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
+          account={account}
+        />
+      ) : null}
+
+      {variant && work.step === "shop" ? (
+        <VariantShop
+          variant={variant}
+          work={work}
+          onChange={(patch) => updateWork((current) => ({ ...current, ...patch }))}
+          onProduct={switchProduct}
+          onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
+          onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
+          onEditor={() => updateWork((current) => ({ ...current, step: "editor" }))}
+          account={account}
+        />
+      ) : null}
+
+      {!variant && work.step === "doors" ? (
         <section className="doors relative flex min-h-screen flex-col overflow-hidden md:flex-row">
           <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
             <a
@@ -364,7 +390,7 @@ export function MerchFlow() {
         </section>
       ) : null}
 
-      {work.step === "shop" ? (
+      {!variant && work.step === "shop" ? (
         <section className="rise">
           <Top
             onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}

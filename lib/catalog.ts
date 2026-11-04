@@ -43,6 +43,12 @@ export const shirtColors = [
 export const sizes = ["S", "M", "L", "XL"] as const;
 export const quantities = ["1", "5", "10", "20"] as const;
 
+export const finishes = [
+  { id: "none", label: "Bez wykończenia" },
+  { id: "matte", label: "Matowe" },
+  { id: "gloss", label: "Błyszczące" },
+] as const;
+
 export function productById(id: ProductId) {
   return catalog.find((item) => item.id === id) ?? catalog[0];
 }

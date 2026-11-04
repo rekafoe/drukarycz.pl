@@ -1,0 +1,225 @@
+@font-face {
+  font-family: "Unbounded Variable";
+  src: url("/fonts/unbounded-latin-wght.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Unbounded Variable";
+  src: url("/fonts/unbounded-pl-wght.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0104-0107, U+0118-0119, U+0141-0144, U+015A-015B, U+0179-017C;
+}
+
+@font-face {
+  font-family: "Manrope Variable";
+  src: url("/fonts/manrope-latin-wght.woff2") format("woff2-variations");
+  font-weight: 200 800;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Manrope Variable";
+  src: url("/fonts/manrope-pl-wght.woff2") format("woff2-variations");
+  font-weight: 200 800;
+  font-display: swap;
+  unicode-range: U+0104-0107, U+0118-0119, U+0141-0144, U+015A-015B, U+0179-017C;
+}
+
+@font-face {
+  font-family: "Fraunces Variable";
+  src: url("/fonts/fraunces-latin-soft.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Fraunces Variable";
+  src: url("/fonts/fraunces-pl-soft.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0104-0107, U+0118-0119, U+0141-0144, U+015A-015B, U+0179-017C;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/plex-mono-latin-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/plex-mono-pl-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0104-0107, U+0118-0119, U+0141-0144, U+015A-015B, U+0179-017C;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/plex-mono-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/plex-mono-pl-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+  unicode-range: U+0104-0107, U+0118-0119, U+0141-0144, U+015A-015B, U+0179-017C;
+}
+
+.font-ui {
+  font-family: "Manrope Variable", var(--font-manrope), system-ui, sans-serif;
+}
+
+.font-poster {
+  font-family: "Unbounded Variable", "Manrope Variable", system-ui, sans-serif;
+  font-variation-settings: normal;
+  letter-spacing: -0.02em;
+}
+
+.font-soft {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-variation-settings: "SOFT" 100, "opsz" 96;
+  letter-spacing: -0.015em;
+}
+
+.font-plex {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  letter-spacing: 0;
+}
+
+.door-leave > * {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* A — plakat */
+
+.poster-disc {
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.door:hover .poster-disc {
+  transform: scale(1.08);
+}
+
+.poster-cta svg {
+  transition: transform 0.25s ease;
+}
+
+.door:hover .poster-cta svg,
+.poster-cta:hover svg {
+  transform: translateX(4px);
+}
+
+.poster-headline span {
+  display: inline-block;
+  animation: poster-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.poster-headline span + span {
+  animation-delay: 0.08s;
+}
+
+@keyframes poster-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* B — siatka */
+
+.grid-paper {
+  background-color: #fbfbf8;
+  background-image:
+    linear-gradient(to right, rgba(20, 20, 20, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 20, 20, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.grid-ruler {
+  background-image:
+    repeating-linear-gradient(to right, #141414 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(to right, rgba(20, 20, 20, 0.45) 0 1px, transparent 1px 8px);
+  background-size: 100% 100%, 100% 45%;
+  background-repeat: no-repeat;
+  background-position: left top, left top;
+}
+
+.grid-cell .grid-crop {
+  transition: inset 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.grid-cell:hover .grid-crop {
+  inset: -14px;
+}
+
+.grid-cell .grid-paper-hover {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.grid-cell:hover .grid-paper-hover {
+  opacity: 1;
+}
+
+.crop-mark {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #141414;
+}
+
+/* C — ceramika */
+
+.ceramic-bg {
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #f7e4da 0%, transparent 60%),
+    radial-gradient(900px 600px at 100% 110%, #e2b9a8 0%, transparent 55%),
+    #edd2c6;
+}
+
+.ceramic-card {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 24px 60px -28px rgba(92, 50, 36, 0.45);
+  transition:
+    flex 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 0.45s ease,
+    transform 0.45s ease;
+}
+
+.door.ceramic-card:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 36px 80px -30px rgba(92, 50, 36, 0.55);
+}
+
+.ceramic-plate {
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.door:hover .ceramic-plate {
+  transform: scale(1.05) rotate(-3deg);
+}
