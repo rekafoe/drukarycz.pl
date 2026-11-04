@@ -32,4 +32,20 @@ INDEXNOW_KEY=                          # ключ IndexNow, отдаётся п�
 curl "https://api.indexnow.org/indexnow?url=https://drukarycz.pl/&key=$INDEXNOW_KEY&keyLocation=https://drukarycz.pl/indexnow.txt"
 ```
 
+## Gotowe wzory
+
+Витрина готовых дизайнов на тестовых данных: полоса «Gotowe wzory» в лавке под «Zrób własny», страница `/wzory` с рубриками и карточка `/wzory/000123`. На карточке два пути. «Zamów bez zmian» возвращает в лавку с выбранным wzorem и ведёт в корзину. «Zmień w edytorze» открывает тот же шаблон в редакторе. В корзине у позиции есть `designTemplateId`, `designTemplateCode`, `designUsageFee`, `designModified` и `usedPrintAreaIds`. Цена wzoru в zł, один раз на позицию, при нуле подпись «Wzór w cenie».
+
+Источник выбирает `DESIGNS_SOURCE`. По умолчанию `fixtures`: ответы в форме CRM лежат в `fixtures/wzory`. Значение `crm` пока пустая заглушка с той же схемой, CRM не подключена. Ручки сайта: `GET /api/wzory?produkt=koszulka|kubek`, `GET /api/wzory/kategorie`, `GET /api/wzory/{id}`, `POST /api/wzory/{id}/wybierz`, `POST /api/wzory/wlasny`. Шаблон проверяется до показа: зоны в мм с допуском 1 мм, единицы холста, адреса картинок и шрифтов только со своего сервера. Плохой шаблон в витрину не попадает, а по прямой ссылке показывает «Ten wzór nie pasuje do tego produktu.». Цену и номер wzoru в проект пишет только сервер.
+
+```bash
+npm run wzory:fixtures   # пересобрать fixtures/wzory и превью
+npm run wzory:previews   # только превью public/wzory/preview/*.png
+npm test
+```
+
+Шрифты Archivo Black и Caveat лежат в `public/fonts/wzory` под OFL.
+
+## Право
+
 Страницы regulamin, prywatność, cookies, odstąpienie, reklamacje, dostawa и kontakt лежат в `/prawne`. Корзина просит e-mail, адрес и две отдельные галочки, оплату не берёт. Реквизиты фирмы в `lib/seller.ts` пустые, пока организация их не впишет. Что осталось до продажи — в `docs/plan-prawny.md`.

@@ -213,7 +213,7 @@ function box(selected: boolean) {
   }`;
 }
 
-export function GridShop({ work, onChange, onProduct, onHome, onCart, onEditor, account }: ShopViewProps) {
+export function GridShop({ work, onChange, onProduct, onHome, onCart, onEditor, account, chosen, showcase }: ShopViewProps) {
   const m = shopModel(work);
   const image = productImage(work.product, work.color);
   const front = m.product.zones[0];
@@ -377,11 +377,13 @@ export function GridShop({ work, onChange, onProduct, onHome, onCart, onEditor, 
               <ArrowIcon />
             </button>
           </div>
+          {chosen}
           <p className="font-plex px-4 pt-3 text-[11px] leading-relaxed text-[#6b6b66] md:px-8 md:pt-0">
             CENA WYJŚCIOWA BRUTTO. WIĄŻĄCA — PRZED PŁATNOŚCIĄ. GOTOWY PLIK PODEPNIEMY DO ZAMÓWIENIA.
           </p>
         </div>
       </div>
+      {showcase}
       <SiteFooter />
       <div className={`fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t-[1.5px] ${line} bg-[#FBFBF8] px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:hidden`}>
         <PriceBox />

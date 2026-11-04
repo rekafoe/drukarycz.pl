@@ -10,6 +10,11 @@ import { SiteFooter } from "@/components/site-footer";
 import { AccentPanel, VariantDoors, VariantShop, VariantSwitch } from "@/components/variants";
 import { defaultAccent, type AccentId } from "@/components/variants/accents";
 import type { Variant } from "@/components/variants/kit";
+import { CartWzorLine, WzorOrderFields } from "@/components/wzory/cart-wzor";
+import { ChosenWzor } from "@/components/wzory/chosen-wzor";
+import { WzoryStrip } from "@/components/wzory/wzory-strip";
+import { dropForeignDesign, withoutDesign } from "@/lib/wzory/choose";
+import { useWzorFonts } from "@/lib/wzory/fonts-client";
 import {
   emptyOrder,
   type PrintAreaId,
@@ -82,12 +87,13 @@ export function MerchFlow({
   const editorKey = `${work.product}:${canvasEpoch}`;
   const [readyFor, setReadyFor] = useState<string | null>(null);
   const [editorFailed, setEditorFailed] = useState(false);
-  const editorOpen = work.step === "editor" && readyFor === editorKey && !editorFailed;
   const workRef = useRef(work);
   workRef.current = work;
   /** Экран с сервера не выезжает: с opacity 0 на первом кадре Chrome не засчитывает отрисовку (FCP, LCP). */
   const [stepMoved, setStepMoved] = useState(false);
   const rise = stepMoved ? "rise" : "";
+  const fontsReady = useWzorFonts(work.design?.fonts);
+  const editorOpen = work.step === "editor" && fontsReady && readyFor === editorKey && !editorFailed;
 
   function updateWork(patch: (current: WorkSnapshot) => WorkSnapshot) {
     const next = patch(workRef.current);
@@ -275,18 +281,32 @@ export function MerchFlow({
     setLeaving(id);
     window.setTimeout(() => {
       const next = productById(id);
-      updateWork((current) => ({
-        ...current,
-        product: id,
-        zone: next.zones[0].id,
-        step: "shop",
-      }));
+      updateWork((current) =>
+        dropForeignDesign({
+          ...current,
+          product: id,
+          zone: next.zones[0].id,
+          step: "shop",
+        }),
+      );
       setLeaving(null);
     }, 480);
   }
 
   function switchProduct(id: ProductId) {
-    updateWork((current) => ({ ...current, product: id, zone: productById(id).zones[0].id, step: "shop" }));
+    updateWork((current) =>
+      dropForeignDesign({
+        ...current,
+        product: id,
+        zone: productById(id).zones[0].id,
+        step: "shop",
+      }),
+    );
+  }
+
+  function startOwn() {
+    if (workRef.current.design && !window.confirm("Zacząć od pustego arkusza? Wybrany wzór zniknie z projektu.")) return;
+    updateWork((current) => ({ ...withoutDesign(current), step: "editor" }));
   }
 
 
@@ -331,8 +351,28 @@ export function MerchFlow({
           onProduct={switchProduct}
           onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
           onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
-          onEditor={() => updateWork((current) => ({ ...current, step: "editor" }))}
+          onEditor={startOwn}
           account={account}
+          chosen={
+            work.design ? (
+              <ChosenWzor
+                work={work}
+                onEdit={() => updateWork((current) => ({ ...current, step: "editor" }))}
+                onRemove={() => updateWork(withoutDesign)}
+                onCart={(printFiles, previewUrl, note) => {
+                  setPrintNote(note);
+                  updateWork((current) => ({
+                    ...current,
+                    cartFrom: "shop",
+                    step: "cart",
+                    printFiles,
+                    previewUrl: previewUrl ?? current.previewUrl,
+                  }));
+                }}
+              />
+            ) : null
+          }
+          showcase={<WzoryStrip product={work.product} color={work.color} />}
         />
       ) : null}
 
@@ -437,9 +477,7 @@ export function MerchFlow({
               </p>
               <p className="mt-1 font-bold">{seller.priceFrom}</p>
               <p className="text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
-              <p className="text-sm text-muted">
-                {work.previewUrl ? "Projekt przygotowany w edytorze" : "Arkusz jest jeszcze pusty"}
-              </p>
+              <CartWzorLine work={work} />
               {work.quality.length > 0 ? (
                 <ul className="mt-2 grid gap-1 text-sm text-ink">
                   {work.quality.map((issue) => (
@@ -465,6 +503,7 @@ export function MerchFlow({
               <li>nakład: {work.qty}</li>
               <li>wykończenie: {finishName} — tylko rodzaj, bez szerokości rolki</li>
               <li>editorKind: souvenir_3d</li>
+              <WzorOrderFields work={work} />
               <li>
                 strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
               </li>

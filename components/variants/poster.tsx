@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { ProductId } from "@/lib/catalog";
+import { productPaths, type ProductId } from "@/lib/catalog";
 import { SiteFooter } from "@/components/site-footer";
 import { seller } from "@/lib/seller";
 import {
@@ -111,9 +111,13 @@ function PosterDoor({
   const taken = leaving === product;
   const isMug = product === "mug";
   return (
-    <button
-      type="button"
-      onClick={() => onPick(product)}
+    <a
+      href={productPaths[product]}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        onPick(product);
+      }}
       className={`door group relative flex flex-1 overflow-hidden text-left ${
         dark ? "bg-[#16130F] pt-[118px] text-[#F3EEE4]" : "bg-[#F3EEE4] pb-5 text-[#16130F]"
       } md:pt-0 md:pb-0 ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
@@ -159,7 +163,7 @@ function PosterDoor({
           />
         </div>
       </div>
-    </button>
+    </a>
   );
 }
 
@@ -225,6 +229,8 @@ export function PosterShop({
   onEditor,
   account,
   accent = defaultAccent,
+  chosen,
+  showcase,
 }: ShopViewProps) {
   const m = shopModel(work);
   const image = productImage(work.product, work.color);
@@ -357,6 +363,7 @@ export function PosterShop({
               </button>
             ))}
           </div>
+          {chosen}
           <div className="sticky bottom-0 z-10 -mx-3 mt-6 hidden bg-[#F3EEE4] px-3 pt-2 pb-3 md:block">
             <button
               type="button"
@@ -370,6 +377,7 @@ export function PosterShop({
           <p className="mt-3 text-[14px] text-[#6b6358] md:mt-1">Masz gotowy plik? Podepniemy go razem z zamówieniem.</p>
         </div>
       </div>
+      {showcase}
       <SiteFooter />
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 bg-[#16130F] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:hidden">
         <PriceChip />

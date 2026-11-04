@@ -1,0 +1,22 @@
+{
+  "id": 102,
+  "design_code": "000102",
+  "name": "Команда, номер на спине",
+  "description": null,
+  "category_id": 5,
+  "category": "Sport",
+  "preview_url": null,
+  "site_preview_url": "/wzory/preview/102-front.png",
+  "spec": "{\"productId\":501,\"typeId\":1,\"sizeId\":11,\"width_mm\":300,\"height_mm\":400,\"page_count\":2,\"import\":{\"status\":\"none\"},\"editorKind\":\"souvenir_3d\",\"printAreas\":[{\"id\":\"front\",\"label\":\"Przód\",\"widthMm\":300,\"heightMm\":400,\"meshName\":\"print_front\",\"procedural\":\"tshirt\"},{\"id\":\"back\",\"label\":\"Tył\",\"widthMm\":300,\"heightMm\":400,\"meshName\":\"print_back\",\"procedural\":\"tshirt\"}],\"designState\":{\"templateId\":102,\"pageWidth\":300,\"pageHeight\":400,\"pageCount\":2,\"sceneScale\":1,\"pages\":[{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[{\"type\":\"Circle\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":215,\"top\":70,\"radius\":34,\"fill\":\"#e4572e\",\"scaleX\":1,\"scaleY\":1},{\"type\":\"Path\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":215,\"top\":69,\"path\":\"M50 4 L61 38 L97 38 L68 59 L79 93 L50 72 L21 93 L32 59 L3 38 L39 38 Z\",\"fill\":\"#fffaf0\",\"stroke\":null,\"strokeWidth\":0,\"strokeLineCap\":\"round\",\"fillRule\":\"evenodd\",\"scaleX\":0.42,\"scaleY\":0.42},{\"type\":\"Textbox\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":215,\"top\":122,\"width\":110,\"text\":\"DRUŻYNA\",\"fontSize\":12,\"fontFamily\":\"Archivo Black\",\"fontWeight\":\"normal\",\"fill\":\"#fffaf0\",\"textAlign\":\"center\",\"lineHeight\":1.05,\"charSpacing\":120,\"angle\":0,\"scaleX\":1,\"scaleY\":1}]},\"printAreaId\":\"front\",\"printAreaLabel\":\"Przód\",\"widthMm\":300,\"heightMm\":400},{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[{\"type\":\"Textbox\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":150,\"top\":60,\"width\":290,\"text\":\"NOWAK\",\"fontSize\":54,\"fontFamily\":\"Archivo Black\",\"fontWeight\":\"normal\",\"fill\":\"#fffaf0\",\"textAlign\":\"center\",\"lineHeight\":1.05,\"charSpacing\":60,\"angle\":0,\"scaleX\":1,\"scaleY\":1},{\"type\":\"Textbox\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":150,\"top\":210,\"width\":290,\"text\":\"10\",\"fontSize\":200,\"fontFamily\":\"Archivo Black\",\"fontWeight\":\"normal\",\"fill\":\"#e4572e\",\"textAlign\":\"center\",\"lineHeight\":1.05,\"charSpacing\":0,\"angle\":0,\"scaleX\":1,\"scaleY\":1}]},\"printAreaId\":\"back\",\"printAreaLabel\":\"Tył\",\"widthMm\":300,\"heightMm\":400}],\"editorKind\":\"souvenir_3d\",\"activePrintAreaId\":\"front\"},\"requiredFonts\":[{\"id\":1,\"family\":\"Archivo Black\",\"url\":\"/fonts/wzory/ArchivoBlack-Regular.ttf\"}],\"fontsResolved\":true}",
+  "is_active": 1,
+  "sort_order": 2,
+  "usage_fee": 8,
+  "created_at": "2026-11-01T10:00:00.000Z",
+  "updated_at": "2026-11-04T12:00:00.000Z",
+  "available_size_ids": [
+    11
+  ],
+  "variant_by_size": {
+    "11": 102
+  }
+}

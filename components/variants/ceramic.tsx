@@ -197,7 +197,7 @@ function Label({ children }: { children: ReactNode }) {
   return <p className="mt-5 mb-2 text-[14px] font-bold text-[#7A625A]">{children}</p>;
 }
 
-export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEditor, account }: ShopViewProps) {
+export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEditor, account, chosen, showcase }: ShopViewProps) {
   const m = shopModel(work);
   const image = productImage(work.product, work.color);
   return (
@@ -322,6 +322,7 @@ export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEdito
                 </button>
               ))}
             </div>
+            {chosen}
             <button
               type="button"
               onClick={onEditor}
@@ -349,6 +350,7 @@ export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEdito
           ))}
         </div>
       </div>
+      {showcase}
       <div className="mt-8">
         <SiteFooter />
       </div>

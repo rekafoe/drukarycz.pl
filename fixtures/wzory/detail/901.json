@@ -1,0 +1,22 @@
+{
+  "id": 901,
+  "design_code": "000901",
+  "name": "Кружка 210×95 (ошибка)",
+  "description": null,
+  "category_id": 2,
+  "category": "Śmieszne",
+  "preview_url": null,
+  "site_preview_url": "/wzory/preview/901-wrap.png",
+  "spec": "{\"productId\":502,\"typeId\":1,\"sizeId\":21,\"width_mm\":210,\"height_mm\":95,\"page_count\":1,\"import\":{\"status\":\"none\"},\"editorKind\":\"souvenir_3d\",\"printAreas\":[{\"id\":\"wrap\",\"label\":\"Обхват кружки\",\"widthMm\":210,\"heightMm\":95,\"meshName\":\"print_wrap\",\"procedural\":\"mug\"}],\"designState\":{\"templateId\":901,\"pageWidth\":210,\"pageHeight\":95,\"pageCount\":1,\"sceneScale\":1,\"pages\":[{\"fabricJSON\":{\"version\":\"7.2.0\",\"objects\":[{\"type\":\"Textbox\",\"version\":\"7.2.0\",\"originX\":\"center\",\"originY\":\"center\",\"left\":105,\"top\":47,\"width\":200,\"text\":\"KAWA TO ŻYCIE\",\"fontSize\":16,\"fontFamily\":\"Archivo Black\",\"fontWeight\":\"normal\",\"fill\":\"#f2c14e\",\"textAlign\":\"center\",\"lineHeight\":1.05,\"charSpacing\":0,\"angle\":0,\"scaleX\":1,\"scaleY\":1}]},\"printAreaId\":\"wrap\",\"printAreaLabel\":\"Обхват кружки\",\"widthMm\":210,\"heightMm\":95}],\"editorKind\":\"souvenir_3d\",\"activePrintAreaId\":\"wrap\"},\"requiredFonts\":[{\"id\":1,\"family\":\"Archivo Black\",\"url\":\"/fonts/wzory/ArchivoBlack-Regular.ttf\"}],\"fontsResolved\":true}",
+  "is_active": 1,
+  "sort_order": 9,
+  "usage_fee": 4,
+  "created_at": "2026-11-01T10:00:00.000Z",
+  "updated_at": "2026-11-04T12:00:00.000Z",
+  "available_size_ids": [
+    21
+  ],
+  "variant_by_size": {
+    "21": 901
+  }
+}

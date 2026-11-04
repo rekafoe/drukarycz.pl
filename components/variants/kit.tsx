@@ -34,6 +34,8 @@ export type ShopViewProps = {
   onEditor: () => void;
   account: ReactNode;
   accent?: AccentId;
+  chosen?: ReactNode;
+  showcase?: ReactNode;
 };
 
 type ProductImage = { src: string; width: number; height: number };

@@ -1,0 +1,12 @@
+{
+  "koszulka": {
+    "productId": 501,
+    "typeId": 1,
+    "souvenirBlankTemplateId": 100
+  },
+  "kubek": {
+    "productId": 502,
+    "typeId": 1,
+    "souvenirBlankTemplateId": 200
+  }
+}

@@ -352,6 +352,22 @@ export function clearPrints(sessionId: string) {
   });
 }
 
+/** Серверная правка проекта в обход sanitizeWork: так ставится wzór из витрины. */
+export function replaceWork(sessionId: string, build: (work: WorkSnapshot) => WorkSnapshot) {
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session) return null;
+    const previous = session.work;
+    session.work = build(previous);
+    if (!samePages(previous.pages, session.work.pages)) removePrints(session.id);
+    session.work.printFiles = listPrintFiles(session.id);
+    session.updatedAt = Date.now();
+    if (session.userId) touchDesign(store, session);
+    else session.designId = null;
+    return structuredClone(viewSession(session, store));
+  });
+}
+
 export function deleteAccount(sessionId: string) {
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);

@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: absoluteUrl("/") },
     ...Object.values(productPaths).map((path) => ({ url: absoluteUrl(path) })),
+    { url: absoluteUrl("/wzory") },
     ...legalSlugs.map((slug) => ({ url: absoluteUrl(`/prawne/${slug}`) })),
   ];
 }
