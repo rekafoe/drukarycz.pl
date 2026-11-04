@@ -83,10 +83,14 @@ export function MerchFlow({ initial }: { initial: SessionView }) {
   const editorOpen = work.step === "editor" && readyFor === editorKey && !editorFailed;
   const workRef = useRef(work);
   workRef.current = work;
+  /** Экран с сервера не выезжает: с opacity 0 на первом кадре Chrome не засчитывает отрисовку (FCP, LCP). */
+  const [stepMoved, setStepMoved] = useState(false);
+  const rise = stepMoved ? "rise" : "";
 
   function updateWork(patch: (current: WorkSnapshot) => WorkSnapshot) {
     const next = patch(workRef.current);
     if (next === workRef.current) return;
+    if (next.step !== workRef.current.step) setStepMoved(true);
     workRef.current = next;
     setWork(next);
   }
@@ -332,7 +336,7 @@ export function MerchFlow({ initial }: { initial: SessionView }) {
       ) : null}
 
       {work.step === "shop" ? (
-        <section className="rise">
+        <section className={rise}>
           <Top
             onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
             onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
@@ -483,7 +487,7 @@ export function MerchFlow({ initial }: { initial: SessionView }) {
 
       {work.step === "cart" ? (
         <>
-        <section className="rise mx-auto max-w-3xl px-7 py-8">
+        <section className={`${rise} mx-auto max-w-3xl px-7 py-8`}>
           <button
             type="button"
             className="font-bold"
