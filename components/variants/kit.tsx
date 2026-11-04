@@ -1,6 +1,7 @@
 import type { ReactNode, SVGProps } from "react";
 import { finishes, productById, quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
 import type { WorkSnapshot } from "@/lib/work";
+import type { AccentId } from "./accents";
 
 export type Variant = "a" | "b" | "c";
 
@@ -19,6 +20,7 @@ export type DoorsViewProps = {
   onPick: (id: ProductId) => void;
   onCart: () => void;
   account: ReactNode;
+  accent?: AccentId;
 };
 
 export type ShopPatch = Partial<Pick<WorkSnapshot, "size" | "color" | "qty" | "finish">>;
@@ -31,6 +33,7 @@ export type ShopViewProps = {
   onCart: () => void;
   onEditor: () => void;
   account: ReactNode;
+  accent?: AccentId;
 };
 
 type ProductImage = { src: string; width: number; height: number };

@@ -7,7 +7,8 @@ import { EditorLoader } from "@/components/editor-loader";
 import { LoginPanel } from "@/components/login-panel";
 import { ProductArt } from "@/components/product-art";
 import { SiteFooter } from "@/components/site-footer";
-import { VariantDoors, VariantShop, VariantSwitch } from "@/components/variants";
+import { AccentPanel, VariantDoors, VariantShop, VariantSwitch } from "@/components/variants";
+import { defaultAccent, type AccentId } from "@/components/variants/accents";
 import type { Variant } from "@/components/variants/kit";
 import {
   emptyOrder,
@@ -53,7 +54,17 @@ function printZoneNames(work: WorkSnapshot) {
     .map((id) => labels[id] ?? id);
 }
 
-export function MerchFlow({ variant = "a", compare = false }: { variant?: Variant; compare?: boolean }) {
+export function MerchFlow({
+  variant = "a",
+  compare = false,
+  accent = defaultAccent,
+  accentPanel = false,
+}: {
+  variant?: Variant;
+  compare?: boolean;
+  accent?: AccentId;
+  accentPanel?: boolean;
+}) {
   const [ready, setReady] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -321,10 +332,14 @@ export function MerchFlow({ variant = "a", compare = false }: { variant?: Varian
   return (
     <main className="min-h-full">
       {compare && (work.step === "doors" || work.step === "shop") ? <VariantSwitch variant={variant} /> : null}
+      {accentPanel && variant === "a" && (work.step === "doors" || work.step === "shop") ? (
+        <AccentPanel accent={accent} raised={work.step === "shop"} lowered={compare} />
+      ) : null}
 
       {work.step === "doors" ? (
         <VariantDoors
           variant={variant}
+          accent={accent}
           leaving={leaving}
           onPick={openProduct}
           onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
@@ -335,6 +350,7 @@ export function MerchFlow({ variant = "a", compare = false }: { variant?: Varian
       {work.step === "shop" ? (
         <VariantShop
           variant={variant}
+          accent={accent}
           work={work}
           onChange={(patch) => updateWork((current) => ({ ...current, ...patch }))}
           onProduct={switchProduct}

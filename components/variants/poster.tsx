@@ -15,6 +15,7 @@ import {
   type DoorsViewProps,
   type ShopViewProps,
 } from "./kit";
+import { accentStyle, defaultAccent } from "./accents";
 
 const [brandName, brandTld] = seller.brand.split(".");
 
@@ -22,7 +23,7 @@ function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`font-poster text-[17px] font-extrabold md:text-[20px] ${className}`}>
       {brandName}
-      <span className="text-[#E23B2F]">.</span>
+      <span className="text-(--a-pop)">.</span>
       {brandTld}
     </span>
   );
@@ -31,7 +32,7 @@ function Wordmark({ className = "" }: { className?: string }) {
 function PriceChip({ big = false }: { big?: boolean }) {
   return (
     <span
-      className={`font-poster inline-flex shrink-0 items-center rounded-full bg-[#F2C14E] font-bold text-[#16130F] ${
+      className={`font-poster inline-flex shrink-0 items-center rounded-full bg-(--a-badge) font-bold text-(--a-badge-text) ${
         big ? "px-5 py-2.5 text-[22px]" : "px-4 py-2 text-[15px]"
       }`}
     >
@@ -53,9 +54,11 @@ function CartButton({ onCart }: { onCart: () => void }) {
   );
 }
 
-export function PosterDoors({ leaving, onPick, onCart, account }: DoorsViewProps) {
+export function PosterDoors({ leaving, onPick, onCart, account, accent = defaultAccent }: DoorsViewProps) {
   return (
-    <section className="font-ui doors relative flex min-h-svh flex-col overflow-hidden bg-[#16130F] md:h-svh md:min-h-[600px] md:flex-row">
+    <section
+      style={accentStyle(accent)}
+      className="font-ui doors relative flex min-h-svh flex-col overflow-hidden bg-[#16130F] md:h-svh md:min-h-[600px] md:flex-row">
       <h1 className="sr-only">Twój nadruk na koszulce i kubku — {seller.brand}</h1>
       <header className="absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 px-5 py-3 md:px-8 md:py-5">
         <Wordmark className="text-[#F3EEE4]" />
@@ -111,7 +114,7 @@ function PosterDoor({
     <button
       type="button"
       onClick={() => onPick(product)}
-      className={`door relative flex flex-1 overflow-hidden text-left ${
+      className={`door group relative flex flex-1 overflow-hidden text-left ${
         dark ? "bg-[#16130F] pt-[118px] text-[#F3EEE4]" : "bg-[#F3EEE4] pb-5 text-[#16130F]"
       } md:pt-0 md:pb-0 ${gone ? "door-leave" : ""} ${taken ? "door-take" : ""}`}
     >
@@ -125,7 +128,13 @@ function PosterDoor({
           </p>
           <div className="mt-3 flex flex-col items-start gap-2 md:mt-[min(20px,2.4vh)] md:flex-row md:items-center md:gap-3">
             <PriceChip />
-            <span className="poster-cta inline-flex items-center gap-2 rounded-full bg-[#E23B2F] px-5 py-3 text-[15px] font-extrabold text-white shadow-[0_14px_30px_-14px_rgba(226,59,47,0.9)] md:px-6 md:py-3.5 md:text-[16px]">
+            <span
+              className={`poster-cta inline-flex items-center gap-2 rounded-full border-2 px-5 py-3 text-[15px] font-extrabold transition-colors md:px-6 md:py-3.5 md:text-[16px] ${
+                dark
+                  ? "border-transparent bg-(--a-cta-dark) text-(--a-cta-dark-text) shadow-[0_14px_30px_-14px_var(--a-cta-dark-glow)] group-hover:bg-(--a-cta-dark-hover)"
+                  : "border-(--a-cta-edge) bg-(--a-cta) text-(--a-cta-text) shadow-[0_14px_30px_-14px_var(--a-cta-glow)] group-hover:bg-(--a-cta-hover)"
+              }`}
+            >
               Zrób własny
               <ArrowIcon />
             </span>
@@ -133,7 +142,7 @@ function PosterDoor({
         </div>
         <div className="door-art relative order-3 grid w-[40%] shrink-0 place-items-center md:order-1 md:min-h-0 md:w-full md:flex-1">
           <span
-            className={`poster-disc absolute aspect-square rounded-full bg-[#C46A4A] md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 ${
+            className={`poster-disc absolute aspect-square rounded-full bg-(--a-disc) md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 ${
               isMug ? "h-[108px] md:h-[74%]" : "h-[132px] md:h-[88%]"
             }`}
           />
@@ -181,7 +190,7 @@ function PosterTop({
             onClick={() => onProduct(id)}
             className={`relative py-2 text-[15px] font-bold ${
               product === id
-                ? "text-[#F3EEE4] after:absolute after:inset-x-0 after:-bottom-0.5 after:h-[3px] after:rounded-full after:bg-[#F2C14E]"
+                ? "text-[#F3EEE4] after:absolute after:inset-x-0 after:-bottom-0.5 after:h-[3px] after:rounded-full after:bg-(--a-badge)"
                 : "text-[#F3EEE4]/60 hover:text-[#F3EEE4]"
             }`}
           >
@@ -203,15 +212,24 @@ function Label({ children }: { children: ReactNode }) {
 
 function choice(selected: boolean) {
   return `rounded-xl border-2 px-4 py-2.5 text-[15px] font-bold transition-colors md:py-2 ${
-    selected ? "border-[#16130F] bg-[#16130F] text-[#F3EEE4]" : "border-[#16130F]/12 bg-white/60 hover:border-[#16130F]"
+    selected ? "border-(--a-mark) bg-[#16130F] text-[#F3EEE4]" : "border-[#16130F]/12 bg-white/60 hover:border-(--a-mark)"
   }`;
 }
 
-export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor, account }: ShopViewProps) {
+export function PosterShop({
+  work,
+  onChange,
+  onProduct,
+  onHome,
+  onCart,
+  onEditor,
+  account,
+  accent = defaultAccent,
+}: ShopViewProps) {
   const m = shopModel(work);
   const image = productImage(work.product, work.color);
   return (
-    <section className="font-ui min-h-svh bg-[#F3EEE4] pb-24 text-[#16130F] md:pb-0">
+    <section style={accentStyle(accent)} className="font-ui min-h-svh bg-[#F3EEE4] pb-24 text-[#16130F] md:pb-0">
       <PosterTop product={work.product} onProduct={onProduct} onHome={onHome} onCart={onCart} account={account} />
       <div className="grid md:min-h-[calc(100svh-68px)] md:grid-cols-[1.08fr_1fr]">
         <div className="relative flex min-h-[380px] items-center justify-center overflow-hidden bg-[#16130F] pt-10 pb-12 md:min-h-0 md:py-0">
@@ -221,7 +239,7 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
           >
             {m.product.name.toUpperCase()}
           </p>
-          <span className="absolute aspect-square h-[58%] max-h-[500px] rounded-full bg-[#C46A4A]" />
+          <span className="absolute aspect-square h-[58%] max-h-[500px] rounded-full bg-(--a-disc)" />
           <Image
             key={image.src}
             src={image.src}
@@ -304,7 +322,7 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
                 aria-label={swatch.label}
                 aria-pressed={work.color === swatch.value}
                 className={`h-10 w-10 rounded-full border border-black/15 transition-transform hover:scale-105 md:h-9 md:w-9 ${
-                  work.color === swatch.value ? "ring-[3px] ring-[#E23B2F] ring-offset-2 ring-offset-[#F3EEE4]" : ""
+                  work.color === swatch.value ? "ring-[3px] ring-(--a-mark) ring-offset-2 ring-offset-[#F3EEE4]" : ""
                 }`}
                 style={{ background: swatch.value }}
                 onClick={() => onChange({ color: swatch.value })}
@@ -343,7 +361,7 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
             <button
               type="button"
               onClick={onEditor}
-              className="poster-cta flex w-full items-center justify-center gap-2 rounded-full bg-[#E23B2F] px-6 py-4 text-[18px] font-extrabold text-white shadow-[0_18px_40px_-18px_rgba(226,59,47,0.9)] hover:bg-[#cf3127]"
+              className="poster-cta flex w-full items-center justify-center gap-2 rounded-full border-2 border-(--a-cta-edge) bg-(--a-cta) px-6 py-4 text-[18px] font-extrabold text-(--a-cta-text) shadow-[0_18px_40px_-18px_var(--a-cta-glow)] transition-colors hover:bg-(--a-cta-hover)"
             >
               Zrób własny
               <ArrowIcon />
@@ -358,7 +376,7 @@ export function PosterShop({ work, onChange, onProduct, onHome, onCart, onEditor
         <button
           type="button"
           onClick={onEditor}
-          className="poster-cta flex flex-1 items-center justify-center gap-2 rounded-full bg-[#E23B2F] px-5 py-3.5 text-[16px] font-extrabold text-white"
+          className="poster-cta flex flex-1 items-center justify-center gap-2 rounded-full bg-(--a-cta-dark) px-5 py-3.5 text-[16px] font-extrabold text-(--a-cta-dark-text) hover:bg-(--a-cta-dark-hover)"
         >
           Zrób własny
           <ArrowIcon />
