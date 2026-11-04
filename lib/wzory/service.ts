@@ -25,7 +25,8 @@ function cached<T>(source: WzorySource, key: string, ms: number, load: () => Pro
   return value;
 }
 
-const logged = new Set<string>();
+// Маршруты Next держат свои копии модуля, поэтому общий набор лежит в globalThis.
+const logged: Set<string> = ((globalThis as { __wzoryLogged?: Set<string> }).__wzoryLogged ??= new Set());
 
 function logRejected(id: number, result: Extract<WzorResult, { ok: false }>) {
   const key = `${id}:${result.reason}:${result.detail}`;

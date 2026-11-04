@@ -311,8 +311,8 @@ const designs: Design[] = [
     fonts: ["archivo", "caveat"],
     pages: {
       wrap: [
-        text("NIE GADAM PRZED KAWĄ", { x: 100, y: 34, size: 13, font: "archivo", fill: ink.mustard, width: 192 }),
-        text("serio, poczekaj chwilę", { x: 100, y: 57, size: 16, font: "caveat", fill: ink.cream, width: 190 }),
+        text("NIE GADAM PRZED KAWĄ", { x: 100, y: 31, size: 11.5, font: "archivo", fill: ink.mustard, width: 104 }),
+        text("serio, poczekaj chwilę", { x: 100, y: 60, size: 12, font: "caveat", fill: ink.cream, width: 120 }),
       ],
     },
   },
@@ -327,10 +327,10 @@ const designs: Design[] = [
     fonts: ["caveat"],
     pages: {
       wrap: [
-        icon("cat", { x: 42, y: 36, size: 44, fill: ink.mustard }),
-        text("miau", { x: 42, y: 70, size: 15, font: "caveat", fill: ink.cream, width: 60 }),
-        icon("cat", { x: 158, y: 36, size: 44, fill: ink.pink }),
-        text("mrrr", { x: 158, y: 70, size: 15, font: "caveat", fill: ink.cream, width: 60 }),
+        icon("cat", { x: 74, y: 36, size: 44, fill: ink.mustard }),
+        text("miau", { x: 74, y: 70, size: 15, font: "caveat", fill: ink.cream, width: 50 }),
+        icon("cat", { x: 126, y: 36, size: 44, fill: ink.pink }),
+        text("mrrr", { x: 126, y: 70, size: 15, font: "caveat", fill: ink.cream, width: 50 }),
       ],
     },
   },

@@ -52,7 +52,7 @@ export function WzoryStrip({ product, color }: { product: ProductId; color: stri
           Zobacz wszystkie
         </Link>
       </div>
-      <div className="-mx-5 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 md:-mx-7 md:px-7">
+      <div className="-mx-5 mt-4 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-2 md:-mx-7 md:scroll-px-7 md:px-7">
         {loading
           ? Array.from({ length: 4 }, (_, index) => (
               <div key={index} className="w-[44%] shrink-0 sm:w-[210px]">

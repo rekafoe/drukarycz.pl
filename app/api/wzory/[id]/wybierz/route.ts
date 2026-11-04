@@ -10,10 +10,11 @@ export const runtime = "nodejs";
 /** Копирует шаблон в проект сессии: «Zamów bez zmian» → лавка, «Zmień w edytorze» → редактор. */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const id = Number((await context.params).id);
-  let mode: ChoiceMode = "as-is";
+  let mode: ChoiceMode;
   try {
     const body = (await request.json()) as { mode?: unknown };
-    if (body.mode === "edit") mode = "edit";
+    if (body.mode !== "edit" && body.mode !== "as-is") throw new Error("mode");
+    mode = body.mode;
   } catch {
     return Response.json({ error: "Nie odczytano wyboru" }, { status: 400 });
   }

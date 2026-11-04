@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { DEFAULT_PRINT_AREA_MUG, DEFAULT_PRINT_AREAS_TSHIRT } from "@/components/souvenir3d/types";
+import { DEFAULT_PRINT_AREAS_TSHIRT } from "@/components/souvenir3d/types";
 import { startOwnDesign, useSessionColor } from "@/components/wzory/use-session-color";
 import { WzorMockup } from "@/components/wzory/wzor-mockup";
 import { productById } from "@/lib/catalog";
@@ -18,8 +18,6 @@ const Souvenir3dPreview = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const mugAreas = [DEFAULT_PRINT_AREA_MUG];
-
 export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asIs: boolean; categoryName: string | null }) {
   const router = useRouter();
   const color = useSessionColor();
@@ -31,7 +29,8 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
   const [busy, setBusy] = useState<ChoiceMode | "own" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const textures = useMemo(() => ({ ...wzor.previews }), [wzor.previews]);
-  const show3d = !modelFailed && Object.keys(textures).length > 0;
+  // Камера 3D-кружки смотрит на начало обёртки, а не на её середину, поэтому кружка остаётся плоским мокапом.
+  const show3d = shirt && !modelFailed && Object.keys(textures).length > 0;
 
   async function choose(mode: ChoiceMode) {
     setBusy(mode);
@@ -67,7 +66,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
           {show3d ? (
             <div className={`absolute inset-0 transition-opacity duration-500 ${modelReady ? "opacity-100" : "opacity-0"}`}>
               <Souvenir3dPreview
-                printAreas={shirt ? DEFAULT_PRINT_AREAS_TSHIRT : mugAreas}
+                printAreas={DEFAULT_PRINT_AREAS_TSHIRT}
                 activePrintAreaId={view}
                 texturesByArea={textures}
                 bodyColor={color}
@@ -77,7 +76,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
               />
             </div>
           ) : null}
-          {shirt ? (
+          {shirt && wzor.usedPrintAreaIds.length > 1 ? (
             <div className="absolute top-3 left-3 flex rounded-full bg-white/90 p-1 shadow-sm" role="group" aria-label="Strona">
               {(["front", "back"] as const).map((side) => (
                 <button
@@ -99,13 +98,7 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
           ) : null}
         </div>
         {!shirt && wzor.previews.wrap ? (
-          <div className="mt-3 rounded-2xl border border-line bg-card p-3">
-            <p className="text-sm font-semibold">Cały nadruk dookoła kubka</p>
-            <div className="mt-2 aspect-[200/85] overflow-hidden rounded-lg" style={{ background: color }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={wzor.previews.wrap} alt="" className="h-full w-full" />
-            </div>
-          </div>
+          <p className="mt-2 text-sm text-muted">Pod kubkiem cały nadruk dookoła: od ucha do ucha.</p>
         ) : null}
       </div>
 

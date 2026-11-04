@@ -87,9 +87,12 @@ function MugMockup({ color, print }: { color: string; print?: string }) {
       />
       <path d="M60 40 H240 V236 C240 252 228 262 212 262 H88 C72 262 60 252 60 236 Z" fill={color} stroke={stroke} strokeWidth="2" />
       {print ? (
-        <svg x="60" y="65" width="180" height="170" viewBox="40 0 120 85" preserveAspectRatio="none" clipPath={`url(#${id}-mug)`}>
-          <image href={print} x="0" y="0" width="200" height="85" preserveAspectRatio="none" />
-        </svg>
+        <g clipPath={`url(#${id}-mug)`}>
+          {/* Спереди видна середина обёртки, напротив ручки: 100 из 200 мм. */}
+          <svg x="60" y="74" width="180" height="153" viewBox="50 0 100 85" preserveAspectRatio="none">
+            <image href={print} x="0" y="0" width="200" height="85" preserveAspectRatio="none" />
+          </svg>
+        </g>
       ) : null}
       <rect x="60" y="40" width="180" height="222" fill={`url(#${id}-cyl)`} clipPath={`url(#${id}-mug)`} />
       <ellipse cx="150" cy="40" rx="90" ry="10" fill={color} stroke={stroke} strokeWidth="2" />

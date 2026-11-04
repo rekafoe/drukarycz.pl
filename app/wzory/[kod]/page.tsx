@@ -17,7 +17,11 @@ function cleanCode(value: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const code = cleanCode((await params).kod);
-  return { title: `${code ? wzorTitle(code) : "Wzór"} — ${seller.brand}` };
+  const result = code ? await findWzorByCode(code) : null;
+  return {
+    title: `${code ? wzorTitle(code) : "Wzór"} — ${seller.brand}`,
+    robots: result?.ok ? undefined : { index: false },
+  };
 }
 
 export default async function WzorPage({ params }: Props) {
