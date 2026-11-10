@@ -5,7 +5,7 @@ import { seller } from "@/lib/seller";
 export const ogSize = { width: 1200, height: 630 };
 export const ogContentType = "image/png";
 
-/** Встроенный шрифт next/og знает только латиницу. На другой глиф он сам пошёл бы на fonts.googleapis.com. */
+/** Встроенный шрифт next/og знает только латиницу. На другой глиф движок сам скачал бы шрифт с CDN Google. */
 function ascii(text: string) {
   if (!/^[\x20-\x7e]*$/.test(text)) throw new Error(`Tekst OG tylko ASCII: ${text}`);
   return text;

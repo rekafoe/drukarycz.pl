@@ -1,4 +1,4 @@
-/** Czcionki arkusza. Manrope jest już w layoucie, reszta to lokalne woff2. */
+/** Czcionki arkusza. Manrope i reszta to lokalne woff2 z public/fonts. */
 
 export type PrintFont = {
   id: string;
