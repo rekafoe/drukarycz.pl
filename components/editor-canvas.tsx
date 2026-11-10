@@ -1137,7 +1137,7 @@ export function EditorCanvas({
         ) : null}
       </div>
       <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-      <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col overflow-hidden lg:flex lg:border-r lg:border-line`}>
+      <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-row overflow-hidden lg:flex lg:border-r lg:border-line`}>
         <EditorOptions
           areas={areas.map((area) => ({ id: area.id, label: area.label }))}
           activeId={active.id}
@@ -1198,7 +1198,7 @@ export function EditorCanvas({
           onToggleLock={(id) => toggleLock(id)}
           onCopy={copyZone}
         />
-        <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 pb-3">
+        <div ref={stageRef} className="grid min-h-0 flex-1 place-items-center overflow-hidden px-3 py-3">
           <div className="grid justify-items-center gap-1">
             <span className="text-[11px] tracking-wide text-muted">
               {active.widthMm} mm · margines {SAFE_MARGIN_MM} mm
