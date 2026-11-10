@@ -211,7 +211,8 @@ export function EditorCanvas({
   const [modelReady, setModelReady] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("model");
+  const [mobilePanel, setMobilePanel] = useState<"model" | "sheet">("sheet");
+  const [dragging, setDragging] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [locked, setLocked] = useState(false);
   const [shapeSelected, setShapeSelected] = useState(false);
@@ -257,6 +258,7 @@ export function EditorCanvas({
     });
     fabricRef.current = canvas;
     let stopped = false;
+    setDragging(false);
     setCanDelete(false);
     setTextSelected(false);
     setImageSelected(false);
@@ -346,10 +348,17 @@ export function EditorCanvas({
       onIssuesRef.current?.(nextIssues);
     };
     const onSelect = () => readSelectionRef.current();
+    const onDrag = () => setDragging(true);
+    const onDragEnd = () => setDragging(false);
     canvas.on("object:modified", onChange);
     canvas.on("object:added", onChange);
     canvas.on("object:removed", onChange);
     canvas.on("text:changed", onChange);
+    canvas.on("object:moving", onDrag);
+    canvas.on("object:scaling", onDrag);
+    canvas.on("object:rotating", onDrag);
+    canvas.on("object:resizing", onDrag);
+    canvas.on("mouse:up", onDragEnd);
     canvas.on("selection:created", onSelect);
     canvas.on("selection:updated", onSelect);
     canvas.on("selection:cleared", onSelect);
@@ -1103,10 +1112,12 @@ export function EditorCanvas({
   const sheetH = Math.round(heightPx * fit);
   const sheetHidden = mobilePanel !== "sheet";
   const modelHidden = mobilePanel !== "model";
+  const copyLabel = areas.length > 1 ? (active.id === "back" ? "Kopiuj na przód" : "Kopiuj na tył") : null;
+  const backEmpty = active.id === "back" && sheetEmpty;
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center gap-5 border-b border-line px-4 py-2 text-sm lg:hidden">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-2 text-sm lg:hidden">
         <button
           type="button"
           className={`border-b-2 pb-0.5 ${mobilePanel === "model" ? "border-(--a-mark) font-semibold text-ink" : "border-transparent text-muted"}`}
@@ -1121,21 +1132,37 @@ export function EditorCanvas({
         >
           Arkusz
         </button>
-        {areas.length > 1 && mobilePanel === "model" ? (
-          <div className="ml-auto flex gap-3">
+        {areas.length > 1 ? (
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {areas.map((area) => (
               <button
                 key={area.id}
                 type="button"
-                className={area.id === active.id ? "font-semibold text-ink" : "text-muted"}
+                aria-pressed={area.id === active.id}
+                className={`rounded-full px-2.5 py-0.5 text-sm ${
+                  area.id === active.id ? "bg-(--a-cta) text-white font-semibold" : "text-muted"
+                }`}
                 onClick={() => onActiveId(area.id)}
               >
                 {area.label}
               </button>
             ))}
+            {mobilePanel === "sheet" && copyLabel ? (
+              <button
+                type="button"
+                className="rounded-full border border-line bg-card px-2.5 py-0.5 text-sm font-semibold text-ink disabled:opacity-35"
+                disabled={sheetEmpty}
+                onClick={copyZone}
+              >
+                {copyLabel}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
+      {mobilePanel === "sheet" && backEmpty ? (
+        <p className="shrink-0 border-b border-line px-4 py-1 text-[11px] tracking-wide text-muted lg:hidden">Tył jeszcze pusty</p>
+      ) : null}
       <div className="grid min-h-0 min-w-0 flex-1 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <aside className={`${sheetHidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-row overflow-hidden lg:flex lg:border-r lg:border-line`}>
         <EditorOptions
@@ -1164,7 +1191,8 @@ export function EditorCanvas({
           crop={crop}
           layers={layers}
           issues={issues}
-          copyLabel={areas.length > 1 ? (active.id === "back" ? "Kopiuj na przód" : "Kopiuj na tył") : null}
+          copyLabel={copyLabel}
+          dragging={dragging}
           onAddText={() => void addText()}
           onAddPhoto={(file) => void addPhoto(file)}
           onUndo={() => void stepHistory(false)}
@@ -1235,7 +1263,7 @@ export function EditorCanvas({
                     className="pointer-events-none absolute inset-0 grid place-items-center text-sm"
                     style={{ color: inkForFabric(bodyColor) === "#ffffff" ? "rgba(255,255,255,0.72)" : "var(--muted)" }}
                   >
-                    Tekst, zdjęcie albo kształt
+                    {backEmpty ? "Tył jeszcze pusty" : "Tekst, zdjęcie albo kształt"}
                   </p>
                 ) : null}
               </div>
