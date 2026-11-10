@@ -19,8 +19,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
-        has: [{ type: "host", value: "www.drukarycz.pl" }],
-        destination: "https://drukarycz.pl/:path*",
+        has: [{ type: "host", value: "drukarycz.pl" }],
+        destination: "https://www.drukarycz.pl/:path*",
         permanent: true,
       },
     ];

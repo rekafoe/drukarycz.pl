@@ -20,7 +20,7 @@ npm run dev -- --hostname 0.0.0.0 --port 43131
 Поисковики на продакшене задаются переменными окружения, пустые не выводятся:
 
 ```bash
-SITE_URL=https://drukarycz.pl          # домен в canonical, sitemap и OG
+SITE_URL=https://www.drukarycz.pl      # домен в canonical, sitemap и OG
 GOOGLE_SITE_VERIFICATION=              # код из Google Search Console, мета google-site-verification
 BING_SITE_VERIFICATION=                # код из Bing Webmaster Tools, мета msvalidate.01
 INDEXNOW_KEY=                          # ключ IndexNow, отдаётся по /indexnow.txt
