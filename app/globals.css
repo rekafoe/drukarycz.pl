@@ -87,6 +87,23 @@ body {
   border-color: var(--a-mark);
 }
 
+.btn-ghost-on-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, #f3eee4 35%, transparent);
+  background: transparent;
+  color: #f3eee4;
+  font-weight: 800;
+  padding: 0.85rem 1.4rem;
+}
+
+.btn-ghost-on-dark:hover {
+  border-color: #c9d5ff;
+  color: #ffffff;
+}
+
 .tool-kobalt {
   background: var(--a-cta);
   color: var(--a-cta-text);

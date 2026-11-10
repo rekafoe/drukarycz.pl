@@ -6,5 +6,5 @@ export const size = ogSize;
 export const contentType = ogContentType;
 
 export default function Image() {
-  return ogCard({ title: "Koszulki i kubki z Twoim projektem", line: `Edytor online, model 3D, druk ${seller.cityIn}` });
+  return ogCard({ title: "Koszulki i kubki z Twoim projektem", line: "Edytor online, model 3D, druk Warszawa" });
 }

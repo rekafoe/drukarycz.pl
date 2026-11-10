@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { productPaths, type ProductId } from "@/lib/catalog";
 import { SiteFooter } from "@/components/site-footer";
+import { landingPaths, shopLead } from "@/lib/landings";
 import { seller } from "@/lib/seller";
 import {
   ArrowIcon,
@@ -83,8 +84,17 @@ export function PosterDoors({ leaving, onPick, onCart, account, accent = default
       </div>
       <PosterDoor product="tshirt" index={1} dark leaving={leaving} onPick={onPick} />
       <PosterDoor product="mug" index={2} leaving={leaving} onPick={onPick} />
-      <p className="absolute right-5 bottom-1.5 z-30 text-[12px] text-[#16130F]/60 md:right-8 md:bottom-3">
-        Nadruk na zdjęciu przykładowy ·{" "}
+      <p className="absolute right-5 bottom-1.5 z-30 flex flex-wrap justify-end gap-x-2 text-[12px] text-[#16130F]/60 md:right-8 md:bottom-3">
+        <span>Nadruk na zdjęciu przykładowy</span>
+        <Link href={landingPaths.warszawa} className="font-semibold underline underline-offset-2 hover:text-[#16130F]">
+          Warszawa
+        </Link>
+        <Link href={landingPaths.rozmiary} className="font-semibold underline underline-offset-2 hover:text-[#16130F]">
+          Rozmiary
+        </Link>
+        <Link href={landingPaths.materialy} className="font-semibold underline underline-offset-2 hover:text-[#16130F]">
+          Kolory
+        </Link>
         <Link href="/prawne/regulamin" className="font-semibold underline underline-offset-2 hover:text-[#16130F]">
           Prawne
         </Link>
@@ -286,6 +296,7 @@ export function PosterShop({
             Druk w Warszawie · gotowe w {seller.leadTime}
           </p>
           <h1 className="font-poster mt-2 text-[44px] leading-[0.95] font-black md:text-[length:clamp(40px,7vh,60px)]">{m.product.name}</h1>
+          <p className="mt-3 max-w-[34rem] text-[14px] leading-snug text-[#6b6358]">{shopLead(work.product)}</p>
           <div className="mt-4 flex items-center gap-3 md:mt-3">
             <PriceChip big />
             <p className="text-[13px] leading-snug text-[#6b6358]">
