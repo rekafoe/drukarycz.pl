@@ -292,7 +292,11 @@ function Dostawa() {
     <>
       <p>
         Druk przygotowujemy {seller.cityIn}. Czas przygotowania, który już podajemy przy rzeczy, to {seller.leadTime}.
-        To czas produkcji, nie obietnica dnia doręczenia przez przewoźnika.
+        To czas produkcji, nie obietnica dnia doręczenia przez przewoźnika. Szerszy opis oferty w mieście jest na stronie{" "}
+        <a href="/nadruk-warszawa" className="font-bold text-(--a-mark) hover:underline">
+          Nadruk w Warszawie
+        </a>
+        .
       </p>
       <p>
         Dostawa jest po Polsce. Kosztu dostawy nie wpisujemy z góry: podamy go przed płatnością, razem z wiążącą ceną

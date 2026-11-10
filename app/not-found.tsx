@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PosterHeader } from "@/components/poster-chrome";
 import { SiteFooter } from "@/components/site-footer";
 import { productPaths } from "@/lib/catalog";
+import { landingPaths } from "@/lib/landings";
 import { seller } from "@/lib/seller";
 
 export const metadata: Metadata = {
@@ -29,6 +30,9 @@ export default function NotFound() {
           </Link>
           <Link href="/wzory" className="btn-ghost">
             Wzory
+          </Link>
+          <Link href={landingPaths.warszawa} className="btn-ghost">
+            Nadruk w Warszawie
           </Link>
         </nav>
       </section>

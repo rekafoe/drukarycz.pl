@@ -13,6 +13,7 @@ import { VariantDoors, VariantShop } from "@/components/variants";
 import { defaultAccent, type AccentId } from "@/components/variants/accents";
 import type { Variant } from "@/components/variants/kit";
 import { CartWzorLine, WzorOrderFields } from "@/components/wzory/cart-wzor";
+import { ProductGuide } from "@/components/product-guide";
 import { ChosenWzor } from "@/components/wzory/chosen-wzor";
 import { WzoryStrip } from "@/components/wzory/wzory-strip";
 import { dropForeignDesign, withoutDesign } from "@/lib/wzory/choose";
@@ -381,7 +382,12 @@ export function MerchFlow({
               />
             ) : null
           }
-          showcase={<WzoryStrip product={work.product} color={work.color} />}
+          showcase={
+            <>
+              <WzoryStrip product={work.product} color={work.color} />
+              <ProductGuide product={work.product} />
+            </>
+          }
         />
       ) : null}
 

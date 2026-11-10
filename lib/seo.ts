@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import type { LegalSlug } from "@/components/legal-documents";
-import { productById, productPaths, shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import {
+  finishes,
+  mugCapacityMl,
+  productById,
+  productPaths,
+  shirtColors,
+  sizes,
+  type ProductId,
+} from "@/lib/catalog";
+import { getLanding, productGuides, type LandingId } from "@/lib/landings";
 import { seller } from "@/lib/seller";
 import { absoluteUrl, site } from "@/lib/site";
 
@@ -9,13 +18,17 @@ type PageSeo = {
   description: string;
   path: string;
   noindex?: boolean;
+  /** Własny plik opengraph-image w segmencie. Bez tego — wspólna karta głównej. */
+  ogImage?: string;
 };
 
-/** Общая картинка из app/opengraph-image.tsx. Свой openGraph страницы иначе стирает её; файл opengraph-image в сегменте вещи главнее. */
 const defaultOgImage = { url: "/opengraph-image", width: 1200, height: 630, alt: `${seller.brand} — własny nadruk` };
 
 /** Canonical, hreflang и OG одной страницы. */
-export function pageMetadata({ title, description, path, noindex }: PageSeo): Metadata {
+export function pageMetadata({ title, description, path, noindex, ogImage }: PageSeo): Metadata {
+  const image = ogImage
+    ? { url: ogImage, width: 1200, height: 630, alt: title }
+    : defaultOgImage;
   return {
     title,
     description,
@@ -28,9 +41,9 @@ export function pageMetadata({ title, description, path, noindex }: PageSeo): Me
       url: path,
       title,
       description,
-      images: [defaultOgImage],
+      images: [image],
     },
-    twitter: { card: "summary_large_image", title, description, images: [defaultOgImage] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 
@@ -44,18 +57,20 @@ export const homeSeo: PageSeo = {
 
 export const productSeo: Record<ProductId, PageSeo & { name: string; summary: string }> = {
   tshirt: {
-    name: productById("tshirt").name,
+    name: "Koszulka z własnym nadrukiem",
     title: `Koszulka z własnym nadrukiem, ${seller.priceFrom} — ${seller.brand}`,
     description: `Koszulka z nadrukiem według własnego projektu: przód i tył, rozmiary ${sizes[0]}–${sizes[sizes.length - 1]}, kolory: ${colorList}. Podgląd 3D, druk ${seller.cityIn}, ${seller.priceFrom}.`,
     summary: `Koszulka z nadrukiem według własnego projektu, przód i tył, rozmiary ${sizes.join(", ")}.`,
     path: productPaths.tshirt,
+    ogImage: `${productPaths.tshirt}/opengraph-image`,
   },
   mug: {
-    name: productById("mug").name,
+    name: "Kubek z własnym nadrukiem",
     title: `Kubek z własnym nadrukiem, ${seller.priceFrom} — ${seller.brand}`,
-    description: `Kubek 330 ml z nadrukiem na obwodzie według własnego projektu. Podgląd 3D w edytorze, druk ${seller.cityIn}, gotowe w ${seller.leadTime}, ${seller.priceFrom}.`,
-    summary: "Kubek 330 ml z nadrukiem na obwodzie według własnego projektu.",
+    description: `Kubek ${mugCapacityMl} ml z nadrukiem na obwodzie według własnego projektu. Podgląd 3D w edytorze, druk ${seller.cityIn}, gotowe w ${seller.leadTime}, ${seller.priceFrom}.`,
+    summary: `Kubek ${mugCapacityMl} ml z nadrukiem na obwodzie według własnego projektu.`,
     path: productPaths.mug,
+    ogImage: `${productPaths.mug}/opengraph-image`,
   },
 };
 
@@ -114,7 +129,28 @@ export function homeJsonLd() {
         inLanguage: "pl",
         publisher: { "@id": organizationId },
       },
+      {
+        "@type": "ItemList",
+        name: "Produkty z własnym nadrukiem",
+        itemListElement: (["tshirt", "mug"] as const).map((id, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: productSeo[id].name,
+          url: absoluteUrl(productSeo[id].path),
+        })),
+      },
     ],
+  };
+}
+
+function faqJsonLd(faqs: { q: string; a: string }[]) {
+  return {
+    "@type": "FAQPage",
+    mainEntity: faqs.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
   };
 }
 
@@ -122,6 +158,22 @@ export function homeJsonLd() {
 export function productJsonLd(id: ProductId) {
   const seo = productSeo[id];
   const url = absoluteUrl(seo.path);
+  const product = productById(id);
+  const additionalProperty = [
+    ...product.zones.map((zone) => ({
+      "@type": "PropertyValue",
+      name: `Strefa ${zone.label}`,
+      value: `${zone.widthMm}×${zone.heightMm} mm`,
+    })),
+    ...(id === "mug"
+      ? [{ "@type": "PropertyValue", name: "Pojemność", value: `${mugCapacityMl} ml` }]
+      : [{ "@type": "PropertyValue", name: "Rozmiary", value: sizes.join(", ") }]),
+    {
+      "@type": "PropertyValue",
+      name: "Wykończenie",
+      value: finishes.map((item) => item.label).join(", "),
+    },
+  ];
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -133,6 +185,8 @@ export function productJsonLd(id: ProductId) {
         url,
         image: absoluteUrl(`${seo.path}/opengraph-image`),
         color: shirtColors.map((item) => item.label).join(", "),
+        ...(id === "tshirt" ? { size: sizes.join(", ") } : {}),
+        additionalProperty,
         offers: {
           "@type": "AggregateOffer",
           priceCurrency: "PLN",
@@ -148,6 +202,41 @@ export function productJsonLd(id: ProductId) {
           { "@type": "ListItem", position: 2, name: seo.name, item: url },
         ],
       },
+      faqJsonLd(productGuides[id].faq),
+      organizationJsonLd(),
+    ],
+  };
+}
+
+export function landingJsonLd(id: LandingId) {
+  const landing = getLanding(id);
+  const url = absoluteUrl(landing.path);
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${url}#webpage`,
+        url,
+        name: landing.h1,
+        description: landing.description,
+        inLanguage: "pl",
+        isPartOf: { "@id": `${site.url}/#website` },
+        about:
+          id === "warszawa"
+            ? { "@type": "City", name: seller.city, addressCountry: "PL" }
+            : { "@id": `${absoluteUrl(productPaths.tshirt)}#product` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: landing.crumbs.map((crumb, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: crumb.label,
+          item: absoluteUrl(crumb.href),
+        })),
+      },
+      faqJsonLd(landing.faq),
       organizationJsonLd(),
     ],
   };

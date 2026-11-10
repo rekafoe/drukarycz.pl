@@ -49,6 +49,9 @@ export const finishes = [
   { id: "gloss", label: "Błyszczące" },
 ] as const;
 
+/** Pojemność kubka z oferty. Ta sama liczba, którą pokazuje ławka. */
+export const mugCapacityMl = 330;
+
 export function productById(id: ProductId) {
   return catalog.find((item) => item.id === id) ?? catalog[0];
 }
