@@ -4,11 +4,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { canSendAuthMail, sendLoginCodeViaCrm } from "../lib/auth/crm-mail.ts";
 import { isEmail, normalizeEmail } from "../lib/auth/email.ts";
 import { googleSignInMode, isGoogleConfigured, safeReturnTo } from "../lib/auth/google.ts";
 import { authMethods } from "../lib/auth/methods.ts";
-import { ensureSession, loginGoogleProfile, requestCode, verifyCode } from "../lib/store.ts";
+import { hashPassword, isPassword, passwordMatches } from "../lib/auth/password.ts";
+import { ensureSession, loginGoogleProfile, loginWithPassword } from "../lib/store.ts";
 
 test.describe("logowanie e-mail i Google", { concurrency: false }, () => {
 
@@ -36,22 +36,27 @@ test("e-mail normalizuje i odrzuca śmieci", () => {
   assert.equal(isEmail(""), false);
 });
 
-test("bez CRM i Google metody są mockiem", () =>
+test("hasło ma próg i skrót nie jest jawnym tekstem", async () => {
+  assert.equal(isPassword("short"), false);
+  assert.equal(isPassword("haslo123"), true);
+  const stored = await hashPassword("haslo123");
+  assert.equal(stored.includes("haslo123"), false);
+  assert.equal(await passwordMatches("haslo123", stored), true);
+  assert.equal(await passwordMatches("innehaslo", stored), false);
+});
+
+test("bez Google metody są mockiem", () =>
   withEnv(
     {
-      CRM_URL: undefined,
-      CRM_API_URL: undefined,
-      AUTH_MAIL_API_KEY: undefined,
       GOOGLE_CLIENT_ID: undefined,
       GOOGLE_CLIENT_SECRET: undefined,
       NODE_ENV: "development",
     },
     () => {
-      assert.equal(canSendAuthMail(), false);
       assert.equal(isGoogleConfigured(), false);
       assert.equal(googleSignInMode(), "mock");
       const methods = authMethods();
-      assert.equal(methods.mail, "mock");
+      assert.equal(methods.email, true);
       assert.equal(methods.google, "mock");
     },
   ));
@@ -68,67 +73,6 @@ test("w production bez Google przycisk jest wyłączony", () =>
     },
   ));
 
-test("CRM mail: unset nie woła sieci", async () => {
-  const originalFetch = globalThis.fetch;
-  let called = 0;
-  globalThis.fetch = (async () => {
-    called += 1;
-    return new Response("no", { status: 500 });
-  }) as typeof fetch;
-  try {
-    await withEnv({ CRM_URL: undefined, AUTH_MAIL_API_KEY: undefined }, async () => {
-      const result = await sendLoginCodeViaCrm({
-        to: "anna@example.com",
-        code: "1234",
-        idempotencyKey: "login:test:1",
-      });
-      assert.equal(result.mode, "mock");
-      assert.equal(result.sent, false);
-      assert.equal(result.reason, "unset");
-      assert.equal(called, 0);
-    });
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
-test("CRM mail: 202 to żywy list", async () => {
-  const originalFetch = globalThis.fetch;
-  const calls: Array<{ url: string; key: string | null; body: unknown }> = [];
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const headers = new Headers(init?.headers);
-    calls.push({ url, key: headers.get("X-API-Key"), body: JSON.parse(String(init?.body ?? "{}")) });
-    return new Response("{}", { status: 202 });
-  }) as typeof fetch;
-  try {
-    await withEnv(
-      { CRM_URL: "https://crm.example.com", AUTH_MAIL_API_KEY: "mail-secret" },
-      async () => {
-        const result = await sendLoginCodeViaCrm({
-          to: "anna@example.com",
-          code: "4821",
-          idempotencyKey: "login:sess:abc",
-        });
-        assert.equal(result.sent, true);
-        assert.equal(result.mode, "crm");
-        assert.equal(calls.length, 1);
-        assert.equal(calls[0].url, "https://crm.example.com/api/mail/website/login-code");
-        assert.equal(calls[0].key, "mail-secret");
-        assert.deepEqual(calls[0].body, {
-          to: "anna@example.com",
-          code: "4821",
-          locale: "pl",
-          brand: "drukarycz.pl",
-          idempotencyKey: "login:sess:abc",
-        });
-      },
-    );
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
 test("safeReturnTo nie puszcza /api", () => {
   const request = new Request("http://127.0.0.1:43141/api/auth/google?next=/koszulka");
   assert.equal(safeReturnTo(request), "/koszulka");
@@ -138,29 +82,62 @@ test("safeReturnTo nie puszcza /api", () => {
   assert.equal(safeReturnTo(api), "/");
 });
 
-test("kod e-mail i Google logują do tej samej sesji", async () => {
+test("dwa e-maile i dwa hasła logują; pary muszą być takie same", async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "drukarycz-login-"));
   const previousStore = process.env.MERCH_STORE;
   process.env.MERCH_STORE = path.join(dir, "store.json");
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async () => new Response("no", { status: 503 })) as typeof fetch;
   try {
     const session = await ensureSession(null);
-    const asked = await requestCode(session.id, "Anna@Example.com");
-    assert.equal("error" in asked, false);
-    if ("error" in asked) return;
-    assert.equal(asked.delivery, "mock");
-    assert.equal(typeof asked.devCode, "string");
-    assert.equal(asked.devCode?.length, 4);
+    const mismatchEmail = await loginWithPassword(session.id, {
+      email: "anna@example.com",
+      emailConfirm: "inna@example.com",
+      password: "haslo123",
+      passwordConfirm: "haslo123",
+    });
+    assert.equal("error" in mismatchEmail, true);
+    if ("error" in mismatchEmail) assert.match(mismatchEmail.error, /E-maile/);
 
-    const verified = await verifyCode(session.id, "anna@example.com", asked.devCode ?? "", "Anna");
-    assert.equal("error" in verified, false);
-    if ("error" in verified) return;
-    assert.equal(verified.view.user?.email, "anna@example.com");
-    assert.equal(verified.view.user?.name, "Anna");
-    assert.equal(verified.view.user?.phone, "");
-    assert.equal(verified.view.work.order.email, "anna@example.com");
-    assert.equal(verified.view.devCode, null);
+    const mismatchPassword = await loginWithPassword(session.id, {
+      email: "anna@example.com",
+      emailConfirm: "anna@example.com",
+      password: "haslo123",
+      passwordConfirm: "haslo999",
+    });
+    assert.equal("error" in mismatchPassword, true);
+    if ("error" in mismatchPassword) assert.match(mismatchPassword.error, /Hasła/);
+
+    const created = await loginWithPassword(session.id, {
+      email: "Anna@Example.com",
+      emailConfirm: "anna@example.com",
+      password: "haslo123",
+      passwordConfirm: "haslo123",
+    });
+    assert.equal("error" in created, false);
+    if ("error" in created) return;
+    assert.equal(created.view.user?.email, "anna@example.com");
+    assert.equal(created.view.user?.name, "anna");
+    assert.equal(created.view.user?.phone, "");
+    assert.equal(created.view.work.order.email, "anna@example.com");
+    assert.equal(created.view.devCode, null);
+    assert.equal(JSON.stringify(created.view).includes("passwordHash"), false);
+
+    const wrong = await loginWithPassword(session.id, {
+      email: "anna@example.com",
+      emailConfirm: "anna@example.com",
+      password: "zlehaslo",
+      passwordConfirm: "zlehaslo",
+    });
+    assert.equal("error" in wrong, true);
+
+    const again = await loginWithPassword(session.id, {
+      email: "anna@example.com",
+      emailConfirm: "anna@example.com",
+      password: "haslo123",
+      passwordConfirm: "haslo123",
+    });
+    assert.equal("error" in again, false);
+    if ("error" in again) return;
+    assert.equal(again.view.user?.id, created.view.user?.id);
 
     const google = await loginGoogleProfile(session.id, {
       googleId: "sub-1",
@@ -169,34 +146,69 @@ test("kod e-mail i Google logują do tej samej sesji", async () => {
     });
     assert.equal("error" in google, false);
     if ("error" in google) return;
-    assert.equal(google.view.user?.id, verified.view.user?.id);
+    assert.equal(google.view.user?.id, created.view.user?.id);
     assert.equal(google.view.user?.name, "Anna G");
   } finally {
-    globalThis.fetch = originalFetch;
     if (previousStore === undefined) delete process.env.MERCH_STORE;
     else process.env.MERCH_STORE = previousStore;
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test("panel i README: e-mail, Google, bez SMS i bez czcionek Google", () => {
+test("konto tylko przez Google nie przyjmuje hasła", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "drukarycz-login-g-"));
+  const previousStore = process.env.MERCH_STORE;
+  process.env.MERCH_STORE = path.join(dir, "store.json");
+  try {
+    const session = await ensureSession(null);
+    const google = await loginGoogleProfile(session.id, {
+      googleId: "sub-google-only",
+      email: "gosia@example.com",
+      name: "Gosia",
+    });
+    assert.equal("error" in google, false);
+    const blocked = await loginWithPassword(session.id, {
+      email: "gosia@example.com",
+      emailConfirm: "gosia@example.com",
+      password: "haslo123",
+      passwordConfirm: "haslo123",
+    });
+    assert.equal("error" in blocked, true);
+    if ("error" in blocked) assert.match(blocked.error, /Google/);
+  } finally {
+    if (previousStore === undefined) delete process.env.MERCH_STORE;
+    else process.env.MERCH_STORE = previousStore;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("panel i README: dwa e-maile, dwa hasła, Google, bez OTP i SMS", () => {
   const panel = fs.readFileSync("components/login-panel.tsx", "utf8");
   const readme = fs.readFileSync("README.md", "utf8");
   const legal = fs.readFileSync("components/legal-documents.tsx", "utf8");
   const google = fs.readFileSync("lib/auth/google.ts", "utf8");
-  const mail = fs.readFileSync("lib/auth/crm-mail.ts", "utf8");
   assert.match(panel, /Wejdź przez Google/);
-  assert.match(panel, /Wyślij kod/);
+  assert.match(panel, /Powtórz e-mail/);
+  assert.match(panel, /Powtórz hasło/);
+  assert.match(panel, /\/api\/auth\/login/);
+  assert.equal(panel.includes("Wyślij kod"), false);
+  assert.equal(panel.includes("devCode"), false);
+  assert.equal(panel.includes("type=\"tel\""), false);
+  assert.equal(/SMS/i.test(panel), false);
   assert.equal(panel.includes("fonts.googleapis"), false);
   assert.equal(panel.includes("accounts.google.com"), false);
   assert.match(google, /accounts\.google\.com/);
   assert.equal(google.includes("fonts.gstatic"), false);
-  assert.match(mail, /\/api\/mail\/website\/login-code/);
-  assert.equal(mail.includes("process.env.SMTP"), false);
-  assert.match(readme, /AUTH_MAIL_API_KEY/);
+  assert.equal(fs.existsSync("lib/auth/crm-mail.ts"), false);
+  assert.equal(fs.existsSync("app/api/auth/code/route.ts"), false);
+  assert.equal(fs.existsSync("app/api/auth/verify/route.ts"), false);
+  assert.equal(readme.includes("AUTH_MAIL_API_KEY"), false);
+  assert.equal(readme.includes("/api/mail/website/login-code"), false);
   assert.match(readme, /GOOGLE_CLIENT_ID/);
   assert.match(readme, /GOOGLE_CLIENT_SECRET/);
-  assert.match(legal, /Kod logowania wysyła CRM przez SMTP/);
+  assert.match(readme, /POST \/api\/auth\/login/);
+  assert.match(legal, /e-mail i hasło, oba wpisane dwa razy/);
+  assert.equal(legal.includes("Kod logowania wysyła CRM przez SMTP"), false);
   assert.equal(legal.includes("logowania telefonem i"), false);
 });
 });

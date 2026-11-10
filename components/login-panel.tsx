@@ -16,11 +16,9 @@ export function LoginPanel({
   initialError?: string | null;
 }) {
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [devCode, setDevCode] = useState<string | null>(null);
-  const [delivery, setDelivery] = useState<"crm" | "mock" | null>(null);
-  const [needsName, setNeedsName] = useState(true);
+  const [emailConfirm, setEmailConfirm] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState<string | null>(initialError);
   const [busy, setBusy] = useState(false);
   const [google, setGoogle] = useState<AuthMethods["google"]>(
@@ -42,52 +40,27 @@ export function LoginPanel({
     };
   }, []);
 
-  async function requestCode() {
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/auth/code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = (await response.json()) as {
-        error?: string;
-        devCode?: string | null;
-        needsName?: boolean;
-        delivery?: "crm" | "mock";
-      };
-      if (!response.ok) {
-        setError(data.error ?? "Nie udało się wysłać kodu");
-        setDevCode(null);
-        setDelivery(null);
-        return;
-      }
-      setDevCode(data.devCode ?? null);
-      setDelivery(data.delivery === "crm" ? "crm" : "mock");
-      const askName = data.needsName !== false;
-      setNeedsName(askName);
-      if (!askName) setName("");
-    } catch {
-      setError("Nie udało się wysłać kodu");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function verify(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
-    setBusy(true);
     setError(null);
+    if (email.trim().toLowerCase() !== emailConfirm.trim().toLowerCase()) {
+      setError("E-maile nie są takie same");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError("Hasła nie są takie same");
+      return;
+    }
+    setBusy(true);
     try {
-      const response = await fetch("/api/auth/verify", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code, name }),
+        body: JSON.stringify({ email, emailConfirm, password, passwordConfirm }),
       });
       const data = (await response.json()) as SessionView & { error?: string };
       if (!response.ok || !data.user) {
-        setError(data.error ?? "Kod nie pasuje");
+        setError(data.error ?? "Nie udało się wejść");
         return;
       }
       onSuccess(data);
@@ -122,8 +95,8 @@ export function LoginPanel({
 
   const form = (
     <form
-      onSubmit={verify}
-      className="font-ui grid w-full max-w-md gap-3 rounded-3xl bg-[#F3EEE4] p-6 text-ink shadow-[0_24px_60px_-28px_rgba(22,19,15,0.45)]"
+      onSubmit={(event) => void submit(event)}
+      className="font-ui grid w-full max-w-md gap-2.5 rounded-3xl bg-[#F3EEE4] p-6 text-ink shadow-[0_24px_60px_-28px_rgba(22,19,15,0.45)]"
     >
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-poster text-[28px] leading-none font-black tracking-tight">Logowanie</h2>
@@ -134,7 +107,7 @@ export function LoginPanel({
         ) : null}
       </div>
       <p className="text-sm text-muted">
-        Kod przychodzi e-mailem. SMS-ów nie wysyłamy. Wejście przez Google jest tylko do konta — bez czcionek Google.
+        Wpisz e-mail i hasło dwa razy. Pola w parze muszą być takie same. Nowe konto powstaje przy pierwszym wejściu.
       </p>
       <label className="grid gap-1 text-sm font-bold">
         E-mail
@@ -149,49 +122,44 @@ export function LoginPanel({
           className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
         />
       </label>
-      <button type="button" disabled={busy} className="btn-ghost" onClick={() => void requestCode()}>
-        Wyślij kod
-      </button>
-      {delivery === "crm" ? (
-        <p className="rounded-xl border border-line bg-card px-3 py-3 text-sm">
-          Kod wysłaliśmy na {email}. To nie jest marketing.
-        </p>
-      ) : null}
-      {delivery === "mock" && !devCode ? (
-        <p className="rounded-xl border border-line bg-card px-3 py-3 text-sm">
-          Poczta CRM nie jest podłączona. Na produkcji kod z listu, tutaj tryb testowy.
-        </p>
-      ) : null}
-      {devCode ? (
-        <p className="rounded-xl border border-line bg-card px-3 py-3 text-sm">
-          Kod testowy: <span className="font-extrabold tracking-[0.2em]">{devCode}</span>
-          <span className="mt-1 block text-muted">CRM / SMTP niepodłączone — list nie poszedł.</span>
-        </p>
-      ) : null}
       <label className="grid gap-1 text-sm font-bold">
-        Kod
+        Powtórz e-mail
         <input
           required
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          value={code}
-          onChange={(event) => setCode(event.target.value)}
-          className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium tracking-[0.2em]"
+          type="email"
+          autoComplete="off"
+          inputMode="email"
+          placeholder="anna@example.com"
+          value={emailConfirm}
+          onChange={(event) => setEmailConfirm(event.target.value)}
+          className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
         />
       </label>
-      {needsName ? (
-        <label className="grid gap-1 text-sm font-bold">
-          Imię
-          <input
-            required
-            autoComplete="name"
-            placeholder="Jak się do Ciebie zwracać"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
-          />
-        </label>
-      ) : null}
+      <label className="grid gap-1 text-sm font-bold">
+        Hasło
+        <input
+          required
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
+        />
+        <span className="font-medium text-muted">Co najmniej 8 znaków.</span>
+      </label>
+      <label className="grid gap-1 text-sm font-bold">
+        Powtórz hasło
+        <input
+          required
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          value={passwordConfirm}
+          onChange={(event) => setPasswordConfirm(event.target.value)}
+          className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
+        />
+      </label>
       {error ? <p className="text-sm font-semibold">{error}</p> : null}
       <button type="submit" disabled={busy} className="btn-kobalt w-full py-4">
         Wejdź

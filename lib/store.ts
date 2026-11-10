@@ -1,8 +1,8 @@
-import { randomBytes, randomInt } from "crypto";
+import { randomBytes } from "crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import path from "path";
-import { sendLoginCodeViaCrm, type MailDelivery } from "@/lib/auth/crm-mail";
 import { isEmail, normalizeEmail } from "@/lib/auth/email";
+import { hashPassword, isPassword, passwordMatches } from "@/lib/auth/password";
 import { listPrintFiles, removePrints, writePrintFile } from "@/lib/print-files";
 import {
   initialWork,
@@ -13,14 +13,6 @@ import {
   type PrintAreaId,
   type WorkSnapshot,
 } from "@/lib/work";
-
-export type Challenge = {
-  email: string;
-  code: string;
-  expiresAt: number;
-  attempts: number;
-  delivery: MailDelivery;
-};
 
 export type OauthPending = {
   state: string;
@@ -36,6 +28,7 @@ export type UserRecord = {
   phoneDigits: string;
   phoneLabel: string;
   googleId: string | null;
+  passwordHash: string | null;
 };
 
 export type DesignRecord = {
@@ -50,7 +43,6 @@ export type SessionRecord = {
   userId: string | null;
   designId: string | null;
   work: WorkSnapshot;
-  challenge: Challenge | null;
   oauth: OauthPending | null;
   updatedAt: number;
 };
@@ -79,7 +71,9 @@ function readUser(raw: unknown): UserRecord | null {
   const phoneLabel = typeof row.phoneLabel === "string" ? row.phoneLabel : "";
   const digits = typeof row.phoneDigits === "string" ? row.phoneDigits : phoneDigits(phoneLabel);
   const googleId = typeof row.googleId === "string" && row.googleId ? row.googleId : null;
-  return { id, email, name, phoneDigits: digits, phoneLabel, googleId };
+  const passwordHash =
+    typeof row.passwordHash === "string" && row.passwordHash.includes(":") ? row.passwordHash : null;
+  return { id, email, name, phoneDigits: digits, phoneLabel, googleId, passwordHash };
 }
 
 function readSession(raw: unknown): SessionRecord | null {
@@ -87,29 +81,15 @@ function readSession(raw: unknown): SessionRecord | null {
   const row = raw as Record<string, unknown>;
   const id = typeof row.id === "string" ? row.id : "";
   if (!id) return null;
-  const challenge = readChallenge(row.challenge);
   const oauth = readOauth(row.oauth);
   return {
     id,
     userId: typeof row.userId === "string" ? row.userId : null,
     designId: typeof row.designId === "string" ? row.designId : null,
     work: row.work && typeof row.work === "object" ? (row.work as WorkSnapshot) : initialWork(),
-    challenge,
     oauth,
     updatedAt: typeof row.updatedAt === "number" ? row.updatedAt : Date.now(),
   };
-}
-
-function readChallenge(raw: unknown): Challenge | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const row = raw as Record<string, unknown>;
-  const email = typeof row.email === "string" ? normalizeEmail(row.email) : "";
-  const code = typeof row.code === "string" ? row.code : "";
-  const expiresAt = typeof row.expiresAt === "number" ? row.expiresAt : 0;
-  const attempts = typeof row.attempts === "number" ? row.attempts : 0;
-  const delivery: MailDelivery = row.delivery === "crm" ? "crm" : "mock";
-  if (!email || !code) return null;
-  return { email, code, expiresAt, attempts, delivery };
 }
 
 function readOauth(raw: unknown): OauthPending | null {
@@ -172,7 +152,6 @@ function freshSession(): SessionRecord {
     userId: null,
     designId: null,
     work: initialWork(),
-    challenge: null,
     oauth: null,
     updatedAt: Date.now(),
   };
@@ -195,13 +174,6 @@ function publicUser(user: UserRecord) {
   return { id: user.id, name: user.name, email: user.email, phone: user.phoneLabel };
 }
 
-function publicDevCode(challenge: Challenge | null) {
-  if (!challenge || challenge.expiresAt <= Date.now()) return null;
-  if (challenge.delivery === "crm") return null;
-  if (process.env.NODE_ENV === "production") return null;
-  return challenge.code;
-}
-
 export function viewSession(session: SessionRecord, store: Store) {
   const user = session.userId ? store.users.find((item) => item.id === session.userId) : undefined;
   session.work = sanitizeWork(session.work, Boolean(session.userId), session.work);
@@ -210,7 +182,7 @@ export function viewSession(session: SessionRecord, store: Store) {
     user: user ? publicUser(user) : null,
     work: session.work,
     designId: session.designId,
-    devCode: publicDevCode(session.challenge),
+    devCode: null,
   };
 }
 
@@ -313,6 +285,7 @@ function ensureUser(
       phoneDigits: "",
       phoneLabel: "",
       googleId: input.googleId ?? null,
+      passwordHash: null,
     };
     store.users.push(user);
     return user;
@@ -326,7 +299,6 @@ function ensureUser(
 function attachUser(store: Store, session: SessionRecord, user: UserRecord) {
   const guestWork = session.work;
   session.userId = user.id;
-  session.challenge = null;
   session.oauth = null;
   if (workIsMeaningful(guestWork)) {
     session.work = guestWork;
@@ -347,53 +319,64 @@ function attachUser(store: Store, session: SessionRecord, user: UserRecord) {
   session.updatedAt = Date.now();
 }
 
-export async function requestCode(sessionId: string, emailLabel: string) {
-  if (!isEmail(emailLabel)) {
+export async function loginWithPassword(
+  sessionId: string,
+  input: { email: string; emailConfirm: string; password: string; passwordConfirm: string },
+) {
+  const email = normalizeEmail(input.email);
+  const emailConfirm = normalizeEmail(input.emailConfirm);
+  if (!isEmail(input.email) || !isEmail(input.emailConfirm)) {
     return { error: "Podaj e-mail" as const };
   }
-  const email = normalizeEmail(emailLabel);
-  const code = randomInt(0, 10000).toString().padStart(4, "0");
-  const idempotencyKey = `login:${sessionId.slice(0, 12)}:${Date.now().toString(36)}`;
-  const sent = await sendLoginCodeViaCrm({ to: email, code, idempotencyKey });
+  if (email !== emailConfirm) {
+    return { error: "E-maile nie są takie same" as const };
+  }
+  if (input.password !== input.passwordConfirm) {
+    return { error: "Hasła nie są takie same" as const };
+  }
+  if (!isPassword(input.password)) {
+    return { error: "Hasło: od 8 do 128 znaków" as const };
+  }
+
+  const snapshot = readStore();
+  const known = findUser(snapshot, { email });
+  if (known && !known.passwordHash) {
+    return { error: "To konto działa przez Google. Wejdź przyciskiem Google." as const };
+  }
+  if (known?.passwordHash) {
+    const ok = await passwordMatches(input.password, known.passwordHash);
+    if (!ok) return { error: "E-mail albo hasło nie pasuje" as const };
+    return updateStore((store) => {
+      const session = store.sessions.find((item) => item.id === sessionId);
+      const user = findUser(store, { email });
+      if (!session || !user) return { error: "Nie znaleziono sesji" as const };
+      attachUser(store, session, user);
+      return { view: viewSession(session, store) };
+    });
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  const name = email.split("@")[0] || "Gość";
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
     if (!session) return { error: "Nie znaleziono sesji" as const };
-    session.challenge = {
+    let user = findUser(store, { email });
+    if (user && !user.passwordHash) {
+      return { error: "To konto działa przez Google. Wejdź przyciskiem Google." as const };
+    }
+    if (user?.passwordHash) {
+      return { error: "Spróbuj jeszcze raz" as const };
+    }
+    user = {
+      id: newId(),
       email,
-      code,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-      attempts: 0,
-      delivery: sent.mode,
+      name,
+      phoneDigits: "",
+      phoneLabel: "",
+      googleId: null,
+      passwordHash,
     };
-    session.updatedAt = Date.now();
-    const known = findUser(store, { email });
-    return {
-      needsName: !known?.name,
-      delivery: sent.mode,
-      devCode: publicDevCode(session.challenge),
-    };
-  });
-}
-
-export function verifyCode(sessionId: string, emailLabel: string, code: string, name: string) {
-  if (!isEmail(emailLabel)) {
-    return Promise.resolve({ error: "Podaj e-mail" as const });
-  }
-  const email = normalizeEmail(emailLabel);
-  return updateStore((store) => {
-    const session = store.sessions.find((item) => item.id === sessionId);
-    if (!session?.challenge) return { error: "Najpierw pobierz kod" as const };
-    const challenge = session.challenge;
-    if (challenge.expiresAt <= Date.now()) return { error: "Kod wygasł. Pobierz nowy" as const };
-    if (challenge.email !== email) return { error: "Kod zamówiono na inny e-mail" as const };
-    challenge.attempts += 1;
-    if (challenge.attempts > 5) return { error: "Za dużo prób. Pobierz nowy kod" as const };
-    if (challenge.code !== code.trim()) return { error: "Kod nie pasuje" as const };
-
-    const known = findUser(store, { email });
-    const nextName = name.trim() || known?.name || "";
-    if (!nextName) return { error: "Napisz, jak się do Ciebie zwracać" as const };
-    const user = ensureUser(store, { email, name: nextName, googleId: known?.googleId });
+    store.users.push(user);
     attachUser(store, session, user);
     return { view: viewSession(session, store) };
   });
@@ -452,7 +435,6 @@ export function logoutSession(sessionId: string) {
     session.userId = null;
     session.designId = null;
     session.work = initialWork();
-    session.challenge = null;
     session.oauth = null;
     session.updatedAt = Date.now();
     return viewSession(session, store);
@@ -564,7 +546,6 @@ export function deleteAccount(sessionId: string) {
       removePrints(item.id);
       item.userId = null;
       item.designId = null;
-      item.challenge = null;
       item.oauth = null;
       item.work = initialWork();
       item.updatedAt = Date.now();
