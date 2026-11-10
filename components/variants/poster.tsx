@@ -6,6 +6,8 @@ import type { ReactNode } from "react";
 import { productPaths, type ProductId } from "@/lib/catalog";
 import { SiteFooter } from "@/components/site-footer";
 import { landingPaths, shopLead } from "@/lib/landings";
+import { QtyField } from "@/components/qty-field";
+import { goodsPriceLabel } from "@/lib/qty";
 import { seller } from "@/lib/seller";
 import {
   ArrowIcon,
@@ -30,14 +32,14 @@ function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
-function PriceChip({ big = false }: { big?: boolean }) {
+function PriceChip({ big = false, qty }: { big?: boolean; qty?: string }) {
   return (
     <span
-      className={`font-poster inline-flex shrink-0 items-center rounded-full bg-(--a-badge) font-bold text-(--a-badge-text) ${
+      className={`font-poster inline-flex shrink-0 items-center rounded-full bg-(--a-badge) font-bold whitespace-nowrap text-(--a-badge-text) ${
         big ? "px-5 py-2.5 text-[22px]" : "px-4 py-2 text-[15px]"
       }`}
     >
-      {seller.priceFrom}
+      {qty ? goodsPriceLabel(qty) : seller.priceFrom}
     </span>
   );
 }
@@ -298,7 +300,7 @@ export function PosterShop({
           <h1 className="font-poster mt-2 text-[44px] leading-[0.95] font-black md:text-[length:clamp(40px,7vh,60px)]">{m.product.name}</h1>
           <p className="mt-3 max-w-[34rem] text-[14px] leading-snug text-[#6b6358]">{shopLead(work.product)}</p>
           <div className="mt-4 flex items-center gap-3 md:mt-3">
-            <PriceChip big />
+            <PriceChip big qty={work.qty} />
             <p className="text-[13px] leading-snug text-[#6b6358]">
               Cena wyjściowa brutto.
               <br />
@@ -347,19 +349,7 @@ export function PosterShop({
             ))}
           </div>
           <Label>Nakład</Label>
-          <div className="flex flex-wrap gap-2">
-            {m.quantities.map((qty) => (
-              <button
-                key={qty}
-                type="button"
-                aria-pressed={work.qty === qty}
-                className={choice(work.qty === qty)}
-                onClick={() => onChange({ qty })}
-              >
-                {qty} szt.
-              </button>
-            ))}
-          </div>
+          <QtyField qty={work.qty} onChange={(qty) => onChange({ qty })} />
           {chosen}
           <div className="sticky bottom-0 z-10 -mx-3 mt-6 hidden bg-[#F3EEE4] px-3 pt-2 pb-3 md:block">
             <button
@@ -377,7 +367,7 @@ export function PosterShop({
       {showcase}
       <SiteFooter />
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 bg-[#16130F] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:hidden">
-        <PriceChip />
+        <PriceChip qty={work.qty} />
         <button
           type="button"
           onClick={onEditor}

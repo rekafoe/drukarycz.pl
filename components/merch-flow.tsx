@@ -32,8 +32,10 @@ const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
   { ssr: false, loading: () => null },
 );
+import { QtyField } from "@/components/qty-field";
 import { productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
+import { goodsPriceLabel, linePriceLabel } from "@/lib/qty";
 import { seller } from "@/lib/seller";
 
 const PreviewBars =
@@ -410,7 +412,7 @@ export function MerchFlow({
             {saveError ? <span className="text-sm text-[#F3EEE4]/70">Nie zapisano</span> : null}
             {work.quality.length > 0 ? <span className="text-sm text-(--a-badge)">Uwagi do druku</span> : null}
             <span className="rounded-full bg-(--a-badge) px-3 py-1 text-sm font-bold text-(--a-badge-text)">
-              {seller.priceFrom}
+              {goodsPriceLabel(work.qty)}
             </span>
             <button
               type="button"
@@ -468,27 +470,35 @@ export function MerchFlow({
             {work.cartFrom === "shop" ? "← Do rzeczy" : "← Do edytora"}
           </button>
           <h1 className="font-poster mt-4 text-[40px] leading-[0.95] font-black tracking-tight md:text-[52px]">Koszyk</h1>
-          <article className="mt-6 flex items-center gap-4 rounded-2xl border border-[#16130F]/10 bg-white p-4">
+          <article className="mt-6 flex items-start gap-4 rounded-2xl border border-[#16130F]/10 bg-white p-4">
             {work.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={work.previewUrl}
                 alt={`Podgląd projektu: ${product.name}`}
-                className="h-24 w-24 object-contain"
+                className="h-24 w-24 shrink-0 object-contain"
                 style={{ background: work.color }}
               />
             ) : (
-              <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
+              <span className="shrink-0">
+                <ProductArt product={work.product} color={work.color} text="" size={96} hidePrint />
+              </span>
             )}
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="font-poster text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
-                {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label]
-                  .filter(Boolean)
-                  .join(" · ")}
+                {[work.product === "tshirt" ? work.size : "330 ml", colorName, zone.label].filter(Boolean).join(" · ")}
               </p>
-              <p className="mt-1 inline-flex rounded-full bg-(--a-badge) px-3 py-1 text-sm font-bold text-(--a-badge-text)">
-                {seller.priceFrom}
+              <div className="mt-3">
+                <p className="mb-2 text-[12px] font-extrabold tracking-[0.14em] uppercase">Nakład</p>
+                <QtyField
+                  id="naklad-koszyk"
+                  qty={work.qty}
+                  onChange={(qty) => updateWork((current) => ({ ...current, qty }))}
+                />
+              </div>
+              <p className="mt-3 inline-flex rounded-full bg-(--a-badge) px-3 py-1 text-sm font-bold text-(--a-badge-text)">
+                {linePriceLabel(work.qty, work.design?.usageFee ?? 0)}
               </p>
               <p className="text-sm text-muted">Cena wyjściowa brutto. Dostawa — przed płatnością.</p>
               <CartWzorLine work={work} />
