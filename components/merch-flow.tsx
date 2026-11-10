@@ -16,10 +16,12 @@ import { CartWzorLine, WzorOrderFields } from "@/components/wzory/cart-wzor";
 import { ProductGuide } from "@/components/product-guide";
 import { ChosenWzor } from "@/components/wzory/chosen-wzor";
 import { WzoryStrip } from "@/components/wzory/wzory-strip";
+import { applyDraftPayload, usedPrintAreaIdsFor, workHasMaket } from "@/lib/editor/souvenir-state";
 import { dropForeignDesign, withoutDesign } from "@/lib/wzory/choose";
 import { useWzorFonts } from "@/lib/wzory/fonts-client";
 import {
   emptyOrder,
+  type CartFrom,
   type PrintAreaId,
   type PrintFiles,
   type PublicUser,
@@ -195,6 +197,25 @@ export function MerchFlow({
     return () => window.removeEventListener("pagehide", flush);
   }, []);
 
+  useEffect(() => {
+    const token = work.editorDraftToken;
+    if (work.step !== "editor" || !token || usedPrintAreaIdsFor(work).length > 0) return;
+    let cancelled = false;
+    void fetch(`/api/editor/drafts/${encodeURIComponent(token)}`)
+      .then(async (response) => {
+        if (!response.ok || cancelled) return;
+        const body = (await response.json()) as { payloadParsed?: unknown };
+        const restored = applyDraftPayload(workRef.current, body.payloadParsed);
+        if (cancelled || restored === workRef.current) return;
+        updateWork(() => restored);
+        setCanvasEpoch((value) => value + 1);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [work.step, work.editorDraftToken]);
+
   async function logout() {
     const response = await fetch("/api/auth/logout", { method: "POST" });
     if (!response.ok) return;
@@ -206,6 +227,28 @@ export function MerchFlow({
     const response = await fetch("/api/account", { method: "DELETE" });
     if (!response.ok) return;
     applySession((await response.json()) as SessionView);
+  }
+
+  async function persistDraft(work: WorkSnapshot): Promise<string | null> {
+    try {
+      const response = await fetch("/api/editor/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(work),
+      });
+      if (!response.ok) return work.editorDraftToken;
+      const body = (await response.json()) as { token?: string };
+      return typeof body.token === "string" && body.token ? body.token : work.editorDraftToken;
+    } catch {
+      return work.editorDraftToken;
+    }
+  }
+
+  async function goToCart(from: CartFrom, extra: Partial<WorkSnapshot> = {}) {
+    const current: WorkSnapshot = { ...workRef.current, ...extra, cartFrom: from, step: "cart" };
+    let token = current.editorDraftToken;
+    if (workHasMaket(current)) token = (await persistDraft(current)) ?? token;
+    updateWork(() => ({ ...current, editorDraftToken: token }));
   }
 
   async function openCart() {
@@ -239,7 +282,7 @@ export function MerchFlow({
     } finally {
       setPrintBusy(false);
     }
-    updateWork((current) => ({ ...current, cartFrom: "editor", step: "cart", printFiles }));
+    await goToCart("editor", { printFiles });
   }
 
   async function placeOrder(event: FormEvent) {
@@ -349,7 +392,7 @@ export function MerchFlow({
           accent={accent}
           leaving={leaving}
           onPick={openProduct}
-          onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
+          onCart={() => void goToCart("shop")}
           account={account}
         />
       ) : null}
@@ -362,7 +405,7 @@ export function MerchFlow({
           onChange={(patch) => updateWork((current) => ({ ...current, ...patch }))}
           onProduct={switchProduct}
           onHome={() => updateWork((current) => ({ ...current, step: "doors" }))}
-          onCart={() => updateWork((current) => ({ ...current, cartFrom: "shop", step: "cart" }))}
+          onCart={() => void goToCart("shop")}
           onEditor={startOwn}
           account={account}
           chosen={
@@ -373,13 +416,10 @@ export function MerchFlow({
                 onRemove={() => updateWork(withoutDesign)}
                 onCart={(printFiles, previewUrl, note) => {
                   setPrintNote(note);
-                  updateWork((current) => ({
-                    ...current,
-                    cartFrom: "shop",
-                    step: "cart",
+                  void goToCart("shop", {
                     printFiles,
-                    previewUrl: previewUrl ?? current.previewUrl,
-                  }));
+                    previewUrl: previewUrl ?? workRef.current.previewUrl,
+                  });
                 }}
               />
             ) : null
@@ -519,7 +559,10 @@ export function MerchFlow({
           </article>
           <section className="mt-6 rounded-2xl border border-dashed border-line p-4 text-sm text-muted">
             <h2 className="font-bold text-ink">Pola przyszłego zamówienia</h2>
-            <p className="mt-1">Trzymane na serwerze {seller.brand}. Do CRM nie wychodzą.</p>
+            <p className="mt-1">
+              Szkic edytora zapisujemy przez serwer {seller.brand}. Zamówienia, płatności i SMS do CRM nie
+              wysyłamy.
+            </p>
             <ul className="mt-3 grid gap-1">
               <li>rzecz: {product.name}</li>
               <li>{work.product === "tshirt" ? `rozmiar: ${work.size}` : "pojemność: 330 ml"}</li>
@@ -530,7 +573,6 @@ export function MerchFlow({
               <li>
                 strefa: {zone.label}, {zone.widthMm}×{zone.heightMm} mm
               </li>
-              <li>editorDraftToken: pojawi się, gdy szkic zacznie iść do CRM</li>
               <li>plik do druku: {printZoneNames(work).length > 0 ? printZoneNames(work).join(", ") : "jeszcze nie"}</li>
               {work.order.email ? <li>e-mail: {work.order.email}</li> : null}
               {work.order.street ? (

@@ -1,6 +1,6 @@
 # drukarycz.pl
 
-Отдельный сайт сувенирки: футболки и кружки со своим макетом. Редактор на сайте, CRM позже забирает дизайн и заказ.
+Отдельный сайт сувенирки: футболки и кружки со своим макетом. Редактор на сайте. Черновик макета пишет сервер сайта в CRM (`editorDraftToken`); если CRM молчит — локальный токен. Заказ, цена и оплата в CRM пока не уходят.
 
 ## Как открыть
 
@@ -36,7 +36,22 @@ curl "https://api.indexnow.org/indexnow?url=https://drukarycz.pl/&key=$INDEXNOW_
 
 Витрина готовых дизайнов на тестовых данных: полоса «Gotowe wzory» в лавке под «Zrób własny», страница `/wzory` с рубриками и карточка `/wzory/000123`. На карточке два пути. «Zamów bez zmian» возвращает в лавку с выбранным wzorem и ведёт в корзину. «Zmień w edytorze» открывает тот же шаблон в редакторе. В корзине у позиции есть `designTemplateId`, `designTemplateCode`, `designUsageFee`, `designModified` и `usedPrintAreaIds`. Цена wzoru в zł, один раз на позицию, при нуле подпись «Wzór w cenie».
 
-Источник выбирает `DESIGNS_SOURCE`. По умолчанию `fixtures`: ответы в форме CRM лежат в `fixtures/wzory`. Значение `crm` пока пустая заглушка с той же схемой, CRM не подключена. Ручки сайта: `GET /api/wzory?produkt=koszulka|kubek`, `GET /api/wzory/kategorie`, `GET /api/wzory/{id}`, `POST /api/wzory/{id}/wybierz`, `POST /api/wzory/wlasny`. Шаблон проверяется до показа: зоны в мм с допуском 1 мм, единицы холста, адреса картинок и шрифтов только со своего сервера. Плохой шаблон в витрину не попадает, а по прямой ссылке показывает «Ten wzór nie pasuje do tego produktu.». Цену и номер wzoru в проект пишет только сервер.
+Источник выбирает `DESIGNS_SOURCE`. По умолчанию `fixtures`: ответы в форме CRM лежат в `fixtures/wzory`. `DESIGNS_SOURCE=crm` читает публичные шаблоны с CRM, если задан `CRM_URL`; если CRM молчит — снова fixtures, сайт без секретов открывается. Ручки сайта: `GET /api/wzory?produkt=koszulka|kubek`, `GET /api/wzory/kategorie`, `GET /api/wzory/{id}`, `POST /api/wzory/{id}/wybierz`, `POST /api/wzory/wlasny`. Картинки и шрифты CRM только через `GET /media/crm/*`. Шаблон проверяется до показа: зоны в мм с допуском 1 мм, единицы холста, адреса картинок и шрифтов только со своего сервера. Плохой шаблон в витрину не попадает, а по прямой ссылке показывает «Ten wzór nie pasuje do tego produktu.». Цену и номер wzoru в проект пишет только сервер. Браузер в CRM не ходит.
+
+Черновик редактора: `POST /api/editor/drafts` и `GET /api/editor/drafts/{token}` на этом сайте проксируют CRM `POST/GET /api/public-editor/drafts`. В позицию корзины пишется `editorDraftToken`. Гость собирает макет; заказ по-прежнему только после входа. Если нет `CRM_URL` или `WEBSITE_ORDER_API_KEY`, или CRM не отвечает, токен локальный (`mock_…` в `data/editor-drafts.json`). Заказ, оплата и SMS в CRM не уходят.
+
+```bash
+DESIGNS_SOURCE=crm                 # иначе fixtures
+CRM_URL=                           # origin CRM, например https://crm.example.com (хвост /api необязателен; синоним CRM_API_URL)
+WEBSITE_ORDER_API_KEY=             # X-API-Key для /api/public-editor/* ; в браузер не попадает
+# не секреты, связь двери с товаром CRM (иначе fixtures/wzory/produkty.json):
+CRM_KOSZULKA_PRODUCT_ID=
+CRM_KOSZULKA_TYPE_ID=
+CRM_KOSZULKA_BLANK_TEMPLATE_ID=
+CRM_KUBEK_PRODUCT_ID=
+CRM_KUBEK_TYPE_ID=
+CRM_KUBEK_BLANK_TEMPLATE_ID=
+```
 
 ```bash
 npm run wzory:fixtures   # пересобрать fixtures/wzory и превью

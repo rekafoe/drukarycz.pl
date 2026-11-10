@@ -32,6 +32,12 @@ export function WzorOrderFields({ work }: { work: WorkSnapshot }) {
       <li>designTemplateCode: {params.designTemplateCode ?? "—"}</li>
       <li>designUsageFee: {formatZl(params.designUsageFee)}</li>
       <li>designModified: {params.designModified ? "tak" : "nie"}</li>
+      <li>editorDraftToken: {params.editorDraftToken ?? "—"}</li>
+      {params.editorDraftToken?.startsWith("mock_") ? (
+        <li>szkic lokalny: CRM niepołączone, token mock</li>
+      ) : null}
+      <li>editorDraftMode: {params.editorDraftMode}</li>
+      <li>activePrintAreaId: {params.activePrintAreaId}</li>
       <li>usedPrintAreaIds: {params.usedPrintAreaIds.length > 0 ? params.usedPrintAreaIds.join(", ") : "—"}</li>
     </>
   );
