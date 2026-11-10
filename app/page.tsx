@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { JsonLd } from "@/components/json-ld";
 import { MerchFlow } from "@/components/merch-flow";
+import { editorPaths } from "@/lib/catalog";
 import { peekCurrentSession } from "@/lib/session";
 import { homeJsonLd, homeSeo, pageMetadata } from "@/lib/seo";
 
@@ -12,6 +14,7 @@ export default async function Home({
   searchParams: Promise<{ v?: string | string[]; accent?: string | string[] }>;
 }) {
   const initial = await peekCurrentSession();
+  if (initial.work.step === "editor") redirect(editorPaths[initial.work.product]);
   const preview =
     process.env.NODE_ENV === "production"
       ? {}
@@ -19,7 +22,7 @@ export default async function Home({
   return (
     <>
       <JsonLd data={homeJsonLd()} />
-      <MerchFlow initial={initial} {...preview} />
+      <MerchFlow surface="home" initial={initial} {...preview} />
     </>
   );
 }

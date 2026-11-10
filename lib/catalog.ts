@@ -56,3 +56,16 @@ export const productPaths: Record<ProductId, string> = {
   tshirt: "/koszulka",
   mug: "/kubek",
 };
+
+/** Адрес листа. Не в sitemap: это рабочий стол, не витрина. */
+export const editorPaths: Record<ProductId, string> = {
+  tshirt: `${productPaths.tshirt}/maket`,
+  mug: `${productPaths.mug}/maket`,
+};
+
+const merchDestinations = new Set<string>([...Object.values(productPaths), ...Object.values(editorPaths)]);
+
+/** Ответ «куда идти» с API: только лавка или лист этой вещи, без чужого templateId. */
+export function merchDest(path: unknown, fallback: string): string {
+  return typeof path === "string" && merchDestinations.has(path) ? path : fallback;
+}

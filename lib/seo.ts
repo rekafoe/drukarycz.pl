@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { LegalSlug } from "@/components/legal-documents";
 import {
+  editorPaths,
   mugCapacityMl,
   productById,
   productPaths,
@@ -77,6 +78,22 @@ export const wzorySeo: PageSeo = {
   title: `Gotowe wzory — ${seller.brand}`,
   description: `Gotowe wzory na koszulki i kubki. Zamów bez zmian albo zmień tekst i zdjęcie w edytorze. Druk ${seller.cityIn}, ${seller.priceFrom}.`,
   path: "/wzory",
+};
+
+/** Лист не индексируем: это рабочий стол сессии, не витрина. */
+export const editorSeo: Record<ProductId, PageSeo> = {
+  tshirt: {
+    title: `Edytor nadruku na koszulce — ${seller.brand}`,
+    description: `Złóż nadruk na koszulce: przód i tył, podgląd 3D. Druk ${seller.cityIn}, ${seller.priceFrom}.`,
+    path: editorPaths.tshirt,
+    noindex: true,
+  },
+  mug: {
+    title: `Edytor nadruku na kubku — ${seller.brand}`,
+    description: `Złóż nadruk na obwodzie kubka i zobacz go na modelu 3D. Druk ${seller.cityIn}, ${seller.priceFrom}.`,
+    path: editorPaths.mug,
+    noindex: true,
+  },
 };
 
 export const legalDescriptions: Record<LegalSlug, string> = {

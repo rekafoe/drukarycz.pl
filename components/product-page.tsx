@@ -5,13 +5,13 @@ import { productJsonLd } from "@/lib/seo";
 import { peekCurrentSession } from "@/lib/session";
 import { openShop } from "@/lib/work";
 
-/** Лавка вещи по своему адресу: поисковик и человек без печенья сразу видят товар и цену. */
+/** Лавка вещи по своему адресу: поисковик и человек без печенья сразу видят товар и цену. Холст сюда не монтируем. */
 export async function ProductPage({ product }: { product: ProductId }) {
   const view = await peekCurrentSession();
   return (
     <>
       <JsonLd data={productJsonLd(product)} />
-      <MerchFlow initial={{ ...view, work: openShop(view.work, product) }} />
+      <MerchFlow surface="shop" initial={{ ...view, work: openShop(view.work, product) }} />
     </>
   );
 }

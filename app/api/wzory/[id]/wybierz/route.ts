@@ -1,3 +1,4 @@
+import { editorPaths, productPaths } from "@/lib/catalog";
 import { persistEditorDraft } from "@/lib/crm/drafts";
 import { requireSessionId } from "@/lib/session";
 import { replaceWork } from "@/lib/store";
@@ -31,5 +32,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!view) return Response.json({ error: "Nie znaleziono sesji" }, { status: 401 });
   const draft = await persistEditorDraft({ guestToken: sessionId, work: view.work });
   const saved = await replaceWork(sessionId, (work) => ({ ...work, editorDraftToken: draft.token }));
-  return Response.json({ ok: true, step: saved?.work.step ?? view.work.step, editorDraftToken: draft.token });
+  const work = saved?.work ?? { ...view.work, editorDraftToken: draft.token };
+  const path = work.step === "editor" ? editorPaths[work.product] : productPaths[work.product];
+  return Response.json({ ok: true, step: work.step, path, editorDraftToken: draft.token });
 }
