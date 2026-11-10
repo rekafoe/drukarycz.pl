@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { WzorMockup } from "@/components/wzory/wzor-mockup";
-import { seller } from "@/lib/seller";
+import { goodsPriceLabel } from "@/lib/qty";
 import type { PrintFiles, WorkSnapshot } from "@/lib/work";
 import { designOrderParams } from "@/lib/wzory/choose";
 import { feeLabel, formatZl, wzorTitle, zonesLabel } from "@/lib/wzory/labels";
@@ -76,7 +76,7 @@ export function ChosenWzor({
       </div>
       <p className="mt-3 text-sm">
         <span className="font-semibold">
-          {seller.priceFrom} × {work.qty} szt. {fee}
+          {goodsPriceLabel(work.qty)} {fee}
         </span>
         <span className="text-muted"> — cenę wzoru liczymy raz na pozycję.</span>
       </p>

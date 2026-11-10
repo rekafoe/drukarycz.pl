@@ -1,4 +1,5 @@
-import { quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import { shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import { qtyString } from "@/lib/qty";
 import { pagesFingerprint } from "@/lib/wzory/fingerprint";
 
 export type Step = "doors" | "shop" | "editor" | "cart";
@@ -281,7 +282,7 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
     raw.step === "shop" || raw.step === "editor" || raw.step === "cart" || raw.step === "doors" ? raw.step : "doors";
   const cartFrom: CartFrom = raw.cartFrom === "editor" ? "editor" : "shop";
   const size = typeof raw.size === "string" && (sizes as readonly string[]).includes(raw.size) ? raw.size : "M";
-  const qty = typeof raw.qty === "string" && (quantities as readonly string[]).includes(raw.qty) ? raw.qty : "1";
+  const qty = qtyString(raw.qty);
   const color =
     typeof raw.color === "string" && shirtColors.some((swatch) => swatch.value === raw.color) ? raw.color : "#171614";
 

@@ -29,3 +29,7 @@ test("шапка редактора — размер, цвет, тираж, бе
   const mug = workHeadline({ ...initialWork(), product: "mug", qty: "5" });
   assert.equal(mug, "330 ml · Czarny · 5 szt.");
 });
+
+test("sanitizeWork nie ogranicza nakładu do paczek 1/5/10/20", () => {
+  assert.equal(sanitizeWork({ ...initialWork(), qty: "7" }, false).qty, "7");
+});

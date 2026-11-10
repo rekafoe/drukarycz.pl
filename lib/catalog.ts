@@ -41,6 +41,7 @@ export const shirtColors = [
 ] as const;
 
 export const sizes = ["S", "M", "L", "XL"] as const;
+/** Opcjonalne skróty nakładu na ławce. Klient może wpisać dowolną liczbę całkowitą ≥ 1. */
 export const quantities = ["1", "5", "10", "20"] as const;
 
 /** Pojemność kubka z oferty. Ta sama liczba, którą pokazuje ławka. */

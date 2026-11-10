@@ -1,5 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
-import { productById, quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import { productById, shirtColors, sizes, type ProductId } from "@/lib/catalog";
 import type { WorkSnapshot } from "@/lib/work";
 import type { AccentId } from "./accents";
 
@@ -70,7 +70,6 @@ export function shopModel(work: WorkSnapshot) {
     color,
     isShirt,
     sizes,
-    quantities,
     colors: shirtColors,
     zonesLine: product.zones.map((zone) => `${zone.label} ${zone.widthMm}×${zone.heightMm} mm`).join(" · "),
     summary: [isShirt ? work.size : "330 ml", color.label, `${work.qty} szt.`].join(" · "),

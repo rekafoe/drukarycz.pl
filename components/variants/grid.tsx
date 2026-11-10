@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ProductId } from "@/lib/catalog";
+import { QtyField } from "@/components/qty-field";
 import { SiteFooter } from "@/components/site-footer";
+import { goodsPriceLabel } from "@/lib/qty";
 import { seller } from "@/lib/seller";
 import {
   ArrowIcon,
@@ -29,14 +31,14 @@ function CropMarks() {
   );
 }
 
-function PriceBox({ big = false }: { big?: boolean }) {
+function PriceBox({ big = false, qty }: { big?: boolean; qty?: string }) {
   return (
     <span
-      className={`font-plex inline-flex shrink-0 items-center border-[1.5px] ${line} bg-white font-semibold ${
+      className={`font-plex inline-flex shrink-0 items-center border-[1.5px] ${line} bg-white font-semibold whitespace-nowrap ${
         big ? "px-5 py-3.5 text-[22px]" : "px-3.5 py-2.5 text-[15px]"
       }`}
     >
-      {seller.priceFrom}
+      {qty ? goodsPriceLabel(qty) : seller.priceFrom}
     </span>
   );
 }
@@ -331,27 +333,14 @@ export function GridShop({ work, onChange, onProduct, onHome, onCart, onEditor, 
             </div>
           </Row>
           <Row n="04" label="Nakład">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {m.quantities.map((qty) => (
-                <button
-                  key={qty}
-                  type="button"
-                  aria-pressed={work.qty === qty}
-                  className={box(work.qty === qty)}
-                  onClick={() => onChange({ qty })}
-                >
-                  {qty}
-                </button>
-              ))}
-              <span className="font-plex ml-1 text-[12px]">SZT.</span>
-            </div>
+            <QtyField qty={work.qty} onChange={(qty) => onChange({ qty })} />
           </Row>
           <Row n="05" label="Czas">
             <span className="font-plex text-[13px]">{seller.leadTime.toUpperCase()} · WARSZAWA</span>
           </Row>
           <div className="hidden items-stretch gap-0 px-8 py-6 md:flex">
             <span className="flex flex-col justify-center">
-              <PriceBox big />
+              <PriceBox big qty={work.qty} />
             </span>
             <button
               type="button"
@@ -371,7 +360,7 @@ export function GridShop({ work, onChange, onProduct, onHome, onCart, onEditor, 
       {showcase}
       <SiteFooter />
       <div className={`fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t-[1.5px] ${line} bg-[#FBFBF8] px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] md:hidden`}>
-        <PriceBox />
+        <PriceBox qty={work.qty} />
         <button
           type="button"
           onClick={onEditor}
