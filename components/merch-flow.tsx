@@ -25,6 +25,7 @@ import {
   type PublicUser,
   type SessionView,
   type WorkSnapshot,
+  workHeadline,
 } from "@/lib/work";
 
 const EditorCanvas = dynamic(
@@ -401,10 +402,7 @@ export function MerchFlow({
               Do rzeczy
             </button>
             <span className="font-poster text-sm font-extrabold">{product.name}</span>
-            <span className="hidden text-sm text-[#F3EEE4]/55 sm:inline">
-              {work.product === "tshirt" ? `${work.size} · ` : "330 ml · "}
-              {colorName} · {work.qty} szt.
-            </span>
+            <span className="hidden text-sm text-[#F3EEE4]/55 sm:inline">{workHeadline(work)}</span>
             <div className="flex-1" />
             <Link href="/prawne/regulamin" className="text-sm text-[#F3EEE4]/70 hover:text-[#F3EEE4]">
               Prawne

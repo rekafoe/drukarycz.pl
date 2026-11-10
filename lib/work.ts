@@ -150,6 +150,13 @@ export function initialWork(): WorkSnapshot {
   };
 }
 
+/** Строка в шапке редактора и на чипах: размер, цвет, тираж. Отделки нет. */
+export function workHeadline(work: Pick<WorkSnapshot, "product" | "size" | "color" | "qty">): string {
+  const colorName = shirtColors.find((item) => item.value === work.color)?.label ?? "";
+  const sizeBit = work.product === "tshirt" ? work.size : "330 ml";
+  return [sizeBit, colorName, `${work.qty} szt.`].filter(Boolean).join(" · ");
+}
+
 /** Как клик по двери: лавка выбранной вещи, листы обеих вещей остаются. */
 export function openShop(work: WorkSnapshot, product: ProductId): WorkSnapshot {
   if (work.step === "shop" && work.product === product) return work;
