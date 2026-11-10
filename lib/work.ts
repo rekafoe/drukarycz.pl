@@ -1,9 +1,11 @@
-import { shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import { editorPaths, productPaths, shirtColors, sizes, type ProductId } from "@/lib/catalog";
 import { qtyString } from "@/lib/qty";
 import { pagesFingerprint } from "@/lib/wzory/fingerprint";
 
 export type Step = "doors" | "shop" | "editor" | "cart";
 export type CartFrom = "shop" | "editor";
+/** Куда вернуться с листа: лавка вещи или карточка wzoru, с которого открыли правку. */
+export type EditorBack = "shop" | "wzor";
 
 export type PrintAreaId = "front" | "back" | "wrap";
 
@@ -49,6 +51,7 @@ export type WorkDesign = {
 export type WorkSnapshot = {
   step: Step;
   cartFrom: CartFrom;
+  editorBack: EditorBack;
   product: ProductId;
   zone: string;
   size: string;
@@ -138,6 +141,7 @@ export function initialWork(): WorkSnapshot {
   return {
     step: "doors",
     cartFrom: "shop",
+    editorBack: "shop",
     product: "tshirt",
     zone: "front",
     size: "M",
@@ -173,6 +177,27 @@ export function workHeadline(work: Pick<WorkSnapshot, "product" | "size" | "colo
 export function openShop(work: WorkSnapshot, product: ProductId): WorkSnapshot {
   if (work.step === "shop" && work.product === product) return work;
   return { ...work, product, zone: zoneIds[product][0], step: "shop" };
+}
+
+/** Адрес /koszulka/maket или /kubek/maket: шаг editor, листы не трогаем. Параметры адреса не читаем. */
+export function openEditor(work: WorkSnapshot, product: ProductId): WorkSnapshot {
+  const same = work.product === product;
+  const zone = same && zoneIds[product].includes(work.zone) ? work.zone : zoneIds[product][0];
+  if (work.step === "editor" && same && work.zone === zone) return work;
+  return { ...work, product, zone, step: "editor" };
+}
+
+/** Лавка, лист или «/» для дверей и корзины. Без hash и без templateId. */
+export function pathForWork(work: Pick<WorkSnapshot, "step" | "product">): string {
+  if (work.step === "shop") return productPaths[work.product];
+  if (work.step === "editor") return editorPaths[work.product];
+  return "/";
+}
+
+/** Назад с листа: карточка wzoru, если правка открыта оттуда, иначе лавка этой вещи. */
+export function editorReturnPath(work: WorkSnapshot): string {
+  if (work.editorBack === "wzor" && work.design?.code) return `/wzory/${work.design.code}`;
+  return productPaths[work.product];
 }
 
 export function samePages(a: Record<string, object>, b: Record<string, object>) {
@@ -281,6 +306,7 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
   const step: Step =
     raw.step === "shop" || raw.step === "editor" || raw.step === "cart" || raw.step === "doors" ? raw.step : "doors";
   const cartFrom: CartFrom = raw.cartFrom === "editor" ? "editor" : "shop";
+  const editorBack: EditorBack = raw.editorBack === "wzor" ? "wzor" : "shop";
   const size = typeof raw.size === "string" && (sizes as readonly string[]).includes(raw.size) ? raw.size : "M";
   const qty = qtyString(raw.qty);
   const color =
@@ -317,6 +343,7 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
   return {
     step,
     cartFrom,
+    editorBack,
     product,
     zone,
     size,

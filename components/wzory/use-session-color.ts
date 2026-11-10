@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { editorPaths, merchDest } from "@/lib/catalog";
+import { productFromSlug } from "@/lib/wzory/types";
 import type { SessionView } from "@/lib/work";
 
 /** Мокап в цвете, выбранном на лавке. */
@@ -25,6 +27,9 @@ export async function startOwnDesign(product: "koszulka" | "kubek", go: (href: s
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ produkt: product }),
   });
-  if (response.ok) go("/");
-  return response.ok;
+  if (!response.ok) return false;
+  const body = (await response.json().catch(() => ({}))) as { path?: unknown };
+  const id = productFromSlug(product) ?? "tshirt";
+  go(merchDest(body.path, editorPaths[id]));
+  return true;
 }

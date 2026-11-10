@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { DEFAULT_PRINT_AREAS_TSHIRT } from "@/components/souvenir3d/types";
 import { startOwnDesign, useSessionColor } from "@/components/wzory/use-session-color";
 import { WzorMockup } from "@/components/wzory/wzor-mockup";
-import { productById } from "@/lib/catalog";
+import { editorPaths, merchDest, productById, productPaths } from "@/lib/catalog";
 import { seller } from "@/lib/seller";
 import type { PrintAreaId } from "@/lib/work";
 import type { ChoiceMode } from "@/lib/wzory/choose";
@@ -42,7 +42,9 @@ export function WzorCardView({ wzor, asIs, categoryName }: { wzor: WzorCard; asI
         body: JSON.stringify({ mode }),
       });
       if (response.ok) {
-        router.push("/");
+        const body = (await response.json().catch(() => ({}))) as { path?: unknown };
+        const fallback = mode === "edit" ? editorPaths[wzor.product] : productPaths[wzor.product];
+        router.push(merchDest(body.path, fallback));
         return;
       }
       const body = (await response.json().catch(() => ({}))) as { error?: string };

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { EditorHandle } from "@/components/editor-canvas";
 import { EditorLoader } from "@/components/editor-loader";
@@ -20,6 +21,7 @@ import { applyDraftPayload, usedPrintAreaIdsFor, workHasMaket } from "@/lib/edit
 import { dropForeignDesign, withoutDesign } from "@/lib/wzory/choose";
 import { useWzorFonts } from "@/lib/wzory/fonts-client";
 import {
+  editorReturnPath,
   emptyOrder,
   type CartFrom,
   type PrintAreaId,
@@ -35,7 +37,7 @@ const EditorCanvas = dynamic(
   { ssr: false, loading: () => null },
 );
 import { QtyField } from "@/components/qty-field";
-import { productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
+import { editorPaths, productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
 import { goodsPriceLabel, linePriceLabel } from "@/lib/qty";
 import { seller } from "@/lib/seller";
@@ -73,19 +75,24 @@ function printZoneNames(work: WorkSnapshot) {
     .map((id) => labels[id] ?? id);
 }
 
+export type FlowSurface = "home" | "shop" | "editor";
+
 export function MerchFlow({
   initial,
+  surface = "home",
   variant = "a",
   compare = false,
   accent = defaultAccent,
   accentPanel = false,
 }: {
   initial: SessionView;
+  surface?: FlowSurface;
   variant?: Variant;
   compare?: boolean;
   accent?: AccentId;
   accentPanel?: boolean;
 }) {
+  const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(initial.user);
   const [designId, setDesignId] = useState<string | null>(initial.designId);
   const [work, setWork] = useState<WorkSnapshot>(initial.work);
@@ -118,6 +125,33 @@ export function MerchFlow({
     setWork(next);
   }
 
+  async function persistWork(next: WorkSnapshot) {
+    if (next.step !== workRef.current.step) setStepMoved(true);
+    workRef.current = next;
+    setWork(next);
+    try {
+      const response = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (!response.ok) {
+        setSaveError(true);
+        return false;
+      }
+      setSaveError(false);
+      return true;
+    } catch {
+      setSaveError(true);
+      return false;
+    }
+  }
+
+  async function persistAndGo(next: WorkSnapshot, href: string) {
+    await persistWork(next);
+    if (window.location.pathname !== href) router.push(href);
+  }
+
   function setOrder(patch: Partial<WorkSnapshot["order"]>) {
     updateWork((current) => ({
       ...current,
@@ -136,9 +170,10 @@ export function MerchFlow({
   }
 
   useEffect(() => {
+    if (surface === "editor" || work.step === "editor") return;
     const path = work.step === "shop" ? productPaths[work.product] : "/";
     if (window.location.pathname !== path) window.history.replaceState(window.history.state, "", path);
-  }, [work.step, work.product]);
+  }, [surface, work.step, work.product]);
 
   useEffect(() => {
     warmModel(DEFAULT_TSHIRT_MODEL_URL);
@@ -248,7 +283,9 @@ export function MerchFlow({
     const current: WorkSnapshot = { ...workRef.current, ...extra, cartFrom: from, step: "cart" };
     let token = current.editorDraftToken;
     if (workHasMaket(current)) token = (await persistDraft(current)) ?? token;
-    updateWork(() => ({ ...current, editorDraftToken: token }));
+    const next = { ...current, editorDraftToken: token };
+    if (from === "editor") await persistAndGo(next, "/");
+    else updateWork(() => next);
   }
 
   async function openCart() {
@@ -361,7 +398,13 @@ export function MerchFlow({
 
   function startOwn() {
     if (workRef.current.design && !window.confirm("Zacząć od pustego arkusza? Wybrany wzór zniknie z projektu.")) return;
-    updateWork((current) => ({ ...withoutDesign(current), step: "editor" }));
+    const next: WorkSnapshot = { ...withoutDesign(workRef.current), step: "editor", editorBack: "shop" };
+    void persistAndGo(next, editorPaths[next.product]);
+  }
+
+  function leaveEditor() {
+    const current = workRef.current;
+    void persistAndGo({ ...current, step: "shop" }, editorReturnPath(current));
   }
 
 
@@ -376,7 +419,7 @@ export function MerchFlow({
 
   return (
     <main className="min-h-full">
-      {process.env.NODE_ENV !== "production" && (work.step === "doors" || work.step === "shop") ? (
+      {process.env.NODE_ENV !== "production" && surface !== "editor" && (work.step === "doors" || work.step === "shop") ? (
         <PreviewBars
           variant={variant}
           accent={accent}
@@ -386,7 +429,7 @@ export function MerchFlow({
         />
       ) : null}
 
-      {work.step === "doors" ? (
+      {surface !== "editor" && work.step === "doors" ? (
         <VariantDoors
           variant={variant}
           accent={accent}
@@ -397,7 +440,7 @@ export function MerchFlow({
         />
       ) : null}
 
-      {work.step === "shop" ? (
+      {surface !== "editor" && work.step !== "doors" && work.step !== "cart" ? (
         <VariantShop
           variant={variant}
           accent={accent}
@@ -412,7 +455,13 @@ export function MerchFlow({
             work.design ? (
               <ChosenWzor
                 work={work}
-                onEdit={() => updateWork((current) => ({ ...current, step: "editor" }))}
+                onEdit={() => {
+                  const current = workRef.current;
+                  void persistAndGo(
+                    { ...current, step: "editor", editorBack: "shop" },
+                    editorPaths[current.product],
+                  );
+                }}
                 onRemove={() => updateWork(withoutDesign)}
                 onCart={(printFiles, previewUrl, note) => {
                   setPrintNote(note);
@@ -433,15 +482,15 @@ export function MerchFlow({
         />
       ) : null}
 
-      {work.step === "editor" ? (
+      {surface === "editor" && work.step !== "cart" ? (
         <section className="relative flex h-dvh flex-col bg-[#F3EEE4] text-ink">
           <header className="flex h-14 shrink-0 items-center gap-3 bg-[#16130F] px-4 text-[#F3EEE4]">
             <button
               type="button"
               className="text-sm text-[#F3EEE4]/70 hover:text-[#F3EEE4]"
-              onClick={() => updateWork((current) => ({ ...current, step: "shop" }))}
+              onClick={leaveEditor}
             >
-              Do rzeczy
+              {work.editorBack === "wzor" && work.design?.code ? "Do wzoru" : "Do rzeczy"}
             </button>
             <span className="font-poster text-sm font-extrabold">{product.name}</span>
             <span className="hidden text-sm text-[#F3EEE4]/55 sm:inline">{workHeadline(work)}</span>
@@ -489,12 +538,12 @@ export function MerchFlow({
             onEditorReady={() => setReadyFor(editorKey)}
             onEditorFailed={() => setEditorFailed(true)}
           />
-          {editorOpen ? null : (
+          {work.step === "editor" && !editorOpen ? (
             <EditorLoader
               failed={editorFailed}
-              onLeave={() => updateWork((current) => ({ ...current, step: "shop" }))}
+              onLeave={leaveEditor}
             />
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -505,7 +554,11 @@ export function MerchFlow({
           <button
             type="button"
             className="text-sm font-bold text-(--a-mark) hover:underline"
-            onClick={() => updateWork((current) => ({ ...current, step: current.cartFrom }))}
+            onClick={() => {
+              const next: WorkSnapshot = { ...workRef.current, step: workRef.current.cartFrom };
+              if (next.step === "editor") void persistAndGo(next, editorPaths[next.product]);
+              else updateWork(() => next);
+            }}
           >
             {work.cartFrom === "shop" ? "← Do rzeczy" : "← Do edytora"}
           </button>

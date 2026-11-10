@@ -1,3 +1,4 @@
+import { editorPaths } from "@/lib/catalog";
 import { requireSessionId } from "@/lib/session";
 import { replaceWork } from "@/lib/store";
 import { workForOwn } from "@/lib/wzory/choose";
@@ -19,5 +20,5 @@ export async function POST(request: Request) {
   const chosen = product;
   const view = await replaceWork(sessionId, (work) => workForOwn(work, chosen));
   if (!view) return Response.json({ error: "Nie znaleziono sesji" }, { status: 401 });
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, path: editorPaths[chosen] });
 }

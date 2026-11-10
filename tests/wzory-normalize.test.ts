@@ -121,6 +121,7 @@ test("проект хранит wzór, отмечает правку и сним
   const wzor = ok(normalizeWzor(fixture(102), shirt));
   const chosen = workWithWzor(initialWork(), wzor, "edit");
   assert.equal(chosen.step, "editor");
+  assert.equal(chosen.editorBack, "wzor");
   assert.equal(chosen.design?.templateId, 102);
 
   const kept = sanitizeWork(JSON.parse(JSON.stringify(chosen)), false, chosen);

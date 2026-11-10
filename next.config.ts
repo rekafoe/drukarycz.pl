@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
         ],
       },
       { source: "/m/:path*", headers: noindex },
+      { source: "/koszulka/maket", headers: noindex },
+      { source: "/kubek/maket", headers: noindex },
       { source: "/indexnow.txt", headers: noindex },
       {
         source: "/models/:file*",
