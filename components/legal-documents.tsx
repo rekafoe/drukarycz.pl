@@ -30,7 +30,7 @@ export function LegalArticle({ slug }: { slug: LegalSlug }) {
   return (
     <div className="mt-6 grid gap-4 text-[15px] leading-relaxed">
       <h1 className="font-poster text-[40px] leading-[0.95] font-black tracking-tight md:text-[52px]">{legalTitles[slug]}</h1>
-      <p className="text-sm text-muted">{seller.brand} · wersja serwisu z 28 października 2026</p>
+      <p className="text-sm text-muted">{seller.brand} · wersja serwisu z 10 listopada 2026</p>
       {slug === "kontakt" ? <Kontakt /> : null}
       {slug === "regulamin" ? <Regulamin /> : null}
       {slug === "prywatnosc" ? <Prywatnosc /> : null}
@@ -120,9 +120,10 @@ function Regulamin() {
       </p>
       <H2>Konto i projekt</H2>
       <p>
-        Gość może złożyć projekt. Zapis zgłoszenia i ponowne otwarcie własnego projektu wymagają logowania telefonem i
-        kodem. W tej wersji kod widać na ekranie, to nie jest kampania SMS. Cudzego projektu linkiem nie otworzysz.
-        Konto usuwasz przyciskiem „Usuń konto”. Wraz z kontem schodzi zapisany projekt.
+        Gość może złożyć projekt. Zapis zgłoszenia i ponowne otwarcie własnego projektu wymagają logowania: kod na
+        e-mail albo konto Google. Kod logowania nie jest marketingiem. SMS-ów z kodem nie wysyłamy. Telefon w profilu
+        jest dobrowolny. Cudzego projektu linkiem nie otworzysz. Konto usuwasz przyciskiem „Usuń konto”. Wraz z kontem
+        schodzi zapisany projekt.
       </p>
       <p>
         Projekt, w tym zdjęcie wgrane na arkusz, ma należeć do Ciebie albo musisz mieć prawo go użyć. Nie przyjmujemy
@@ -157,7 +158,9 @@ function Prywatnosc() {
       </p>
       <H2>Jakie dane zbieramy</H2>
       <ul className="grid list-disc gap-1 pl-5">
-        <li>telefon i imię przy logowaniu,</li>
+        <li>e-mail i imię przy logowaniu kodem,</li>
+        <li>e-mail, imię i identyfikator konta Google, gdy wybierzesz to wejście,</li>
+        <li>opcjonalny telefon w profilu,</li>
         <li>e-mail, ulicę, kod pocztowy, miejscowość i opcjonalny NIP w koszyku,</li>
         <li>projekt nadruku i podgląd, w tym zdjęcie, które sam wgrywasz,</li>
         <li>treść dwóch zgód i dobrowolnej zgody marketingowej oraz czas ich zapisu,</li>
@@ -171,8 +174,9 @@ function Prywatnosc() {
         domyślnie puste i nie jest warunkiem zgłoszenia. Kod logowania nie jest marketingiem.
       </p>
       <p>
-        Podanie telefonu jest potrzebne do konta. E-mail i adres są potrzebne do zgłoszenia. NIP jest dobrowolny i
-        służy fakturze, gdy sprzedaż już będzie fakturowana. Brak NIP-u nie blokuje zgłoszenia.
+        Podanie e-maila jest potrzebne do konta przy logowaniu kodem. Wejście przez Google zastępuje kod. Telefon jest
+        dobrowolny. Adres jest potrzebny do zgłoszenia. NIP jest dobrowolny i służy fakturze, gdy sprzedaż już będzie
+        fakturowana. Brak NIP-u nie blokuje zgłoszenia.
       </p>
       <H2>Jak długo</H2>
       <p>
@@ -183,9 +187,11 @@ function Prywatnosc() {
       </p>
       <H2>Komu przekazujemy</H2>
       <p>
-        Zgłoszenie nie idzie do CRM. Płatności nie ma, więc nie ma operatora płatności. SMS-ów z kodem nie wysyłamy: kod
-        testowy widać na ekranie. Osobne umowy powierzenia z hostingiem, CRM, SMS i płatnością opisujemy, zanim te
-        usługi zaczną przetwarzać dane klientów.
+        Kod logowania wysyła CRM przez SMTP. Przeglądarka nie łączy się z CRM ani z serwerem poczty. Wejście przez
+        Google odbywa się na stronie Google — to jedyny wyjątek od zasady, że strona nie ładuje zasobów z obcych
+        serwerów; dotyczy logowania, nie czcionek. Płatności nie ma, więc nie ma operatora płatności. SMS-ów z kodem
+        nie wysyłamy. Osobne umowy powierzenia z hostingiem, CRM, Google i płatnością opisujemy, zanim te usługi
+        zaczną przetwarzać dane klientów.
       </p>
       <H2>Twoje prawa</H2>
       <p>
@@ -207,6 +213,10 @@ function Cookies() {
       <p>
         Używamy jednego ciasteczka technicznego: {sessionCookieName}. Jest httpOnly, SameSite=Lax, działa w całej witrynie i
         wygasa po 30 dniach. Trzyma identyfikator sesji, żeby projekt i logowanie przetrwały odświeżenie strony.
+      </p>
+      <p>
+        Wejście przez Google odbywa się na stronie Google. Po powrocie zostaje tylko nasze ciasteczko sesji. Nie
+        ładujemy skryptów ani czcionek Google.
       </p>
       <p>
         To ciasteczko jest niezbędne do usługi, którą sam otwierasz. Nie pytamy o zgodę banerem, bo nie ma ciasteczek

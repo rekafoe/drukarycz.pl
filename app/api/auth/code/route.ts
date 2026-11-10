@@ -6,14 +6,14 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const sessionId = await requireSessionId();
-  let body: { phone?: unknown };
+  let body: { email?: unknown };
   try {
-    body = (await request.json()) as { phone?: unknown };
+    body = (await request.json()) as { email?: unknown };
   } catch {
-    return Response.json({ error: "Podaj telefon" }, { status: 400 });
+    return Response.json({ error: "Podaj e-mail" }, { status: 400 });
   }
-  const phone = typeof body.phone === "string" ? body.phone : "";
-  const result = await requestCode(sessionId, phone);
+  const email = typeof body.email === "string" ? body.email : "";
+  const result = await requestCode(sessionId, email);
   if ("error" in result) return Response.json(result, { status: 400 });
   return Response.json(result);
 }

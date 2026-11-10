@@ -53,7 +53,7 @@ export function DesignGate({ id }: { id: string }) {
       {phase === "locked" ? (
         <>
           <h1 className="font-poster text-[40px] leading-[0.95] font-black tracking-tight">Projekt się nie otwiera</h1>
-          <p className="text-muted">Zaloguj się telefonem, na który jest zapisany.</p>
+          <p className="text-muted">Zaloguj się e-mailem albo przez Google, na które jest zapisany.</p>
           <Link href="/" className="font-extrabold text-(--a-mark)">
             Do drzwi
           </Link>

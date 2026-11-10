@@ -90,7 +90,9 @@ export function MerchFlow({
   const [designId, setDesignId] = useState<string | null>(initial.designId);
   const [work, setWork] = useState<WorkSnapshot>(initial.work);
   const [orderName, setOrderName] = useState(initial.user?.name ?? "");
+  const [orderPhone, setOrderPhone] = useState(initial.user?.phone ?? "");
   const [loginOpen, setLoginOpen] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [leaving, setLeaving] = useState<ProductId | null>(null);
   const [saveError, setSaveError] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
@@ -132,6 +134,7 @@ export function MerchFlow({
     setUser(view.user);
     setDesignId(view.designId);
     setOrderName(view.user?.name ?? "");
+    setOrderPhone(view.user?.phone ?? "");
     setCanvasEpoch((value) => value + 1);
   }
 
@@ -139,6 +142,20 @@ export function MerchFlow({
     const path = work.step === "shop" ? productPaths[work.product] : "/";
     if (window.location.pathname !== path) window.history.replaceState(window.history.state, "", path);
   }, [work.step, work.product]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const login = params.get("login");
+    const authError = params.get("error");
+    if (login === "1" || authError === "google") {
+      setLoginOpen(true);
+      if (authError === "google") setLoginError("Nie udało się wejść przez Google");
+      params.delete("login");
+      params.delete("error");
+      const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+      window.history.replaceState(window.history.state, "", next);
+    }
+  }, []);
 
   useEffect(() => {
     warmModel(DEFAULT_TSHIRT_MODEL_URL);
@@ -297,15 +314,16 @@ export function MerchFlow({
       const profile = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: orderName }),
+        body: JSON.stringify({ name: orderName, phone: orderPhone }),
       });
       if (!profile.ok) {
-        setOrderError("Nie zapisano imienia");
+        setOrderError("Nie zapisano profilu");
         return;
       }
       const named = (await profile.json()) as SessionView;
       setUser(named.user);
       setOrderName(named.user?.name ?? orderName);
+      setOrderPhone(named.user?.phone ?? orderPhone);
       const next: WorkSnapshot = { ...workRef.current, placed: true };
       const saved = await fetch("/api/session", {
         method: "POST",
@@ -635,11 +653,15 @@ export function MerchFlow({
               </label>
               <label className="grid gap-1 text-sm font-bold">
                 Telefon
+                <span className="font-medium text-muted"> opcjonalnie, do kontaktu</span>
                 <input
-                  readOnly
                   type="tel"
-                  value={user.phone}
-                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="+48 500 600 700"
+                  value={orderPhone}
+                  onChange={(event) => setOrderPhone(event.target.value)}
+                  className="rounded-[10px] border border-line bg-white px-3 py-2.5 font-medium placeholder:text-muted"
                 />
               </label>
               <label className="grid gap-1 text-sm font-bold">
@@ -785,10 +807,15 @@ export function MerchFlow({
 
       {loginOpen ? (
         <LoginPanel
-          onClose={() => setLoginOpen(false)}
+          initialError={loginError}
+          onClose={() => {
+            setLoginOpen(false);
+            setLoginError(null);
+          }}
           onSuccess={(view) => {
             applySession(view);
             setLoginOpen(false);
+            setLoginError(null);
           }}
         />
       ) : null}

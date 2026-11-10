@@ -1,6 +1,8 @@
 import { randomBytes, randomInt } from "crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "fs";
 import path from "path";
+import { sendLoginCodeViaCrm, type MailDelivery } from "@/lib/auth/crm-mail";
+import { isEmail, normalizeEmail } from "@/lib/auth/email";
 import { listPrintFiles, removePrints, writePrintFile } from "@/lib/print-files";
 import {
   initialWork,
@@ -13,18 +15,27 @@ import {
 } from "@/lib/work";
 
 export type Challenge = {
-  phoneDigits: string;
-  phoneLabel: string;
+  email: string;
   code: string;
   expiresAt: number;
   attempts: number;
+  delivery: MailDelivery;
+};
+
+export type OauthPending = {
+  state: string;
+  nonce: string;
+  returnTo: string;
+  expiresAt: number;
 };
 
 export type UserRecord = {
   id: string;
+  email: string;
+  name: string;
   phoneDigits: string;
   phoneLabel: string;
-  name: string;
+  googleId: string | null;
 };
 
 export type DesignRecord = {
@@ -40,6 +51,7 @@ export type SessionRecord = {
   designId: string | null;
   work: WorkSnapshot;
   challenge: Challenge | null;
+  oauth: OauthPending | null;
   updatedAt: number;
 };
 
@@ -49,19 +61,77 @@ type Store = {
   sessions: SessionRecord[];
 };
 
-const filePath = path.join(process.cwd(), "data", "merch-store.json");
+function storePath() {
+  return process.env.MERCH_STORE || path.join(process.cwd(), "data", "merch-store.json");
+}
 
 function emptyStore(): Store {
   return { users: [], designs: [], sessions: [] };
 }
 
+function readUser(raw: unknown): UserRecord | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const id = typeof row.id === "string" ? row.id : "";
+  if (!id) return null;
+  const email = typeof row.email === "string" ? normalizeEmail(row.email) : "";
+  const name = typeof row.name === "string" ? row.name : "";
+  const phoneLabel = typeof row.phoneLabel === "string" ? row.phoneLabel : "";
+  const digits = typeof row.phoneDigits === "string" ? row.phoneDigits : phoneDigits(phoneLabel);
+  const googleId = typeof row.googleId === "string" && row.googleId ? row.googleId : null;
+  return { id, email, name, phoneDigits: digits, phoneLabel, googleId };
+}
+
+function readSession(raw: unknown): SessionRecord | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const id = typeof row.id === "string" ? row.id : "";
+  if (!id) return null;
+  const challenge = readChallenge(row.challenge);
+  const oauth = readOauth(row.oauth);
+  return {
+    id,
+    userId: typeof row.userId === "string" ? row.userId : null,
+    designId: typeof row.designId === "string" ? row.designId : null,
+    work: row.work && typeof row.work === "object" ? (row.work as WorkSnapshot) : initialWork(),
+    challenge,
+    oauth,
+    updatedAt: typeof row.updatedAt === "number" ? row.updatedAt : Date.now(),
+  };
+}
+
+function readChallenge(raw: unknown): Challenge | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const email = typeof row.email === "string" ? normalizeEmail(row.email) : "";
+  const code = typeof row.code === "string" ? row.code : "";
+  const expiresAt = typeof row.expiresAt === "number" ? row.expiresAt : 0;
+  const attempts = typeof row.attempts === "number" ? row.attempts : 0;
+  const delivery: MailDelivery = row.delivery === "crm" ? "crm" : "mock";
+  if (!email || !code) return null;
+  return { email, code, expiresAt, attempts, delivery };
+}
+
+function readOauth(raw: unknown): OauthPending | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const state = typeof row.state === "string" ? row.state : "";
+  const nonce = typeof row.nonce === "string" ? row.nonce : "";
+  const returnTo = typeof row.returnTo === "string" ? row.returnTo : "/";
+  const expiresAt = typeof row.expiresAt === "number" ? row.expiresAt : 0;
+  if (!state) return null;
+  return { state, nonce, returnTo, expiresAt };
+}
+
 function readStore(): Store {
   try {
-    const parsed = JSON.parse(readFileSync(filePath, "utf8")) as Partial<Store>;
+    const parsed = JSON.parse(readFileSync(storePath(), "utf8")) as Partial<Store>;
     return {
-      users: Array.isArray(parsed.users) ? parsed.users : [],
+      users: Array.isArray(parsed.users) ? parsed.users.map(readUser).filter((item): item is UserRecord => Boolean(item)) : [],
       designs: Array.isArray(parsed.designs) ? parsed.designs : [],
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+      sessions: Array.isArray(parsed.sessions)
+        ? parsed.sessions.map(readSession).filter((item): item is SessionRecord => Boolean(item))
+        : [],
     };
   } catch {
     return emptyStore();
@@ -69,6 +139,7 @@ function readStore(): Store {
 }
 
 function writeStore(store: Store) {
+  const filePath = storePath();
   mkdirSync(path.dirname(filePath), { recursive: true });
   const tmp = `${filePath}.tmp`;
   writeFileSync(tmp, JSON.stringify(store));
@@ -102,6 +173,7 @@ function freshSession(): SessionRecord {
     designId: null,
     work: initialWork(),
     challenge: null,
+    oauth: null,
     updatedAt: Date.now(),
   };
 }
@@ -120,13 +192,14 @@ function pruneSessions(store: Store, currentId: string) {
 }
 
 function publicUser(user: UserRecord) {
-  return { id: user.id, name: user.name, phone: user.phoneLabel };
+  return { id: user.id, name: user.name, email: user.email, phone: user.phoneLabel };
 }
 
-function devCodeFor(session: SessionRecord) {
+function publicDevCode(challenge: Challenge | null) {
+  if (!challenge || challenge.expiresAt <= Date.now()) return null;
+  if (challenge.delivery === "crm") return null;
   if (process.env.NODE_ENV === "production") return null;
-  if (!session.challenge || session.challenge.expiresAt <= Date.now()) return null;
-  return session.challenge.code;
+  return challenge.code;
 }
 
 export function viewSession(session: SessionRecord, store: Store) {
@@ -137,7 +210,7 @@ export function viewSession(session: SessionRecord, store: Store) {
     user: user ? publicUser(user) : null,
     work: session.work,
     designId: session.designId,
-    devCode: devCodeFor(session),
+    devCode: publicDevCode(session.challenge),
   };
 }
 
@@ -212,72 +285,163 @@ export function saveWork(sessionId: string, input: unknown) {
   });
 }
 
-export function requestCode(sessionId: string, phoneLabel: string) {
-  const digits = phoneDigits(phoneLabel);
-  if (digits.length < 9 || digits.length > 15) {
-    return Promise.resolve({ error: "Podaj telefon" as const });
+function findUser(
+  store: Store,
+  query: { email?: string; googleId?: string },
+): UserRecord | undefined {
+  if (query.googleId) {
+    const byGoogle = store.users.find((item) => item.googleId === query.googleId);
+    if (byGoogle) return byGoogle;
   }
+  if (query.email) {
+    return store.users.find((item) => item.email && item.email === query.email);
+  }
+  return undefined;
+}
+
+function ensureUser(
+  store: Store,
+  input: { email: string; name: string; googleId?: string | null },
+): UserRecord {
+  const email = normalizeEmail(input.email);
+  let user = findUser(store, { googleId: input.googleId ?? undefined, email });
+  if (!user) {
+    user = {
+      id: newId(),
+      email,
+      name: input.name,
+      phoneDigits: "",
+      phoneLabel: "",
+      googleId: input.googleId ?? null,
+    };
+    store.users.push(user);
+    return user;
+  }
+  if (input.name) user.name = input.name;
+  if (email && !user.email) user.email = email;
+  if (input.googleId) user.googleId = input.googleId;
+  return user;
+}
+
+function attachUser(store: Store, session: SessionRecord, user: UserRecord) {
+  const guestWork = session.work;
+  session.userId = user.id;
+  session.challenge = null;
+  session.oauth = null;
+  if (workIsMeaningful(guestWork)) {
+    session.work = guestWork;
+    touchDesign(store, session);
+  } else {
+    const saved = store.designs.find((item) => item.ownerId === user.id);
+    if (saved) {
+      session.work = saved.work;
+      session.designId = saved.id;
+    } else {
+      session.work = initialWork();
+      touchDesign(store, session);
+    }
+  }
+  if (user.email && !session.work.order.email) {
+    session.work = { ...session.work, order: { ...session.work.order, email: user.email } };
+  }
+  session.updatedAt = Date.now();
+}
+
+export async function requestCode(sessionId: string, emailLabel: string) {
+  if (!isEmail(emailLabel)) {
+    return { error: "Podaj e-mail" as const };
+  }
+  const email = normalizeEmail(emailLabel);
   const code = randomInt(0, 10000).toString().padStart(4, "0");
+  const idempotencyKey = `login:${sessionId.slice(0, 12)}:${Date.now().toString(36)}`;
+  const sent = await sendLoginCodeViaCrm({ to: email, code, idempotencyKey });
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
     if (!session) return { error: "Nie znaleziono sesji" as const };
     session.challenge = {
-      phoneDigits: digits,
-      phoneLabel: phoneLabel.trim(),
+      email,
       code,
       expiresAt: Date.now() + 10 * 60 * 1000,
       attempts: 0,
+      delivery: sent.mode,
     };
     session.updatedAt = Date.now();
-    const known = store.users.find((item) => item.phoneDigits === digits);
+    const known = findUser(store, { email });
     return {
       needsName: !known?.name,
-      devCode: process.env.NODE_ENV === "production" ? null : code,
+      delivery: sent.mode,
+      devCode: publicDevCode(session.challenge),
     };
   });
 }
 
-export function verifyCode(sessionId: string, phoneLabel: string, code: string, name: string) {
-  const digits = phoneDigits(phoneLabel);
+export function verifyCode(sessionId: string, emailLabel: string, code: string, name: string) {
+  if (!isEmail(emailLabel)) {
+    return Promise.resolve({ error: "Podaj e-mail" as const });
+  }
+  const email = normalizeEmail(emailLabel);
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
     if (!session?.challenge) return { error: "Najpierw pobierz kod" as const };
     const challenge = session.challenge;
     if (challenge.expiresAt <= Date.now()) return { error: "Kod wygasł. Pobierz nowy" as const };
-    if (challenge.phoneDigits !== digits) return { error: "Kod zamówiono na inny telefon" as const };
+    if (challenge.email !== email) return { error: "Kod zamówiono na inny e-mail" as const };
     challenge.attempts += 1;
     if (challenge.attempts > 5) return { error: "Za dużo prób. Pobierz nowy kod" as const };
     if (challenge.code !== code.trim()) return { error: "Kod nie pasuje" as const };
 
-    let user = store.users.find((item) => item.phoneDigits === digits);
-    const nextName = name.trim() || user?.name || "";
+    const known = findUser(store, { email });
+    const nextName = name.trim() || known?.name || "";
     if (!nextName) return { error: "Napisz, jak się do Ciebie zwracać" as const };
-    if (!user) {
-      user = { id: newId(), phoneDigits: digits, phoneLabel: challenge.phoneLabel, name: nextName };
-      store.users.push(user);
-    } else {
-      user.name = nextName;
-      user.phoneLabel = challenge.phoneLabel;
-    }
-
-    const guestWork = session.work;
-    session.userId = user.id;
-    session.challenge = null;
-    if (workIsMeaningful(guestWork)) {
-      session.work = guestWork;
-      touchDesign(store, session);
-    } else {
-      const saved = store.designs.find((item) => item.ownerId === user.id);
-      if (saved) {
-        session.work = saved.work;
-        session.designId = saved.id;
-      } else {
-        session.work = initialWork();
-        touchDesign(store, session);
-      }
-    }
-    session.updatedAt = Date.now();
+    const user = ensureUser(store, { email, name: nextName, googleId: known?.googleId });
+    attachUser(store, session, user);
     return { view: viewSession(session, store) };
+  });
+}
+
+export function loginGoogleProfile(
+  sessionId: string,
+  profile: { googleId: string; email: string; name: string },
+) {
+  if (!isEmail(profile.email) || !profile.googleId.trim()) {
+    return Promise.resolve({ error: "Konto Google bez e-maila" as const });
+  }
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session) return { error: "Nie znaleziono sesji" as const };
+    const user = ensureUser(store, {
+      email: profile.email,
+      name: profile.name.trim() || profile.email.split("@")[0] || "Gość",
+      googleId: profile.googleId,
+    });
+    attachUser(store, session, user);
+    return { view: viewSession(session, store) };
+  });
+}
+
+export function beginGoogleOauth(
+  sessionId: string,
+  pending: Omit<OauthPending, "expiresAt">,
+) {
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session) return { error: "Nie znaleziono sesji" as const };
+    session.oauth = { ...pending, expiresAt: Date.now() + 10 * 60 * 1000 };
+    session.updatedAt = Date.now();
+    return { oauth: session.oauth };
+  });
+}
+
+export function takeGoogleOauth(sessionId: string, state: string) {
+  return updateStore((store) => {
+    const session = store.sessions.find((item) => item.id === sessionId);
+    if (!session?.oauth) return { error: "Sesja Google wygasła" as const };
+    const pending = session.oauth;
+    session.oauth = null;
+    session.updatedAt = Date.now();
+    if (pending.expiresAt <= Date.now()) return { error: "Sesja Google wygasła" as const };
+    if (pending.state !== state) return { error: "Sesja Google nie pasuje" as const };
+    return { oauth: pending };
   });
 }
 
@@ -289,19 +453,39 @@ export function logoutSession(sessionId: string) {
     session.designId = null;
     session.work = initialWork();
     session.challenge = null;
+    session.oauth = null;
     session.updatedAt = Date.now();
     return viewSession(session, store);
   });
 }
 
 export function renameUser(sessionId: string, name: string) {
-  const trimmed = name.trim();
-  if (!trimmed || trimmed.length > 80) return Promise.resolve({ error: "Napisz, jak się do Ciebie zwracać" as const });
+  return updateProfile(sessionId, { name });
+}
+
+export function updateProfile(sessionId: string, input: { name?: string; phone?: string }) {
+  const nextName = input.name !== undefined ? input.name.trim() : undefined;
+  if (nextName !== undefined && (!nextName || nextName.length > 80)) {
+    return Promise.resolve({ error: "Napisz, jak się do Ciebie zwracać" as const });
+  }
+  let phoneLabel: string | undefined;
+  let digits = "";
+  if (input.phone !== undefined) {
+    phoneLabel = input.phone.trim();
+    digits = phoneDigits(phoneLabel);
+    if (phoneLabel && (digits.length < 9 || digits.length > 15)) {
+      return Promise.resolve({ error: "Podaj telefon albo zostaw puste" as const });
+    }
+  }
   return updateStore((store) => {
     const session = store.sessions.find((item) => item.id === sessionId);
     const user = session?.userId ? store.users.find((item) => item.id === session.userId) : undefined;
     if (!session || !user) return { error: "Najpierw się zaloguj" as const };
-    user.name = trimmed;
+    if (nextName !== undefined) user.name = nextName;
+    if (phoneLabel !== undefined) {
+      user.phoneLabel = phoneLabel;
+      user.phoneDigits = digits;
+    }
     session.updatedAt = Date.now();
     return { view: viewSession(session, store) };
   });
@@ -381,6 +565,7 @@ export function deleteAccount(sessionId: string) {
       item.userId = null;
       item.designId = null;
       item.challenge = null;
+      item.oauth = null;
       item.work = initialWork();
       item.updatedAt = Date.now();
     }
