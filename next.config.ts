@@ -7,6 +7,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/api/:path*", headers: noindex },
+      {
+        source: "/media/crm/:path*",
+        headers: [
+          ...noindex,
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
       { source: "/m/:path*", headers: noindex },
       { source: "/indexnow.txt", headers: noindex },
       {

@@ -40,6 +40,7 @@ export function workWithWzor(work: WorkSnapshot, wzor: WzorDetail, mode: ChoiceM
       fonts: wzor.fonts,
       previews: wzor.previews,
     },
+    editorDraftToken: null,
   };
 }
 
@@ -58,12 +59,13 @@ export function workForOwn(work: WorkSnapshot, product: ProductId): WorkSnapshot
     placed: false,
     order: { ...work.order, consentAt: "" },
     design: null,
+    editorDraftToken: keep ? work.editorDraftToken : null,
   };
 }
 
 export function withoutDesign(work: WorkSnapshot): WorkSnapshot {
   if (!work.design) return work;
-  return { ...work, design: null, pages: {}, previewUrl: null, quality: [], printFiles: {} };
+  return { ...work, design: null, pages: {}, previewUrl: null, quality: [], printFiles: {}, editorDraftToken: null };
 }
 
 /** На клиенте то же, что делает sanitizeWork при смене вещи. */
@@ -71,7 +73,7 @@ export function dropForeignDesign(work: WorkSnapshot): WorkSnapshot {
   if (!work.design || work.design.product === work.product) return work;
   const pages = { ...work.pages };
   for (const key of zoneIds(work.design.product)) delete pages[key];
-  return { ...work, design: null, pages, previewUrl: null };
+  return { ...work, design: null, pages, previewUrl: null, editorDraftToken: null };
 }
 
 export function usedPrintAreas(work: WorkSnapshot) {
@@ -87,6 +89,9 @@ export function designOrderParams(work: WorkSnapshot) {
     designUsageFee: design?.usageFee ?? 0,
     designModified: design ? pagesFingerprint(work.pages) !== design.fingerprint : false,
     editorKind: "souvenir_3d" as const,
+    editorDraftMode: "souvenir_3d" as const,
+    editorDraftToken: work.editorDraftToken,
+    activePrintAreaId: work.zone,
     usedPrintAreaIds: usedPrintAreas(work),
   };
 }

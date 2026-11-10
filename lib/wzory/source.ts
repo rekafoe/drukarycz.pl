@@ -1,5 +1,8 @@
 import { readFile } from "fs/promises";
 import path from "path";
+import { crmOrigin, designsSourceKind, isCrmConfigured } from "@/lib/crm/config";
+import { CrmUnreachableError, fetchCrm, readCrmJson } from "@/lib/crm/fetch";
+import { siteProductLink } from "@/lib/crm/products";
 import { localAssets, type AssetPolicy } from "@/lib/wzory/normalize";
 import type { WzorProductSlug } from "@/lib/wzory/types";
 
@@ -49,25 +52,62 @@ const fixturesSource: WzorySource = {
   },
 };
 
-/** Пустая заглушка до подключения CRM: те же формы, без данных. Запросы в CRM пойдут только с этого сервера. */
-const crmSource: WzorySource = {
-  kind: "crm",
-  cacheMs: 5 * 60_000,
-  assets: { mode: "crm", origin: process.env.CRM_URL ?? "" },
-  async product() {
-    return null;
-  },
-  async list() {
-    return [];
-  },
-  async detail() {
-    return null;
-  },
-  async categories() {
-    return [];
-  },
-};
+async function crmPublic(path: string): Promise<{ status: "ok"; data: unknown } | { status: "miss" } | { status: "down" }> {
+  if (!isCrmConfigured()) return { status: "down" };
+  try {
+    const response = await fetchCrm(path, { apiKey: false });
+    if (response.status === 404) return { status: "miss" };
+    if (!response.ok) return { status: "down" };
+    return { status: "ok", data: await readCrmJson(response) };
+  } catch (error) {
+    if (error instanceof CrmUnreachableError) return { status: "down" };
+    return { status: "down" };
+  }
+}
+
+function warnCrmDown(what: string) {
+  console.warn(`[wzory] CRM недоступна (${what}), берём fixtures`);
+}
+
+/**
+ * Живая CRM, когда задан `CRM_URL`. Если CRM не отвечает — те же fixtures, чтобы сайт открывался без секретов.
+ * Админка каталога на сайте не появляется: шаблоны по-прежнему заводятся в CRM.
+ */
+function liveCrmSource(): WzorySource {
+  return {
+    kind: "crm",
+    cacheMs: 5 * 60_000,
+    assets: { mode: "crm", origin: crmOrigin() },
+    product(slug) {
+      return siteProductLink(slug);
+    },
+    async list(slug, link) {
+      const result = await crmPublic(
+        `/api/design-templates/public?productId=${encodeURIComponent(String(link.productId))}&typeId=${encodeURIComponent(String(link.typeId))}`,
+      );
+      if (result.status === "ok") return result.data;
+      if (result.status === "miss") return [];
+      warnCrmDown(`список ${slug}`);
+      return fixturesSource.list(slug, link);
+    },
+    async detail(id) {
+      if (!Number.isSafeInteger(id) || id <= 0) return null;
+      const result = await crmPublic(`/api/design-templates/public/${id}`);
+      if (result.status === "ok") return result.data;
+      if (result.status === "miss") return null;
+      warnCrmDown(`шаблон ${id}`);
+      return fixturesSource.detail(id);
+    },
+    async categories() {
+      const result = await crmPublic("/api/design-templates/public/categories");
+      if (result.status === "ok") return result.data;
+      if (result.status === "miss") return [];
+      warnCrmDown("рубрики");
+      return fixturesSource.categories();
+    },
+  };
+}
 
 export function designsSource(): WzorySource {
-  return process.env.DESIGNS_SOURCE === "crm" ? crmSource : fixturesSource;
+  return designsSourceKind() === "crm" ? liveCrmSource() : fixturesSource;
 }

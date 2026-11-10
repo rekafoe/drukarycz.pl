@@ -1,3 +1,4 @@
+import { persistEditorDraft } from "@/lib/crm/drafts";
 import { requireSessionId } from "@/lib/session";
 import { replaceWork } from "@/lib/store";
 import { workWithWzor, type ChoiceMode } from "@/lib/wzory/choose";
@@ -28,5 +29,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const sessionId = await requireSessionId();
   const view = await replaceWork(sessionId, (work) => workWithWzor(work, result.wzor, mode));
   if (!view) return Response.json({ error: "Nie znaleziono sesji" }, { status: 401 });
-  return Response.json({ ok: true, step: view.work.step });
+  const draft = await persistEditorDraft({ guestToken: sessionId, work: view.work });
+  const saved = await replaceWork(sessionId, (work) => ({ ...work, editorDraftToken: draft.token }));
+  return Response.json({ ok: true, step: saved?.work.step ?? view.work.step, editorDraftToken: draft.token });
 }

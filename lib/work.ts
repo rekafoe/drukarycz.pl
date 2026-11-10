@@ -60,6 +60,8 @@ export type WorkSnapshot = {
   order: OrderDetails;
   placed: boolean;
   design: WorkDesign | null;
+  /** Токен CRM `/public-editor/drafts` или локальный `mock_…`, если CRM молчит. */
+  editorDraftToken: string | null;
 };
 
 export type PublicUser = {
@@ -147,7 +149,16 @@ export function initialWork(): WorkSnapshot {
     order: emptyOrder(),
     placed: false,
     design: null,
+    editorDraftToken: null,
   };
+}
+
+/** Токен черновика: CRM base64url или локальный `mock_`. Чужую строку не принимаем. */
+export function sanitizeDraftToken(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const token = raw.trim();
+  if (!/^(mock_)?[A-Za-z0-9_-]{16,80}$/.test(token)) return null;
+  return token;
 }
 
 /** Строка в шапке редактора и на чипах: размер, цвет, тираж. Отделки нет. */
@@ -298,6 +309,10 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
     for (const key of zoneIds[previous.design.product]) delete pages[key];
   }
 
+  let editorDraftToken = sanitizeDraftToken(raw.editorDraftToken) ?? previous?.editorDraftToken ?? null;
+  if (previous && previous.product !== product) editorDraftToken = null;
+  if (previous?.design && !design) editorDraftToken = null;
+
   return {
     step,
     cartFrom,
@@ -313,6 +328,7 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
     order: orderState.order,
     placed: orderState.placed,
     design,
+    editorDraftToken,
   };
 }
 
