@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { finishes, mugCapacityMl, productPaths, shirtColors, sizes } from "../lib/catalog.ts";
+import { mugCapacityMl, productPaths, shirtColors, sizes } from "../lib/catalog.ts";
 import { allLandings, landingPaths, landingSitemapPaths, productGuides, shopLead } from "../lib/landings.ts";
 import { landingJsonLd, productJsonLd, productSeo } from "../lib/seo.ts";
 import { site } from "../lib/site.ts";
@@ -54,7 +54,6 @@ test("landingi są po polsku, w złotych, z faktami oferty i bez cienkiego tekst
   }
   const materialy = landingText("materialy");
   assert.match(materialy, new RegExp(colorLine, "i"));
-  for (const finish of finishes) assert.match(materialy, new RegExp(finish.label, "i"));
   const rozmiary = landingText("rozmiary");
   for (const size of sizes) assert.match(rozmiary, new RegExp(`\\b${size}\\b`));
   assert.match(landingText("warszawa"), new RegExp(String(mugCapacityMl)));
@@ -84,4 +83,34 @@ test("JSON-LD landingu ma FAQ i kanoniczny adres", () => {
   assert.equal(page.url, "https://www.drukarycz.pl/nadruk-warszawa");
   const faq = data["@graph"].find((node: { "@type": string }) => node["@type"] === "FAQPage");
   assert.ok(faq);
+});
+
+const finishCopy = /wykończen|matowe|błyszczące|szerokości rolki/i;
+
+test("suveniry nie sprzedają wykończenia nadruku", () => {
+  for (const landing of allLandings()) {
+    const packed = [
+      landingText(landing.id),
+      landing.title,
+      ...landing.crumbs.map((item) => item.label),
+      ...landing.ctas.map((item) => item.label),
+      ...landing.seeAlso.map((item) => item.label),
+    ].join(" ");
+    assert.doesNotMatch(packed, finishCopy, landing.id);
+  }
+  for (const id of ["tshirt", "mug"] as const) {
+    const guide = [
+      productGuides[id].h2,
+      productGuides[id].intro,
+      ...productGuides[id].sections.flatMap((section) => [section.h2, ...section.paragraphs]),
+      ...productGuides[id].faq.flatMap((item) => [item.q, item.a]),
+      ...productGuides[id].seeAlso.map((item) => item.label),
+      shopLead(id),
+    ].join(" ");
+    assert.doesNotMatch(guide, finishCopy, id);
+    const product = productJsonLd(id)["@graph"].find((node: { "@type": string }) => node["@type"] === "Product") as {
+      additionalProperty: Array<{ name: string; value: string }>;
+    };
+    assert.ok(!product.additionalProperty.some((item) => finishCopy.test(`${item.name} ${item.value}`)), id);
+  }
 });

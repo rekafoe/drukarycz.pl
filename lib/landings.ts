@@ -1,5 +1,4 @@
 import {
-  finishes,
   mugCapacityMl,
   productById,
   productPaths,
@@ -53,7 +52,6 @@ const tshirt = productById("tshirt");
 const mug = productById("mug");
 const colorNames = shirtColors.map((item) => item.label.toLowerCase()).join(", ");
 const sizeLine = sizes.join(", ");
-const finishLine = finishes.map((item) => item.label.toLowerCase()).join(", ");
 const shirtZones = tshirt.zones.map((zone) => `${zone.label} ${zone.widthMm}×${zone.heightMm} mm`).join(" i ");
 const mugZone = mug.zones.map((zone) => `${zone.label} ${zone.widthMm}×${zone.heightMm} mm`).join(", ");
 const price = seller.priceFrom;
@@ -99,7 +97,7 @@ export const landings: Record<LandingId, LandingPage> = {
         list: [
           `Koszulka: rozmiary ${sizeLine}, kolory ${colorNames}.`,
           `Kubek: ${mugCapacityMl} ml, te same cztery kolory korpusu, nadruk na obwodzie.`,
-          `Wykończenie nadruku: ${finishLine}. Wybierasz tylko rodzaj, bez szerokości rolki.`,
+          `Nakład: 1, 5, 10 albo 20 sztuk z tym samym projektem. Edytor i podgląd 3D są na stronie.`,
         ],
       },
       {
@@ -113,7 +111,7 @@ export const landings: Record<LandingId, LandingPage> = {
       {
         h2: "Jak złożyć nadruk, jeśli jesteś w Warszawie albo poza nią",
         paragraphs: [
-          `Adres ${city} dotyczy przygotowania druku, nie limitu „tylko odbiór osobisty”. Projekt składasz online: wybierasz koszulkę albo kubek, ustawiasz kolor, nakład i wykończenie, potem otwierasz edytor. Z Warszawy, Gdańska albo Wrocławia ścieżka jest ta sama.`,
+          `Adres ${city} dotyczy przygotowania druku, nie limitu „tylko odbiór osobisty”. Projekt składasz online: wybierasz koszulkę albo kubek, ustawiasz kolor i nakład, potem otwierasz edytor. Z Warszawy, Gdańska albo Wrocławia ścieżka jest ta sama.`,
           `Gotowy wzór z galerii możesz wziąć bez zmian albo poprawić tekst i zdjęcie. Pusty arkusz zostaje, jeśli chcesz projekt od zera.`,
         ],
       },
@@ -146,7 +144,7 @@ export const landings: Record<LandingId, LandingPage> = {
       { href: productPaths.tshirt, label: "Ławka koszulki" },
       { href: productPaths.mug, label: "Ławka kubka" },
       { href: landingPaths.rozmiary, label: "Rozmiary koszulek" },
-      { href: landingPaths.materialy, label: "Kolory i wykończenie" },
+      { href: landingPaths.materialy, label: "Kolory" },
       { href: "/prawne/dostawa", label: "Dostawa i płatność" },
     ],
   },
@@ -170,7 +168,7 @@ export const landings: Record<LandingId, LandingPage> = {
     ],
     ctas: [
       { href: productPaths.tshirt, label: "Wybierz rozmiar na ławce", primary: true },
-      { href: landingPaths.materialy, label: "Kolory i wykończenie" },
+      { href: landingPaths.materialy, label: "Kolory" },
     ],
     sections: [
       {
@@ -209,7 +207,7 @@ export const landings: Record<LandingId, LandingPage> = {
       {
         h2: "Kubek nie ma rozmiaru S–XL",
         paragraphs: [
-          `Kubek w ofercie ma pojemność ${mugCapacityMl} ml i nadruk na obwodzie ${mugZone}. Liter S, M, L, XL przy kubku nie wybierasz. Kolor korpusu i wykończenie nadruku — tak, te same co przy koszulce.`,
+          `Kubek w ofercie ma pojemność ${mugCapacityMl} ml i nadruk na obwodzie ${mugZone}. Liter S, M, L, XL przy kubku nie wybierasz. Kolor korpusu — tak, te same cztery co przy koszulce.`,
         ],
       },
     ],
@@ -234,25 +232,25 @@ export const landings: Record<LandingId, LandingPage> = {
     seeAlso: [
       { href: productPaths.tshirt, label: "Koszulka — ławka" },
       { href: productPaths.mug, label: "Kubek — ławka" },
-      { href: landingPaths.materialy, label: "Kolory i wykończenie" },
+      { href: landingPaths.materialy, label: "Kolory" },
       { href: landingPaths.warszawa, label: `Nadruk ${cityIn}` },
     ],
   },
   materialy: {
     id: "materialy",
     path: landingPaths.materialy,
-    title: `Kolory i wykończenie nadruku na koszulce i kubku — ${brand}`,
-    description: `Kolory oferty: ${colorNames}. Wykończenie nadruku: ${finishLine}. Koszulka ${sizeLine}, kubek ${mugCapacityMl} ml. Druk ${cityIn}, ${price} brutto.`,
-    h1: "Kolory i wykończenie nadruku",
-    lead: `W asortymencie nie ma składu tkaniny ani opisu glazury kubka — nie dopisujemy bawełny, poliestru ani ceramiki, skoro ławka tego nie pyta. Klient wybiera kolor rzeczy i rodzaj wykończenia nadruku. Kolory: ${colorNames}. Wykończenie: ${finishLine}. Szerokości rolki na stronie nie ma.`,
-    kicker: "Kolor rzeczy · rodzaj nadruku",
-    ogTitle: "Kolory i wykonczenie",
+    title: `Kolory koszulki i kubka z nadrukiem — ${brand}`,
+    description: `Kolory oferty: ${colorNames}. Koszulka ${sizeLine}, kubek ${mugCapacityMl} ml. Ta sama paleta na obu rzeczach. Druk ${cityIn}, ${price} brutto.`,
+    h1: "Kolory koszulki i kubka",
+    lead: `W asortymencie nie ma składu tkaniny ani opisu glazury kubka — nie dopisujemy bawełny, poliestru ani ceramiki, skoro ławka tego nie pyta. Klient wybiera kolor rzeczy. Kolory: ${colorNames}. Ta sama czwórka maluje koszulkę i kubek.`,
+    kicker: "Kolor rzeczy · cztery próbki",
+    ogTitle: "Kolory koszulki i kubka",
     ogLine: "Czarny, piaskowy, bordowy, granatowy",
     ogImage: `${landingPaths.materialy}/opengraph-image`,
     nav: "home",
     crumbs: [
       { href: "/", label: brand },
-      { href: landingPaths.materialy, label: "Kolory i wykończenie" },
+      { href: landingPaths.materialy, label: "Kolory" },
     ],
     ctas: [
       { href: productPaths.tshirt, label: "Koszulka — wybierz kolor", primary: true },
@@ -262,7 +260,7 @@ export const landings: Record<LandingId, LandingPage> = {
       {
         h2: "Cztery kolory z oferty",
         paragraphs: [
-          `Ta sama paleta maluje koszulkę i kubek. Na ławce są cztery próbki, nie wzornik Pantone i nie dowolny hex.`,
+          `Ta sama paleta maluje koszulkę i kubek. Na ławce są cztery próbki, nie wzornik Pantone i nie dowolny hex. Kolor zmieniasz kółkiem przy rzeczy: tkanina albo korpus na modelu przyjmują ten sam odcień, który widzisz na przycisku. Piątego koloru, mieszanki i własnego kodu nie przyjmujemy, bo ich nie ma w asortymencie.`,
         ],
         list: shirtColors.map((item) => {
           if (item.id === "black") {
@@ -278,33 +276,34 @@ export const landings: Record<LandingId, LandingPage> = {
         }),
       },
       {
-        h2: "Wykończenie nadruku, nie materiał rolki",
+        h2: "Kolor na modelu, nie na arkuszu",
         paragraphs: [
-          `Trzecia decyzja po kolorze i nakładzie to wykończenie: ${finishLine}. To rodzaj powierzchni nadruku, który widzisz na ławce. Szerokości rolki, mikronów i nazw maszyn na stronie klienta nie pokazujemy.`,
-          `Bez wykończenia zostawia nadruk tak, jak schodzi z druku. Matowe ścisza błysk. Błyszczące go dodaje. Nie obiecujemy odporności na zmywarkę ani pranie w liczbach, których nie mamy w ofercie.`,
+          `Kolor dotyczy rzeczy, nie farby nadruku. Arkusz w edytorze zostaje przezroczysty poza Twoją grafiką. Ciemny korpus dostaje jasny tekst startowy, jasny — ciemny, żeby napis było widać. Własny kolor napisu, który sam ustawisz, edytor zostawia.`,
+          `Na czarnym, bordowym i granatowym jaśniejsza grafika czyta się pewniej. Na piaskowym pewniej czyta się ciemna. To nie osobna opcja na ławce — to skutek kontrastu, który widzisz od razu na podglądzie 3D.`,
+          `Kubek i koszulka dzielą paletę, ale nie dzielą strefy. Zmiana koloru koszulki nie maluje kubka w koszyku: to dwie osobne rzeczy, każda ze swoim projektem. Na ławce kubka i na ławce koszulki kółka kolorów są te same cztery.`,
         ],
       },
       {
         h2: "Czego w materiałach nie ma",
         paragraphs: [
           `Nie ma gramatury, procentu bawełny, certyfikatu OEKO-TEX, pojemności innej niż ${mugCapacityMl} ml i piątego koloru. Gdy kroj, tkanina albo szkliwo dostaną pola w ofercie, pojawią się tutaj z tych samych danych co ławka — nie wcześniej.`,
-          `Nakład na ławce to 1, 5, 10 albo 20 sztuk. To nie materiał, ale ta sama karta produktu: kolor i wykończenie dotyczą całego nakładu.`,
-          `Druk przygotowujemy ${cityIn}, cena wyjściowa ${price} brutto. Kolor i wykończenie nie zmieniają tego progu, dopóki system zamówień nie policzy wiążącej kwoty.`,
+          `Nakład na ławce to 1, 5, 10 albo 20 sztuk. Kolor dotyczy całego nakładu: dwadzieścia sztuk wychodzi w tym samym czarnym, piaskowym, bordowym albo granatowym, który wybrałeś na ławce.`,
+          `Druk przygotowujemy ${cityIn}, cena wyjściowa ${price} brutto. Kolor nie zmienia tego progu, dopóki system zamówień nie policzy wiążącej kwoty.`,
         ],
       },
     ],
     faq: [
       {
         q: "Z jakiego materiału jest koszulka?",
-        a: "Składu tkaniny nie podajemy, bo nie ma go w ofercie. Na ławce wybierasz kolor i wykończenie nadruku.",
+        a: "Składu tkaniny nie podajemy, bo nie ma go w ofercie. Na ławce wybierasz kolor rzeczy, rozmiar i nakład.",
       },
       {
         q: "Jakie kolory są dostępne?",
         a: `${shirtColors.map((item) => item.label).join(", ")} — na koszulce i na kubku.`,
       },
       {
-        q: "Co oznacza wykończenie matowe i błyszczące?",
-        a: "To rodzaj nadruku, nie tkanina. Wybierasz tylko podpis: bez wykończenia, matowe albo błyszczące.",
+        q: "Czy kubek i koszulka mają te same kolory?",
+        a: "Tak. Czarny, piaskowy, bordowy i granatowy — ta sama lista na obu ławkach.",
       },
       {
         q: "Czy kubek jest ceramiczny?",
@@ -333,9 +332,9 @@ export const productGuides: Record<ProductId, ProductGuideContent> = {
         ],
       },
       {
-        h2: "Rozmiar, kolor, nakład, wykończenie",
+        h2: "Rozmiar, kolor, nakład",
         paragraphs: [
-          `Rozmiar zmienia kroj koszulki, nie milimetry nadruku — szerszy opis jest na stronie rozmiarów. Kolor maluje tkaninę na modelu. Nakład to 1, 5, 10 albo 20 sztuk z tym samym projektem. Wykończenie: ${finishLine}.`,
+          `Rozmiar zmienia kroj koszulki, nie milimetry nadruku — szerszy opis jest na stronie rozmiarów. Kolor maluje tkaninę na modelu. Nakład to 1, 5, 10 albo 20 sztuk z tym samym projektem.`,
           `Jeśli masz gotowy plik zamiast pracy w edytorze, na ławce jest o tym zdanie: podepniemy go razem ze zgłoszeniem. Osobnego pola „plik z dysku” na tej karcie nie ma.`,
         ],
       },
@@ -360,7 +359,7 @@ export const productGuides: Record<ProductId, ProductGuideContent> = {
     ],
     seeAlso: [
       { href: landingPaths.rozmiary, label: "Rozmiary S–XL" },
-      { href: landingPaths.materialy, label: "Kolory i wykończenie" },
+      { href: landingPaths.materialy, label: "Kolory" },
       { href: landingPaths.warszawa, label: `Nadruk ${cityIn}` },
       { href: productPaths.mug, label: "Kubek z nadrukiem" },
       { href: "/wzory?produkt=koszulka", label: "Gotowe wzory na koszulkę" },
@@ -378,9 +377,9 @@ export const productGuides: Record<ProductId, ProductGuideContent> = {
         ],
       },
       {
-        h2: "Kolor korpusu i wykończenie",
+        h2: "Kolor korpusu",
         paragraphs: [
-          `Czarny, piaskowy, bordowy i granatowy zmieniają kubek na modelu tak samo jak koszulkę. Wykończenie nadruku: ${finishLine}. Pojemność zostaje ${mugCapacityMl} ml — innej w asortymencie nie ma.`,
+          `Czarny, piaskowy, bordowy i granatowy zmieniają kubek na modelu tak samo jak koszulkę. Pojemność zostaje ${mugCapacityMl} ml — innej w asortymencie nie ma.`,
           `Nakład 1, 5, 10 albo 20 sztuk niesie ten sam projekt. Wiążącej ceny za sztukę nie ma, dopóki system zamówień jej nie policzy; na ławce zostaje ${price} brutto.`,
         ],
       },
@@ -404,7 +403,7 @@ export const productGuides: Record<ProductId, ProductGuideContent> = {
       },
     ],
     seeAlso: [
-      { href: landingPaths.materialy, label: "Kolory i wykończenie" },
+      { href: landingPaths.materialy, label: "Kolory" },
       { href: landingPaths.warszawa, label: `Nadruk ${cityIn}` },
       { href: productPaths.tshirt, label: "Koszulka z nadrukiem" },
       { href: landingPaths.rozmiary, label: "Rozmiary koszulek" },

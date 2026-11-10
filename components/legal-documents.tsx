@@ -110,8 +110,7 @@ function Regulamin() {
       <H2>Co można zamówić później</H2>
       <p>
         Koszulka: przód i tył, rozmiar z listy, kolor z listy. Kubek: nadruk na obwodzie, pojemność 330 ml, te same
-        kolory. Wykończenie nadruku klient widzi tylko jako brak wykończenia, matowe albo błyszczące. Szerokości
-        rolki na stronie nie ma.
+        kolory.
       </p>
       <H2>Cena</H2>
       <p>

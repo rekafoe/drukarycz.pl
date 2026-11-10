@@ -2,7 +2,6 @@ import { quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
 import { pagesFingerprint } from "@/lib/wzory/fingerprint";
 
 export type Step = "doors" | "shop" | "editor" | "cart";
-export type Finish = "none" | "matte" | "gloss";
 export type CartFrom = "shop" | "editor";
 
 export type PrintAreaId = "front" | "back" | "wrap";
@@ -54,7 +53,6 @@ export type WorkSnapshot = {
   size: string;
   color: string;
   qty: string;
-  finish: Finish;
   previewUrl: string | null;
   pages: Record<string, object>;
   quality: QualityIssue[];
@@ -142,7 +140,6 @@ export function initialWork(): WorkSnapshot {
     size: "M",
     color: "#171614",
     qty: "1",
-    finish: "none",
     previewUrl: null,
     pages: {},
     quality: [],
@@ -269,7 +266,6 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
   const qty = typeof raw.qty === "string" && (quantities as readonly string[]).includes(raw.qty) ? raw.qty : "1";
   const color =
     typeof raw.color === "string" && shirtColors.some((swatch) => swatch.value === raw.color) ? raw.color : "#171614";
-  const finish: Finish = raw.finish === "matte" || raw.finish === "gloss" || raw.finish === "none" ? raw.finish : "none";
 
   let previewUrl: string | null = null;
   if (typeof raw.previewUrl === "string" && raw.previewUrl.startsWith("data:image/") && raw.previewUrl.length < 1_500_000) {
@@ -303,7 +299,6 @@ export function sanitizeWork(input: unknown, allowPlaced: boolean, previous?: Wo
     size,
     color,
     qty,
-    finish,
     previewUrl,
     pages,
     quality: sanitizeQuality(raw.quality),

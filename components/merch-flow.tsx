@@ -31,7 +31,7 @@ const EditorCanvas = dynamic(
   () => import("@/components/editor-canvas").then((mod) => mod.EditorCanvas),
   { ssr: false, loading: () => null },
 );
-import { finishes, productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
+import { productById, productPaths, shirtColors, type ProductId } from "@/lib/catalog";
 import { DEFAULT_MUG_MODEL_URL, DEFAULT_TSHIRT_MODEL_URL } from "@/components/souvenir3d/types";
 import { seller } from "@/lib/seller";
 
@@ -285,7 +285,6 @@ export function MerchFlow({
   const product = productById(work.product);
   const zone = product.zones.find((item) => item.id === work.zone) ?? product.zones[0];
   const colorName = shirtColors.find((item) => item.value === work.color)?.label ?? "";
-  const finishName = finishes.find((item) => item.id === work.finish)?.label ?? "";
 
   function openProduct(id: ProductId) {
     setLeaving(id);
@@ -404,7 +403,7 @@ export function MerchFlow({
             <span className="font-poster text-sm font-extrabold">{product.name}</span>
             <span className="hidden text-sm text-[#F3EEE4]/55 sm:inline">
               {work.product === "tshirt" ? `${work.size} · ` : "330 ml · "}
-              {colorName} · {work.qty} szt. · {finishName}
+              {colorName} · {work.qty} szt.
             </span>
             <div className="flex-1" />
             <Link href="/prawne/regulamin" className="text-sm text-[#F3EEE4]/70 hover:text-[#F3EEE4]">
@@ -486,7 +485,7 @@ export function MerchFlow({
             <div>
               <h2 className="font-poster text-xl font-extrabold">{product.name}</h2>
               <p className="text-muted">
-                {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label, finishName]
+                {[work.product === "tshirt" ? work.size : "330 ml", colorName, `nakład ${work.qty}`, zone.label]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
@@ -518,7 +517,6 @@ export function MerchFlow({
               <li>{work.product === "tshirt" ? `rozmiar: ${work.size}` : "pojemność: 330 ml"}</li>
               <li>kolor rzeczy: {colorName}</li>
               <li>nakład: {work.qty}</li>
-              <li>wykończenie: {finishName} — tylko rodzaj, bez szerokości rolki</li>
               <li>editorKind: souvenir_3d</li>
               <WzorOrderFields work={work} />
               <li>

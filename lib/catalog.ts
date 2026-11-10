@@ -43,12 +43,6 @@ export const shirtColors = [
 export const sizes = ["S", "M", "L", "XL"] as const;
 export const quantities = ["1", "5", "10", "20"] as const;
 
-export const finishes = [
-  { id: "none", label: "Bez wykończenia" },
-  { id: "matte", label: "Matowe" },
-  { id: "gloss", label: "Błyszczące" },
-] as const;
-
 /** Pojemność kubka z oferty. Ta sama liczba, którą pokazuje ławka. */
 export const mugCapacityMl = 330;
 

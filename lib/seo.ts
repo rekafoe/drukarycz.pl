@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { LegalSlug } from "@/components/legal-documents";
 import {
-  finishes,
   mugCapacityMl,
   productById,
   productPaths,
@@ -168,11 +167,6 @@ export function productJsonLd(id: ProductId) {
     ...(id === "mug"
       ? [{ "@type": "PropertyValue", name: "Pojemność", value: `${mugCapacityMl} ml` }]
       : [{ "@type": "PropertyValue", name: "Rozmiary", value: sizes.join(", ") }]),
-    {
-      "@type": "PropertyValue",
-      name: "Wykończenie",
-      value: finishes.map((item) => item.label).join(", "),
-    },
   ];
   return {
     "@context": "https://schema.org",

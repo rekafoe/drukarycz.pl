@@ -2,9 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { PosterHeader } from "@/components/poster-chrome";
 import { SiteFooter } from "@/components/site-footer";
-import { finishes, productPaths, shirtColors, sizes } from "@/lib/catalog";
+import { productPaths, shirtColors, sizes } from "@/lib/catalog";
 import { getLanding, type LandingId } from "@/lib/landings";
-import { seller } from "@/lib/seller";
 
 export function ProductLanding({ id }: { id: LandingId }) {
   const landing = getLanding(id);
@@ -153,30 +152,15 @@ function RozmiaryVisual() {
 function MaterialyVisual() {
   return (
     <div className="border-b border-[#16130F]/10 bg-[#F3EEE4] px-5 py-8 md:px-8">
-      <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
-        <div>
-          <p className="text-[12px] font-extrabold tracking-[0.14em] text-[#6b6358] uppercase">Kolor rzeczy</p>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {shirtColors.map((color) => (
-              <figure key={color.id} className="rounded-2xl border border-[#16130F]/10 bg-white p-3">
-                <span className="mx-auto block h-14 w-14 rounded-full border border-black/15" style={{ background: color.value }} />
-                <figcaption className="mt-2 text-center text-sm font-extrabold">{color.label}</figcaption>
-              </figure>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="text-[12px] font-extrabold tracking-[0.14em] text-[#6b6358] uppercase">Wykończenie nadruku</p>
-          <ul className="mt-3 grid gap-2">
-            {finishes.map((item) => (
-              <li key={item.id} className="rounded-2xl border border-[#16130F]/10 bg-white px-4 py-3 text-[15px] font-bold">
-                {item.label}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-sm text-[#6b6358]">
-            Tylko rodzaj. Szerokości rolki {seller.brand} na stronie klienta nie pokazuje.
-          </p>
+      <div className="mx-auto max-w-5xl">
+        <p className="text-[12px] font-extrabold tracking-[0.14em] text-[#6b6358] uppercase">Kolor rzeczy</p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {shirtColors.map((color) => (
+            <figure key={color.id} className="rounded-2xl border border-[#16130F]/10 bg-white p-3">
+              <span className="mx-auto block h-14 w-14 rounded-full border border-black/15" style={{ background: color.value }} />
+              <figcaption className="mt-2 text-center text-sm font-extrabold">{color.label}</figcaption>
+            </figure>
+          ))}
         </div>
       </div>
       <div className="mx-auto mt-6 grid max-w-5xl grid-cols-2 gap-3 md:grid-cols-4">

@@ -1,5 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
-import { finishes, productById, quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
+import { productById, quantities, shirtColors, sizes, type ProductId } from "@/lib/catalog";
 import type { WorkSnapshot } from "@/lib/work";
 import type { AccentId } from "./accents";
 
@@ -23,7 +23,7 @@ export type DoorsViewProps = {
   accent?: AccentId;
 };
 
-export type ShopPatch = Partial<Pick<WorkSnapshot, "size" | "color" | "qty" | "finish">>;
+export type ShopPatch = Partial<Pick<WorkSnapshot, "size" | "color" | "qty">>;
 
 export type ShopViewProps = {
   work: WorkSnapshot;
@@ -64,19 +64,16 @@ export const teeFrontZone = { left: 28.8, top: 22.4, width: 40.7, height: 50.8 }
 export function shopModel(work: WorkSnapshot) {
   const product = productById(work.product);
   const color = shirtColors.find((swatch) => swatch.value === work.color) ?? shirtColors[0];
-  const finish = finishes.find((item) => item.id === work.finish) ?? finishes[0];
   const isShirt = work.product === "tshirt";
   return {
     product,
     color,
-    finish,
     isShirt,
     sizes,
     quantities,
     colors: shirtColors,
-    finishes,
     zonesLine: product.zones.map((zone) => `${zone.label} ${zone.widthMm}×${zone.heightMm} mm`).join(" · "),
-    summary: [isShirt ? work.size : "330 ml", color.label, `${work.qty} szt.`, finish.label].join(" · "),
+    summary: [isShirt ? work.size : "330 ml", color.label, `${work.qty} szt.`].join(" · "),
   };
 }
 

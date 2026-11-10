@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { productPaths } from "../lib/catalog.ts";
-import { initialWork, openShop } from "../lib/work.ts";
+import { initialWork, openShop, sanitizeWork } from "../lib/work.ts";
 
 test("адрес лавки открывает её как клик по двери и не трогает листы", () => {
   const work = { ...initialWork(), step: "editor" as const, product: "tshirt" as const, pages: { front: { objects: [1] } } };
@@ -15,4 +15,9 @@ test("адрес лавки открывает её как клик по две�
 
 test("у каждой вещи свой читаемый адрес", () => {
   assert.deepEqual(productPaths, { tshirt: "/koszulka", mug: "/kubek" });
+});
+
+test("sanitizeWork nie trzyma wykończenia z dawnego zapisu", () => {
+  const work = sanitizeWork({ ...initialWork(), finish: "gloss" }, false);
+  assert.equal("finish" in work, false);
 });

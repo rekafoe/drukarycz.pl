@@ -308,20 +308,6 @@ export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEdito
                 </button>
               ))}
             </div>
-            <Label>Wykończenie</Label>
-            <div className="flex flex-wrap gap-2">
-              {m.finishes.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={work.finish === item.id}
-                  className={pill(work.finish === item.id)}
-                  onClick={() => onChange({ finish: item.id })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
             {chosen}
             <button
               type="button"

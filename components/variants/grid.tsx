@@ -346,22 +346,7 @@ export function GridShop({ work, onChange, onProduct, onHome, onCart, onEditor, 
               <span className="font-plex ml-1 text-[12px]">SZT.</span>
             </div>
           </Row>
-          <Row n="05" label="Wykończenie">
-            <div className="flex flex-wrap gap-1.5">
-              {m.finishes.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={work.finish === item.id}
-                  className={box(work.finish === item.id)}
-                  onClick={() => onChange({ finish: item.id })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </Row>
-          <Row n="06" label="Czas">
+          <Row n="05" label="Czas">
             <span className="font-plex text-[13px]">{seller.leadTime.toUpperCase()} · WARSZAWA</span>
           </Row>
           <div className="hidden items-stretch gap-0 px-8 py-6 md:flex">

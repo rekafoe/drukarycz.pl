@@ -360,20 +360,6 @@ export function PosterShop({
               </button>
             ))}
           </div>
-          <Label>Wykończenie</Label>
-          <div className="flex flex-wrap gap-2">
-            {m.finishes.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={work.finish === item.id}
-                className={choice(work.finish === item.id)}
-                onClick={() => onChange({ finish: item.id })}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
           {chosen}
           <div className="sticky bottom-0 z-10 -mx-3 mt-6 hidden bg-[#F3EEE4] px-3 pt-2 pb-3 md:block">
             <button

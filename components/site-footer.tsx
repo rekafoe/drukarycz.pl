@@ -8,7 +8,7 @@ const catalogLinks = [
   ["/wzory", "Wzory"],
   [landingPaths.warszawa, "Nadruk w Warszawie"],
   [landingPaths.rozmiary, "Rozmiary"],
-  [landingPaths.materialy, "Kolory i wykończenie"],
+  [landingPaths.materialy, "Kolory"],
 ] as const;
 
 const legalLinks = [
