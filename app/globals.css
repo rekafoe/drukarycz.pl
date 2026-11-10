@@ -33,13 +33,13 @@
   --color-paper: var(--paper);
   --color-card: var(--white);
   --color-kobalt: var(--kobalt);
-  --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --font-sans: "Manrope Variable", "Manrope", system-ui, sans-serif;
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: "Manrope Variable", system-ui, sans-serif;
+  font-family: "Manrope Variable", "Manrope", system-ui, sans-serif;
 }
 
 .btn-kobalt {
