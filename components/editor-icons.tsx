@@ -8,7 +8,7 @@ function Glyph({ className, children }: IconProps & { children: ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className={className ?? "h-5 w-5"}
+      className={className ?? "h-4 w-4"}
       aria-hidden="true"
       fill="none"
       stroke="currentColor"
@@ -334,6 +334,51 @@ export function AlignBottomIcon() {
       <path d="M8 15h8" />
       <path d="M10 11h4" />
       <path d="M8 7h8" />
+    </Glyph>
+  );
+}
+
+export function ShapesIcon() {
+  return (
+    <Glyph>
+      <rect x="4" y="4" width="7.5" height="7.5" rx="1" />
+      <circle cx="16.5" cy="7.8" r="3.3" />
+      <path d="M8.2 20 4.2 13.5h8Z" />
+    </Glyph>
+  );
+}
+
+export function StickersIcon() {
+  return (
+    <Glyph>
+      <path d="M12 4 14.2 9.4 20 10.1 15.8 14 17 19.8 12 16.8 7 19.8 8.2 14 4 10.1 9.8 9.4Z" />
+    </Glyph>
+  );
+}
+
+export function LayersIcon() {
+  return (
+    <Glyph>
+      <path d="M12 4 4 8.2 12 12.4 20 8.2 12 4Z" />
+      <path d="m4 12 8 4.2L20 12" />
+      <path d="m4 15.8 8 4.2 8-4.2" />
+    </Glyph>
+  );
+}
+
+export function ChevronIcon({ className }: IconProps) {
+  return (
+    <Glyph className={className ?? "h-3 w-3"}>
+      <path d="m6 9 6 6 6-6" />
+    </Glyph>
+  );
+}
+
+export function CropIcon() {
+  return (
+    <Glyph>
+      <path d="M7 3v12a2 2 0 0 0 2 2h12" />
+      <path d="M3 8h12a2 2 0 0 1 2 2v11" />
     </Glyph>
   );
 }

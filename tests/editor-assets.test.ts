@@ -23,3 +23,16 @@ test("naklejki nie wskazują na obce adresy", () => {
     assert.ok(sticker.label.length > 0);
   }
 });
+
+test("panele edytora zwarte, kobalt, bez obcych adresów i indigo", () => {
+  const options = fs.readFileSync("components/editor-options.tsx", "utf8");
+  const icons = fs.readFileSync("components/editor-icons.tsx", "utf8");
+  assert.equal(options.includes("indigo"), false);
+  assert.equal(options.includes("max-h-[48%]"), false);
+  assert.equal(/https?:\/\//.test(options), false);
+  assert.equal(/https?:\/\//.test(icons), false);
+  assert.match(options, /accent-kobalt|tool-kobalt/);
+  assert.match(options, /Figury i naklejki/);
+  assert.match(options, /Warstwy/);
+  assert.match(options, /Ułożenie/);
+});
