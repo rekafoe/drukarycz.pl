@@ -96,6 +96,7 @@ export function EditorOptions({
   layers,
   issues,
   copyLabel,
+  dragging = false,
   onAddText,
   onAddPhoto,
   onUndo,
@@ -155,6 +156,7 @@ export function EditorOptions({
   layers: EditorLayer[];
   issues: Issue[];
   copyLabel: string | null;
+  dragging?: boolean;
   onAddText: () => void;
   onAddPhoto: (file: File) => void;
   onUndo: () => void;
@@ -250,7 +252,7 @@ export function EditorOptions({
         <ToolButton label={`Warstwy (${layers.length})`} pressed={tray === "layers"} onClick={() => toggle("layers")}>
           <LayersIcon />
         </ToolButton>
-        <div className="mt-auto flex flex-col items-center gap-1 px-0.5">
+        <div className="mt-auto hidden flex-col items-center gap-1 px-0.5 lg:flex">
           {copyLabel ? (
             <button
               type="button"
@@ -282,7 +284,9 @@ export function EditorOptions({
 
       {panelOpen ? (
         <aside
-          className="absolute top-0 bottom-0 left-11 z-20 flex w-56 flex-col overflow-y-auto border-r border-line bg-card shadow-[8px_0_24px_-16px_rgba(22,19,15,0.45)] lg:static lg:z-0 lg:shadow-none"
+          className={`absolute top-0 bottom-0 left-11 z-20 flex w-56 flex-col overflow-y-auto border-r border-line bg-card shadow-[8px_0_24px_-16px_rgba(22,19,15,0.45)] lg:static lg:z-0 lg:shadow-none ${
+            dragging ? "max-lg:hidden" : ""
+          }`}
           aria-label={panelTitle}
         >
           <div className="flex items-center justify-between gap-2 border-b border-line px-2 py-1.5">

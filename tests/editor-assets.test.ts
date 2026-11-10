@@ -39,3 +39,24 @@ test("panele edytora zwarte, kobalt, bez obcych adresów i indigo", () => {
   assert.match(options, /Ułożenie/);
   assert.match(canvas, /flex-row/);
 });
+
+test("telefon: arkusz na wejściu, Przód/Tył słowami, panel nie zasłania przy ruchu", () => {
+  const options = fs.readFileSync("components/editor-options.tsx", "utf8");
+  const canvas = fs.readFileSync("components/editor-canvas.tsx", "utf8");
+  assert.match(canvas, /useState<"model" \| "sheet">\("sheet"\)/);
+  assert.match(canvas, /object:moving/);
+  assert.match(canvas, /object:scaling/);
+  assert.match(canvas, /object:rotating/);
+  assert.match(canvas, /object:resizing/);
+  assert.match(canvas, /Tył jeszcze pusty/);
+  assert.match(canvas, /Kopiuj na tył/);
+  assert.match(canvas, /\{area\.label\}/);
+  assert.match(canvas, /dragging=\{dragging\}/);
+  assert.match(options, /dragging \? "max-lg:hidden"/);
+  assert.match(options, /mt-auto hidden flex-col items-center gap-1 px-0\.5 lg:flex/);
+  assert.match(options, /"Prz"/);
+  assert.match(options, /"Na tył"/);
+  assert.equal(options.includes("indigo"), false);
+  assert.equal(/https?:\/\//.test(canvas), false);
+  assert.match(canvas, /#2F5BFF/);
+});
