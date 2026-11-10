@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ProductId } from "@/lib/catalog";
+import { QtyField } from "@/components/qty-field";
 import { SiteFooter } from "@/components/site-footer";
+import { goodsPriceLabel } from "@/lib/qty";
 import { seller } from "@/lib/seller";
 import {
   ArrowIcon,
@@ -31,14 +33,14 @@ function Wordmark() {
   );
 }
 
-function PricePill({ big = false }: { big?: boolean }) {
+function PricePill({ big = false, qty }: { big?: boolean; qty?: string }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full bg-white font-extrabold text-[#2E2421] shadow-[0_6px_18px_-10px_rgba(92,50,36,0.6)] ${
+      className={`inline-flex shrink-0 items-center rounded-full bg-white font-extrabold whitespace-nowrap text-[#2E2421] shadow-[0_6px_18px_-10px_rgba(92,50,36,0.6)] ${
         big ? "px-5 py-2.5 text-[22px]" : "px-4 py-2 text-[15px]"
       }`}
     >
-      {seller.priceFrom}
+      {qty ? goodsPriceLabel(qty) : seller.priceFrom}
     </span>
   );
 }
@@ -246,7 +248,7 @@ export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEdito
             </span>
             <h1 className="font-soft mt-3 text-[42px] leading-none font-semibold md:text-[58px]">{m.product.name}</h1>
             <div className="mt-4 flex items-center gap-3">
-              <PricePill big />
+              <PricePill big qty={work.qty} />
               <p className="text-[13px] leading-snug text-[#7A625A]">
                 Cena wyjściowa brutto.
                 <br />
@@ -295,19 +297,7 @@ export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEdito
               ))}
             </div>
             <Label>Nakład</Label>
-            <div className="flex flex-wrap gap-2">
-              {m.quantities.map((qty) => (
-                <button
-                  key={qty}
-                  type="button"
-                  aria-pressed={work.qty === qty}
-                  className={pill(work.qty === qty)}
-                  onClick={() => onChange({ qty })}
-                >
-                  {qty} szt.
-                </button>
-              ))}
-            </div>
+            <QtyField qty={work.qty} onChange={(qty) => onChange({ qty })} />
             {chosen}
             <button
               type="button"
@@ -341,7 +331,7 @@ export function CeramicShop({ work, onChange, onProduct, onHome, onCart, onEdito
         <SiteFooter />
       </div>
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 bg-[#FBF4EE]/95 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-[0_-12px_30px_-20px_rgba(92,50,36,0.6)] backdrop-blur md:hidden">
-        <PricePill />
+        <PricePill qty={work.qty} />
         <button
           type="button"
           onClick={onEditor}

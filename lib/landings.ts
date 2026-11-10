@@ -97,7 +97,7 @@ export const landings: Record<LandingId, LandingPage> = {
         list: [
           `Koszulka: rozmiary ${sizeLine}, kolory ${colorNames}.`,
           `Kubek: ${mugCapacityMl} ml, te same cztery kolory korpusu, nadruk na obwodzie.`,
-          `Nakład: 1, 5, 10 albo 20 sztuk z tym samym projektem. Edytor i podgląd 3D są na stronie.`,
+          `Nakład: od jednej sztuki, krok po jednej; 1, 5, 10 i 20 zostają skrótami. Edytor i podgląd 3D są na stronie.`,
         ],
       },
       {
@@ -287,7 +287,7 @@ export const landings: Record<LandingId, LandingPage> = {
         h2: "Czego w materiałach nie ma",
         paragraphs: [
           `Nie ma gramatury, procentu bawełny, certyfikatu OEKO-TEX, pojemności innej niż ${mugCapacityMl} ml i piątego koloru. Gdy kroj, tkanina albo szkliwo dostaną pola w ofercie, pojawią się tutaj z tych samych danych co ławka — nie wcześniej.`,
-          `Nakład na ławce to 1, 5, 10 albo 20 sztuk. Kolor dotyczy całego nakładu: dwadzieścia sztuk wychodzi w tym samym czarnym, piaskowym, bordowym albo granatowym, który wybrałeś na ławce.`,
+          `Nakład na ławce ustawiasz od jednej sztuki, krok po jednej. 1, 5, 10 i 20 sztuk to skróty, nie limit. Kolor dotyczy całego nakładu: siedem sztuk wychodzi w tym samym czarnym, piaskowym, bordowym albo granatowym, który wybrałeś na ławce.`,
           `Druk przygotowujemy ${cityIn}, cena wyjściowa ${price} brutto. Kolor nie zmienia tego progu, dopóki system zamówień nie policzy wiążącej kwoty.`,
         ],
       },
@@ -334,7 +334,7 @@ export const productGuides: Record<ProductId, ProductGuideContent> = {
       {
         h2: "Rozmiar, kolor, nakład",
         paragraphs: [
-          `Rozmiar zmienia kroj koszulki, nie milimetry nadruku — szerszy opis jest na stronie rozmiarów. Kolor maluje tkaninę na modelu. Nakład to 1, 5, 10 albo 20 sztuk z tym samym projektem.`,
+          `Rozmiar zmienia kroj koszulki, nie milimetry nadruku — szerszy opis jest na stronie rozmiarów. Kolor maluje tkaninę na modelu. Nakład ustawiasz sztuka po sztuce, od jednej. 1, 5, 10 i 20 zostają skrótami na ławce.`,
           `Jeśli masz gotowy plik zamiast pracy w edytorze, na ławce jest o tym zdanie: podepniemy go razem ze zgłoszeniem. Osobnego pola „plik z dysku” na tej karcie nie ma.`,
         ],
       },
@@ -380,7 +380,7 @@ export const productGuides: Record<ProductId, ProductGuideContent> = {
         h2: "Kolor korpusu",
         paragraphs: [
           `Czarny, piaskowy, bordowy i granatowy zmieniają kubek na modelu tak samo jak koszulkę. Pojemność zostaje ${mugCapacityMl} ml — innej w asortymencie nie ma.`,
-          `Nakład 1, 5, 10 albo 20 sztuk niesie ten sam projekt. Wiążącej ceny za sztukę nie ma, dopóki system zamówień jej nie policzy; na ławce zostaje ${price} brutto.`,
+          `Nakład od jednej sztuki, krok po jednej — ten sam projekt na każdej. Na ławce widać ${price} × liczba sztuk. Wiążącej ceny za sztukę nie ma, dopóki system zamówień jej nie policzy.`,
         ],
       },
     ],
